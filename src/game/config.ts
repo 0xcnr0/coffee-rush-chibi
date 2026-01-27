@@ -1,62 +1,85 @@
 // Game Configuration Constants for Coffee Rush
+// All speeds are in pixels/second, intervals are in milliseconds (ms)
 
 export const GAME_CONFIG = {
-  // Canvas dimensions (9:16 portrait)
-  CANVAS_WIDTH: 360,
-  CANVAS_HEIGHT: 640,
+  // ─────────────────────────────────────────────────────────────
+  // CANVAS
+  // ─────────────────────────────────────────────────────────────
+  CANVAS_WIDTH: 360,           // pixels (9:16 portrait)
+  CANVAS_HEIGHT: 640,          // pixels
   
-  // Cart configuration
-  CART_X: 60,
-  CART_WIDTH: 80,
-  BLOCK_HEIGHT: 50,
-  BLOCK_MAX_HP: 100,
-  BLOCK_COUNT: 3,
+  // ─────────────────────────────────────────────────────────────
+  // CART (player tower)
+  // ─────────────────────────────────────────────────────────────
+  CART_X: 60,                  // pixels from left edge
+  CART_WIDTH: 80,              // pixels
+  BLOCK_HEIGHT: 50,            // pixels per block
+  BLOCK_MAX_HP: 100,           // HP per block
+  BLOCK_COUNT: 3,              // number of stacked blocks
   
-  // Enemy configuration
-  ENEMY_WIDTH: 40,
-  ENEMY_HEIGHT: 50,
-  ENEMY_BASE_HP: 30,
-  ENEMY_BASE_SPEED: 40, // pixels per second
-  ENEMY_DAMAGE: 15, // damage to cart block
-  MAX_ENEMIES: 30, // hard cap
+  // ─────────────────────────────────────────────────────────────
+  // ENEMIES
+  // ─────────────────────────────────────────────────────────────
+  ENEMY_WIDTH: 40,             // pixels
+  ENEMY_HEIGHT: 50,            // pixels
+  ENEMY_BASE_HP: 30,           // HP at difficulty level 0
+  ENEMY_BASE_SPEED: 52,        // pixels/second (+30% from 40)
+  ENEMY_DAMAGE: 15,            // damage dealt to cart block on contact
+  MAX_ENEMIES: 30,             // hard cap for performance
   
-  // Spawning
-  BASE_SPAWN_INTERVAL: 2000, // ms between spawns
-  MIN_SPAWN_INTERVAL: 400, // minimum interval
+  // ─────────────────────────────────────────────────────────────
+  // SPAWNING
+  // ─────────────────────────────────────────────────────────────
+  BASE_SPAWN_INTERVAL: 2000,   // ms between spawns at level 0
+  MIN_SPAWN_INTERVAL: 400,     // ms - floor to prevent overload
   
-  // Combat
-  AUTO_ATTACK_INTERVAL: 800, // ms between auto attacks
-  PROJECTILE_SPEED: 300, // pixels per second
-  PROJECTILE_DAMAGE: 12,
-  PROJECTILE_RADIUS: 8,
+  // ─────────────────────────────────────────────────────────────
+  // COMBAT (auto-attack)
+  // ─────────────────────────────────────────────────────────────
+  AUTO_ATTACK_INTERVAL: 640,   // ms between espresso shots (~20% faster)
+  PROJECTILE_SPEED: 420,       // pixels/second (+40% from 300)
+  PROJECTILE_DAMAGE: 12,       // damage per hit
+  PROJECTILE_RADIUS: 8,        // pixels - hitbox radius
   
-  // Skill
-  TONIC_BOMB_COST: 2,
-  TONIC_BOMB_RADIUS: 100,
-  TONIC_BOMB_DAMAGE: 25,
-  MAX_ENERGY: 4,
-  ENERGY_REGEN_RATE: 0.5, // energy per second
+  // ─────────────────────────────────────────────────────────────
+  // SKILL: Tonic Bomb
+  // ─────────────────────────────────────────────────────────────
+  TONIC_BOMB_COST: 2,          // energy cost
+  TONIC_BOMB_RADIUS: 100,      // pixels - AoE radius
+  TONIC_BOMB_DAMAGE: 25,       // damage to enemies in radius
+  MAX_ENERGY: 4,               // maximum energy capacity
+  ENERGY_REGEN_RATE: 0.5,      // energy/second
   
-  // Difficulty ramp (every 30 seconds)
-  DIFFICULTY_INTERVAL: 30, // seconds
-  SPAWN_RATE_INCREASE: 0.10, // 10% faster spawning
-  ENEMY_HP_INCREASE: 0.06, // 6% more HP
-  ENEMY_SPEED_INCREASE: 0.03, // 3% faster
+  // ─────────────────────────────────────────────────────────────
+  // DIFFICULTY RAMP (every 30 seconds, cumulative)
+  // ─────────────────────────────────────────────────────────────
+  DIFFICULTY_INTERVAL: 30,     // seconds between ramp-ups
+  SPAWN_RATE_INCREASE: 0.08,   // +8% faster spawning per level
+  ENEMY_HP_INCREASE: 0.05,     // +5% more HP per level
+  ENEMY_SPEED_INCREASE: 0.01,  // +1% faster movement per level (subtle)
   
-  // Morning Rush
-  RUSH_DURATION: 7, // seconds
-  RUSH_SPAWN_MULTIPLIER: 1.8,
+  // ─────────────────────────────────────────────────────────────
+  // MORNING RUSH (temporary spawn spike)
+  // ─────────────────────────────────────────────────────────────
+  RUSH_DURATION: 6,            // seconds
+  RUSH_SPAWN_MULTIPLIER: 1.8,  // spawn rate multiplier during rush
   
-  // Tips
-  TIP_VALUE: 5,
-  TIP_FLOAT_SPEED: 80, // pixels per second
+  // ─────────────────────────────────────────────────────────────
+  // TIPS & REWARDS
+  // ─────────────────────────────────────────────────────────────
+  TIP_VALUE: 5,                // points per tip
+  TIP_FLOAT_SPEED: 80,         // pixels/second - float animation
   
-  // Served enemy animation
-  SERVED_EXIT_DURATION: 0.5, // seconds
-  SERVED_EXIT_SPEED: 200, // pixels per second
+  // ─────────────────────────────────────────────────────────────
+  // SERVED ENEMY ANIMATION
+  // ─────────────────────────────────────────────────────────────
+  SERVED_EXIT_DURATION: 0.5,   // seconds before despawn
+  SERVED_EXIT_SPEED: 200,      // pixels/second - happy exit speed
   
-  // Particles
-  MAX_PARTICLES: 100,
+  // ─────────────────────────────────────────────────────────────
+  // PARTICLES & VFX
+  // ─────────────────────────────────────────────────────────────
+  MAX_PARTICLES: 100,          // hard cap for performance
 } as const;
 
 // Colors (HSL values matching index.css)
