@@ -23,20 +23,20 @@ export const GAME_CONFIG = {
   ENEMY_WIDTH: 40,             // pixels
   ENEMY_HEIGHT: 50,            // pixels
   ENEMY_BASE_HP: 30,           // HP at difficulty level 0
-  ENEMY_BASE_SPEED: 70,        // pixels/second (+75% from 40, snappier early game)
+  ENEMY_BASE_SPEED: 60,        // pixels/second (+50% from 40, balanced early game)
   ENEMY_DAMAGE: 15,            // damage dealt to cart block on contact
   MAX_ENEMIES: 30,             // hard cap for performance
   
   // ─────────────────────────────────────────────────────────────
   // SPAWNING
   // ─────────────────────────────────────────────────────────────
-  BASE_SPAWN_INTERVAL: 1400,   // ms between spawns (faster early pressure)
+  BASE_SPAWN_INTERVAL: 1600,   // ms between spawns (smoother early pacing)
   MIN_SPAWN_INTERVAL: 400,     // ms - floor to prevent overload
   
   // ─────────────────────────────────────────────────────────────
   // COMBAT (auto-attack)
   // ─────────────────────────────────────────────────────────────
-  AUTO_ATTACK_INTERVAL: 640,   // ms between espresso shots (~20% faster)
+  AUTO_ATTACK_INTERVAL: 576,   // ms between espresso shots (~10% faster)
   PROJECTILE_SPEED: 420,       // pixels/second (+40% from 300)
   PROJECTILE_DAMAGE: 12,       // damage per hit
   PROJECTILE_RADIUS: 8,        // pixels - hitbox radius
