@@ -41,8 +41,9 @@ export function drawGame(
   // Draw tip drops
   tips.forEach(tip => drawTip(ctx, tip));
   
-  // Draw morning rush indicator
+  // Draw morning rush indicator and edge glow
   if (difficulty.isMorningRush) {
+    drawRushEdgeGlow(ctx);
     drawRushIndicator(ctx);
   }
   
@@ -181,74 +182,131 @@ function drawBarista(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
 }
 
 function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
-  const { x, y, width, height, isServed, hp, maxHp } = enemy;
+  const { x, y, width, height, isServed, hp, maxHp, state } = enemy;
   
-  if (isServed) {
+  // Calculate shake for latched enemies
+  const isLatched = state === 'LATCHED';
+  const shakeX = isLatched ? Math.sin(Date.now() / 50) * 2 : 0;
+  const shakeY = isLatched ? Math.cos(Date.now() / 70) * 1 : 0;
+  
+  const drawX = x + shakeX;
+  const drawY = y + shakeY;
+  
+  if (isServed || state === 'SERVED') {
     // Happy served customer - colorful!
     ctx.fillStyle = COLORS.awake;
     
     // Body
     ctx.beginPath();
-    roundRect(ctx, x - width/2, y - height, width, height, 10);
+    roundRect(ctx, drawX - width/2, drawY - height, width, height, 10);
     ctx.fill();
     
     // Happy face
     ctx.fillStyle = COLORS.espresso;
     ctx.beginPath();
-    ctx.arc(x - 8, y - height + 20, 4, 0, Math.PI * 2);
-    ctx.arc(x + 8, y - height + 20, 4, 0, Math.PI * 2);
+    ctx.arc(drawX - 8, drawY - height + 20, 4, 0, Math.PI * 2);
+    ctx.arc(drawX + 8, drawY - height + 20, 4, 0, Math.PI * 2);
     ctx.fill();
     
     // Big smile
     ctx.strokeStyle = COLORS.espresso;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(x, y - height + 30, 10, 0.3, Math.PI - 0.3);
+    ctx.arc(drawX, drawY - height + 30, 10, 0.3, Math.PI - 0.3);
     ctx.stroke();
     
     // Coffee cup in hand
     ctx.fillStyle = COLORS.foam;
-    ctx.fillRect(x + width/2 - 5, y - height + 25, 12, 15);
+    ctx.fillRect(drawX + width/2 - 5, drawY - height + 25, 12, 15);
     ctx.fillStyle = COLORS.mediumRoast;
-    ctx.fillRect(x + width/2 - 3, y - height + 27, 8, 8);
+    ctx.fillRect(drawX + width/2 - 3, drawY - height + 27, 8, 8);
     
-  } else {
-    // Sleepy customer - desaturated
-    ctx.fillStyle = COLORS.sleepy;
+  } else if (isLatched) {
+    // LATCHED enemy - angry/attacking, red tint
+    ctx.fillStyle = 'hsl(0, 50%, 55%)'; // Red tint
     
     // Body
     ctx.beginPath();
-    roundRect(ctx, x - width/2, y - height, width, height, 10);
+    roundRect(ctx, drawX - width/2, drawY - height, width, height, 10);
+    ctx.fill();
+    
+    // Angry eyes (open, aggressive)
+    ctx.fillStyle = 'hsl(0, 70%, 30%)';
+    ctx.beginPath();
+    ctx.arc(drawX - 8, drawY - height + 20, 5, 0, Math.PI * 2);
+    ctx.arc(drawX + 8, drawY - height + 20, 5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Angry eyebrows
+    ctx.strokeStyle = 'hsl(0, 70%, 30%)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(drawX - 14, drawY - height + 12);
+    ctx.lineTo(drawX - 4, drawY - height + 16);
+    ctx.moveTo(drawX + 14, drawY - height + 12);
+    ctx.lineTo(drawX + 4, drawY - height + 16);
+    ctx.stroke();
+    
+    // Aggressive mouth
+    ctx.beginPath();
+    ctx.arc(drawX, drawY - height + 38, 6, Math.PI + 0.5, -0.5);
+    ctx.stroke();
+    
+    // Exclamation mark
+    ctx.fillStyle = 'hsl(0, 80%, 50%)';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText('!', drawX - 4, drawY - height - 5);
+    
+    // HP indicator
+    const hpPercent = hp / maxHp;
+    if (hpPercent < 1) {
+      const barWidth = width - 10;
+      ctx.fillStyle = COLORS.hpBarBg;
+      ctx.fillRect(drawX - barWidth/2, drawY - height - 16, barWidth, 4);
+      ctx.fillStyle = 'hsl(0, 70%, 55%)';
+      ctx.fillRect(drawX - barWidth/2, drawY - height - 16, barWidth * hpPercent, 4);
+    }
+    
+  } else {
+    // Sleepy customer (WALKING or QUEUED) - desaturated
+    const isQueued = state === 'QUEUED';
+    ctx.fillStyle = isQueued ? 'hsl(220, 15%, 55%)' : COLORS.sleepy;
+    
+    // Body
+    ctx.beginPath();
+    roundRect(ctx, drawX - width/2, drawY - height, width, height, 10);
     ctx.fill();
     
     // Tired eyes (closed lines)
     ctx.strokeStyle = 'hsl(220, 10%, 40%)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(x - 12, y - height + 20);
-    ctx.lineTo(x - 4, y - height + 20);
-    ctx.moveTo(x + 4, y - height + 20);
-    ctx.lineTo(x + 12, y - height + 20);
+    ctx.moveTo(drawX - 12, drawY - height + 20);
+    ctx.lineTo(drawX - 4, drawY - height + 20);
+    ctx.moveTo(drawX + 4, drawY - height + 20);
+    ctx.lineTo(drawX + 12, drawY - height + 20);
     ctx.stroke();
     
     // Frown
     ctx.beginPath();
-    ctx.arc(x, y - height + 38, 8, Math.PI + 0.3, -0.3);
+    ctx.arc(drawX, drawY - height + 38, 8, Math.PI + 0.3, -0.3);
     ctx.stroke();
     
-    // Zzz icon
-    ctx.fillStyle = 'hsl(220, 30%, 70%)';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.fillText('💤', x - 8, y - height - 5);
+    // Zzz icon (only for walking, not queued)
+    if (!isQueued) {
+      ctx.fillStyle = 'hsl(220, 30%, 70%)';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('💤', drawX - 8, drawY - height - 5);
+    }
     
     // HP indicator (small bar above)
     const hpPercent = hp / maxHp;
     if (hpPercent < 1) {
       const barWidth = width - 10;
       ctx.fillStyle = COLORS.hpBarBg;
-      ctx.fillRect(x - barWidth/2, y - height - 12, barWidth, 4);
+      ctx.fillRect(drawX - barWidth/2, drawY - height - 12, barWidth, 4);
       ctx.fillStyle = COLORS.hpBar;
-      ctx.fillRect(x - barWidth/2, y - height - 12, barWidth * hpPercent, 4);
+      ctx.fillRect(drawX - barWidth/2, drawY - height - 12, barWidth * hpPercent, 4);
     }
   }
 }
@@ -335,14 +393,29 @@ function drawTip(ctx: CanvasRenderingContext2D, tip: TipDrop) {
 
 function drawRushIndicator(ctx: CanvasRenderingContext2D) {
   ctx.save();
-  ctx.fillStyle = 'hsla(25, 80%, 55%, 0.3)';
+  ctx.fillStyle = 'hsla(25, 80%, 55%, 0.4)';
   ctx.fillRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, 50);
   
   ctx.fillStyle = COLORS.warmOrange;
-  ctx.font = 'bold 16px sans-serif';
+  ctx.font = 'bold 18px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('☕ MORNING RUSH! ☕', GAME_CONFIG.CANVAS_WIDTH / 2, 30);
+  ctx.fillText('☕ MORNING RUSH! ☕', GAME_CONFIG.CANVAS_WIDTH / 2, 32);
   ctx.restore();
+}
+
+function drawRushEdgeGlow(ctx: CanvasRenderingContext2D) {
+  const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
+  
+  // Create radial gradient for edge glow
+  const gradient = ctx.createRadialGradient(
+    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.35,
+    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.7
+  );
+  gradient.addColorStop(0, 'transparent');
+  gradient.addColorStop(1, 'hsla(25, 80%, 55%, 0.15)');
+  
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 }
 
 function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number) {

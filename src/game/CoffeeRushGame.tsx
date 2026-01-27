@@ -37,6 +37,9 @@ const createEnemy = (id: number): Enemy => ({
   isServed: false,
   servedTimer: 0,
   animationFrame: 0,
+  state: 'WALKING',
+  latchedTimer: 0,
+  queuePosition: 0,
 });
 
 const createProjectile = (id: number): Projectile => ({
@@ -91,6 +94,8 @@ export const CoffeeRushGame: React.FC = () => {
     maxActiveEnemiesSeen: number;
     effectiveSpawnInterval: number;
     effectiveBlockHp: number;
+    latchedCount: number;
+    breatherTimer: number;
   }>({
     fps: 60,
     minFps: 60,
@@ -98,6 +103,8 @@ export const CoffeeRushGame: React.FC = () => {
     maxActiveEnemiesSeen: 0,
     effectiveSpawnInterval: GAME_CONFIG.BASE_SPAWN_INTERVAL,
     effectiveBlockHp: GAME_CONFIG.BLOCK_MAX_HP,
+    latchedCount: 0,
+    breatherTimer: 0,
   });
   
   // Stress test tracking refs
@@ -113,7 +120,9 @@ export const CoffeeRushGame: React.FC = () => {
     enemySpeedMultiplier: 1,
     isMorningRush: false,
     rushTimer: 0,
+    breatherTimer: 0,
   });
+  const latchedCountRef = useRef(0); // Track latched enemies for TDS panic system
   const screenShakeRef = useRef({ x: 0, y: 0, duration: 0 });
   const lastAttackRef = useRef(0);
   const lastSpawnRef = useRef(0);
@@ -178,7 +187,11 @@ export const CoffeeRushGame: React.FC = () => {
       enemySpeedMultiplier: 1,
       isMorningRush: false,
       rushTimer: 0,
+      breatherTimer: 0,
     };
+    
+    // Reset latched count
+    latchedCountRef.current = 0;
     
     // Reset refs
     screenShakeRef.current = { x: 0, y: 0, duration: 0 };
@@ -254,6 +267,9 @@ export const CoffeeRushGame: React.FC = () => {
     enemy.speed = GAME_CONFIG.ENEMY_BASE_SPEED * difficulty.enemySpeedMultiplier;
     enemy.isServed = false;
     enemy.servedTimer = 0;
+    enemy.state = 'WALKING';
+    enemy.latchedTimer = 0;
+    enemy.queuePosition = 0;
   }, [enemyPool]);
   
   const fireProjectile = useCallback((targetEnemy: Enemy) => {
@@ -327,7 +343,7 @@ export const CoffeeRushGame: React.FC = () => {
     spawnParticles(bombX, bombY, 'steam', 10);
     
     enemyPool.getActive().forEach(enemy => {
-      if (enemy.isServed) return;
+      if (enemy.state === 'SERVED' || enemy.isServed) return;
       
       const dx = enemy.x - bombX;
       const dy = (enemy.y - enemy.height / 2) - bombY;
@@ -336,6 +352,11 @@ export const CoffeeRushGame: React.FC = () => {
       if (dist < GAME_CONFIG.TONIC_BOMB_RADIUS) {
         enemy.hp -= GAME_CONFIG.TONIC_BOMB_DAMAGE;
         spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 3);
+        
+        // If killed and was latched, decrement count
+        if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
+          latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+        }
       }
     });
   }, [enemyPool, spawnParticles]);
@@ -391,6 +412,8 @@ export const CoffeeRushGame: React.FC = () => {
         maxActiveEnemiesSeen: maxActiveEnemiesSeenRef.current,
         effectiveSpawnInterval: effectiveInterval,
         effectiveBlockHp: effectiveBlockHpRef.current,
+        latchedCount: latchedCountRef.current,
+        breatherTimer: difficulty.breatherTimer,
       });
     }
     
@@ -412,7 +435,14 @@ export const CoffeeRushGame: React.FC = () => {
       difficulty.rushTimer -= deltaTime;
       if (difficulty.rushTimer <= 0) {
         difficulty.isMorningRush = false;
+        // Start breather period - pause spawns after Rush
+        difficulty.breatherTimer = GAME_CONFIG.BREATHER_DURATION;
       }
+    }
+    
+    // Update breather timer
+    if (difficulty.breatherTimer > 0) {
+      difficulty.breatherTimer -= deltaTime;
     }
     
     // Start rush with extended duration in stress test
@@ -433,6 +463,9 @@ export const CoffeeRushGame: React.FC = () => {
     }
     
     // Spawn enemies (v3.2: warmup pre-rush uses slower spawn rate)
+    // Block spawning during breather period
+    const canSpawn = difficulty.breatherTimer <= 0;
+    
     const isWarmup = timeRef.current < GAME_CONFIG.EARLY_GAME_SECONDS 
       && difficulty.level === 0 
       && !difficulty.isMorningRush;
@@ -446,7 +479,7 @@ export const CoffeeRushGame: React.FC = () => {
     const rushMultiplier = difficulty.isMorningRush ? stressRushMultiplier : 1;
     const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval / rushMultiplier);
     
-    if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
+    if (canSpawn && currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
       spawnEnemy();
       lastSpawnRef.current = currentTime;
     }
@@ -503,21 +536,38 @@ export const CoffeeRushGame: React.FC = () => {
       }
     });
     
-    // Update enemies
+    // Update enemies - TDS-style latched system
     const activeBlocks = blocks.filter(b => !b.destroyed);
     const cartRightEdge = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
     
+    // Calculate max latched slots (more during Rush)
+    const maxLatched = difficulty.isMorningRush 
+      ? GAME_CONFIG.MAX_LATCHED_ENEMIES + GAME_CONFIG.RUSH_LATCHED_BONUS
+      : GAME_CONFIG.MAX_LATCHED_ENEMIES;
+    
+    // Count queued enemies for proper positioning
+    let queuedCount = 0;
+    
     enemyPool.getActive().forEach(enemy => {
-      if (enemy.isServed) {
-        // Served animation - exit right
+      // SERVED state - happy exit animation
+      if (enemy.state === 'SERVED' || enemy.isServed) {
         enemy.servedTimer -= deltaTime;
         enemy.x += GAME_CONFIG.SERVED_EXIT_SPEED * deltaTime;
         
         if (enemy.servedTimer <= 0 || enemy.x > GAME_CONFIG.CANVAS_WIDTH + 50) {
           enemyPool.release(enemy);
         }
-      } else if (enemy.hp <= 0) {
-        // Just served - trigger transformation
+        return;
+      }
+      
+      // Check if just served (HP <= 0)
+      if (enemy.hp <= 0) {
+        // Was latched? Decrement count
+        if (enemy.state === 'LATCHED') {
+          latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+        }
+        
+        enemy.state = 'SERVED';
         enemy.isServed = true;
         enemy.servedTimer = GAME_CONFIG.SERVED_EXIT_DURATION;
         customersServedRef.current++;
@@ -528,17 +578,23 @@ export const CoffeeRushGame: React.FC = () => {
         // Celebration particles
         spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'heart', 3);
         spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 5);
-      } else {
-        // Move toward cart (with Rush speed boost)
-        const rushSpeedMultiplier = difficulty.isMorningRush ? GAME_CONFIG.RUSH_SPEED_MULTIPLIER : 1;
-        enemy.x -= enemy.speed * rushSpeedMultiplier * deltaTime;
+        return;
+      }
+      
+      // LATCHED state - tick damage to cart
+      if (enemy.state === 'LATCHED') {
+        enemy.latchedTimer -= deltaTime;
         
-        // Check if reached cart
-        if (enemy.x - enemy.width / 2 < cartRightEdge && activeBlocks.length > 0) {
-          // Damage lowest block
+        if (enemy.latchedTimer <= 0 && activeBlocks.length > 0) {
+          // Deal tick damage to lowest block
           const lowestBlock = activeBlocks[0];
-          lowestBlock.hp -= GAME_CONFIG.ENEMY_DAMAGE;
+          lowestBlock.hp -= GAME_CONFIG.LATCHED_TICK_DAMAGE;
+          enemy.latchedTimer = GAME_CONFIG.LATCHED_TICK_INTERVAL;
           
+          // Small damage particles
+          spawnParticles(cartRightEdge, lowestBlock.y + GAME_CONFIG.BLOCK_HEIGHT / 2, 'steam', 2);
+          
+          // Check block destruction
           if (lowestBlock.hp <= 0) {
             lowestBlock.destroyed = true;
             spawnParticles(
@@ -547,15 +603,50 @@ export const CoffeeRushGame: React.FC = () => {
               'steam',
               15
             );
+            
+            // Check game over
+            if (blocks.filter(b => !b.destroyed).length === 0) {
+              handleGameOver();
+            }
           }
-          
-          // Remove enemy
-          enemyPool.release(enemy);
-          
-          // Check game over
-          if (blocks.filter(b => !b.destroyed).length === 0) {
-            handleGameOver();
-          }
+        }
+        return;
+      }
+      
+      // QUEUED state - wait for latched slot to open
+      if (enemy.state === 'QUEUED') {
+        // Check if slot opened
+        if (latchedCountRef.current < maxLatched) {
+          enemy.state = 'LATCHED';
+          enemy.latchedTimer = GAME_CONFIG.LATCHED_TICK_INTERVAL;
+          enemy.x = cartRightEdge + enemy.width / 2;
+          latchedCountRef.current++;
+        } else {
+          // Update queue position (stay in line)
+          queuedCount++;
+        }
+        return;
+      }
+      
+      // WALKING state - move toward cart
+      const rushSpeedMultiplier = difficulty.isMorningRush ? GAME_CONFIG.RUSH_SPEED_MULTIPLIER : 1;
+      enemy.x -= enemy.speed * rushSpeedMultiplier * deltaTime;
+      
+      // Check if reached cart edge
+      if (enemy.x - enemy.width / 2 < cartRightEdge) {
+        if (latchedCountRef.current < maxLatched && activeBlocks.length > 0) {
+          // Become latched
+          enemy.state = 'LATCHED';
+          enemy.latchedTimer = GAME_CONFIG.LATCHED_TICK_INTERVAL;
+          enemy.x = cartRightEdge + enemy.width / 2;
+          latchedCountRef.current++;
+        } else if (activeBlocks.length > 0) {
+          // Queue behind - stop at queue position
+          enemy.state = 'QUEUED';
+          enemy.queuePosition = cartRightEdge + enemy.width / 2 + GAME_CONFIG.LATCHED_QUEUE_SPACING;
+          enemy.x = Math.max(enemy.x, enemy.queuePosition);
+        } else {
+          // No blocks left - game over already handled
         }
       }
     });
@@ -708,6 +799,8 @@ export const CoffeeRushGame: React.FC = () => {
             effectiveBlockHp={debugInfo.effectiveBlockHp}
             isVisible={showDebug}
             isStressTest={isStressTest}
+            latchedCount={debugInfo.latchedCount}
+            breatherTimer={debugInfo.breatherTimer}
             onToggle={() => setShowDebug(prev => !prev)}
             onStressTestToggle={() => setIsStressTest(prev => !prev)}
           />

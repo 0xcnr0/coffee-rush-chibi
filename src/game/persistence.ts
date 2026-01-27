@@ -2,7 +2,7 @@
 // Safely handles localStorage read/write with defaults
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 2; // Bump this to reset all player progression
+const SAVE_VERSION = 3; // Bump this to reset all player progression (v3: TDS panic system)
 
 export interface ProgressionData {
   version: number;

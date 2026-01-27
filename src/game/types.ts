@@ -16,6 +16,8 @@ export interface CartBlock {
   destroyed: boolean;
 }
 
+export type EnemyState = 'WALKING' | 'LATCHED' | 'QUEUED' | 'SERVED';
+
 export interface Enemy {
   id: number;
   x: number;
@@ -29,6 +31,9 @@ export interface Enemy {
   isServed: boolean; // true when HP reaches 0, triggers happy animation
   servedTimer: number; // countdown for exit animation
   animationFrame: number;
+  state: EnemyState; // TDS-style state machine
+  latchedTimer: number; // time until next tick damage
+  queuePosition: number; // X position when queued (behind latched enemies)
 }
 
 export interface Projectile {
@@ -82,6 +87,7 @@ export interface DifficultyState {
   enemySpeedMultiplier: number;
   isMorningRush: boolean;
   rushTimer: number;
+  breatherTimer: number; // post-rush spawn pause
 }
 
 export interface UpgradeInfo {
