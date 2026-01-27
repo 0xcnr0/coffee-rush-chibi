@@ -101,6 +101,7 @@ export const CoffeeRushGame: React.FC = () => {
   const customersServedRef = useRef(0);
   const damageMultiplierRef = useRef(1);
   const energyRegenMultiplierRef = useRef(1);
+  const hudAccumulatorRef = useRef(0); // HUD throttle accumulator
   
   // Object pools
   const enemyPool = useObjectPool(createEnemy, GAME_CONFIG.MAX_ENEMIES);
@@ -318,7 +319,14 @@ export const CoffeeRushGame: React.FC = () => {
     
     // Update time
     timeRef.current += deltaTime;
-    setTimeSurvived(timeRef.current);
+    
+    // Throttle HUD updates to 10 Hz for mobile performance
+    hudAccumulatorRef.current += deltaTime;
+    const shouldUpdateHUD = hudAccumulatorRef.current >= 0.1;
+    if (shouldUpdateHUD) {
+      hudAccumulatorRef.current = 0;
+      setTimeSurvived(timeRef.current);
+    }
     
     // Update difficulty every 30 seconds
     const newLevel = Math.floor(timeRef.current / GAME_CONFIG.DIFFICULTY_INTERVAL);
@@ -348,7 +356,9 @@ export const CoffeeRushGame: React.FC = () => {
         GAME_CONFIG.MAX_ENERGY,
         energyRef.current + effectiveRegenRate * deltaTime
       );
-      setEnergy(energyRef.current);
+      if (shouldUpdateHUD) {
+        setEnergy(energyRef.current);
+      }
     }
     
     // Spawn enemies
@@ -476,7 +486,9 @@ export const CoffeeRushGame: React.FC = () => {
       
       if (tip.y < tip.targetY || tip.opacity <= 0) {
         tipsRef.current += tip.value;
-        setTips(tipsRef.current);
+        if (shouldUpdateHUD) {
+          setTips(tipsRef.current);
+        }
         tipPool.release(tip);
       }
     });

@@ -23,14 +23,14 @@ export const GAME_CONFIG = {
   ENEMY_WIDTH: 40,             // pixels
   ENEMY_HEIGHT: 50,            // pixels
   ENEMY_BASE_HP: 30,           // HP at difficulty level 0
-  ENEMY_BASE_SPEED: 52,        // pixels/second (+30% from 40)
+  ENEMY_BASE_SPEED: 70,        // pixels/second (+75% from 40, snappier early game)
   ENEMY_DAMAGE: 15,            // damage dealt to cart block on contact
   MAX_ENEMIES: 30,             // hard cap for performance
   
   // ─────────────────────────────────────────────────────────────
   // SPAWNING
   // ─────────────────────────────────────────────────────────────
-  BASE_SPAWN_INTERVAL: 2000,   // ms between spawns at level 0
+  BASE_SPAWN_INTERVAL: 1400,   // ms between spawns (faster early pressure)
   MIN_SPAWN_INTERVAL: 400,     // ms - floor to prevent overload
   
   // ─────────────────────────────────────────────────────────────
