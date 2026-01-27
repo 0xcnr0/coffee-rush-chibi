@@ -22,21 +22,21 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   ENEMY_WIDTH: 40,             // pixels
   ENEMY_HEIGHT: 50,            // pixels
-  ENEMY_BASE_HP: 30,           // HP at difficulty level 0
-  ENEMY_BASE_SPEED: 85,        // pixels/second (aggressive for shorter runs)
-  ENEMY_DAMAGE: 18,            // damage dealt to cart block on contact
+  ENEMY_BASE_HP: 35,           // HP at difficulty level 0 (+15% for early tankiness)
+  ENEMY_BASE_SPEED: 95,        // pixels/second (v3: very aggressive)
+  ENEMY_DAMAGE: 22,            // damage dealt to cart block on contact
   MAX_ENEMIES: 30,             // hard cap for performance
   
   // ─────────────────────────────────────────────────────────────
   // SPAWNING
   // ─────────────────────────────────────────────────────────────
-  BASE_SPAWN_INTERVAL: 900,    // ms between spawns (fast early pressure)
-  MIN_SPAWN_INTERVAL: 320,     // ms - floor to prevent overload
+  BASE_SPAWN_INTERVAL: 650,    // ms between spawns (v3: heavy early pressure)
+  MIN_SPAWN_INTERVAL: 260,     // ms - floor to prevent overload
   
   // ─────────────────────────────────────────────────────────────
   // COMBAT (auto-attack)
   // ─────────────────────────────────────────────────────────────
-  AUTO_ATTACK_INTERVAL: 576,   // ms between espresso shots (~10% faster)
+  AUTO_ATTACK_INTERVAL: 520,   // ms between espresso shots (v3: ~10% faster)
   PROJECTILE_SPEED: 420,       // pixels/second (+40% from 300)
   PROJECTILE_DAMAGE: 12,       // damage per hit
   PROJECTILE_RADIUS: 8,        // pixels - hitbox radius
@@ -45,25 +45,25 @@ export const GAME_CONFIG = {
   // SKILL: Tonic Bomb
   // ─────────────────────────────────────────────────────────────
   TONIC_BOMB_COST: 2,          // energy cost
-  TONIC_BOMB_RADIUS: 100,      // pixels - AoE radius
-  TONIC_BOMB_DAMAGE: 25,       // damage to enemies in radius
+  TONIC_BOMB_RADIUS: 110,      // pixels - AoE radius (v3: +10%)
+  TONIC_BOMB_DAMAGE: 28,       // damage to enemies in radius (v3: +10%)
   MAX_ENERGY: 4,               // maximum energy capacity
   ENERGY_REGEN_RATE: 0.5,      // energy/second
   
   // ─────────────────────────────────────────────────────────────
-  // DIFFICULTY RAMP (every 20 seconds, cumulative - aggressive for shorter runs)
+  // DIFFICULTY RAMP (every 20 seconds, cumulative - v3 aggressive)
   // ─────────────────────────────────────────────────────────────
-  DIFFICULTY_INTERVAL: 20,     // seconds between ramp-ups (faster scaling)
-  SPAWN_RATE_INCREASE: 0.18,   // +18% faster spawning per level
-  ENEMY_HP_INCREASE: 0.10,     // +10% more HP per level
-  ENEMY_SPEED_INCREASE: 0.06,  // +6% faster movement per level
+  DIFFICULTY_INTERVAL: 20,     // seconds between ramp-ups
+  SPAWN_RATE_INCREASE: 0.22,   // +22% faster spawning per level
+  ENEMY_HP_INCREASE: 0.14,     // +14% more HP per level
+  ENEMY_SPEED_INCREASE: 0.08,  // +8% faster movement per level
   
   // ─────────────────────────────────────────────────────────────
-  // MORNING RUSH (temporary spawn spike - now a real threat)
+  // MORNING RUSH (v3: real panic mode)
   // ─────────────────────────────────────────────────────────────
-  RUSH_DURATION: 8,            // seconds (longer panic window)
-  RUSH_SPAWN_MULTIPLIER: 2.3,  // spawn rate multiplier during rush
-  RUSH_SPEED_MULTIPLIER: 1.15, // +15% enemy speed during rush
+  RUSH_DURATION: 9,            // seconds (longer panic window)
+  RUSH_SPAWN_MULTIPLIER: 2.8,  // spawn rate multiplier during rush
+  RUSH_SPEED_MULTIPLIER: 1.25, // +25% enemy speed during rush (v3)
   
   // ─────────────────────────────────────────────────────────────
   // TIPS & REWARDS
@@ -88,16 +88,19 @@ export const GAME_CONFIG = {
   UPGRADE_MAX_LEVEL: 20,       // max level for each upgrade
   
   // Tower Reinforcement - increases BLOCK_MAX_HP
-  TOWER_HP_BONUS_PER_LEVEL: 0.06,  // +6% per level (max +120%)
+  TOWER_HP_BONUS_PER_LEVEL: 0.04,  // +4% per level (v3: nerfed, max +80%)
   TOWER_HP_BASE_COST: 10,          // beans
+  MAX_BLOCK_HP_MULTIPLIER: 2.2,    // cap for blockHpMultiplier
   
   // Espresso Mastery - increases PROJECTILE_DAMAGE
-  ESPRESSO_BONUS_PER_LEVEL: 0.05,  // +5% per level (max +100%)
+  ESPRESSO_BONUS_PER_LEVEL: 0.04,  // +4% per level (v3: nerfed, max +80%)
   ESPRESSO_BASE_COST: 15,          // beans
+  MAX_DAMAGE_MULTIPLIER: 2.0,      // cap for damageMultiplier
   
   // Caffeine Flow - increases ENERGY_REGEN_RATE
-  ENERGY_BONUS_PER_LEVEL: 0.05,    // +5% per level (max +100%)
+  ENERGY_BONUS_PER_LEVEL: 0.035,   // +3.5% per level (v3: nerfed, max +70%)
   ENERGY_BASE_COST: 12,            // beans
+  MAX_ENERGY_MULTIPLIER: 2.0,      // cap for energyRegenMultiplier
 } as const;
 
 // Colors (HSL values matching index.css)

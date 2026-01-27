@@ -137,17 +137,18 @@ export const CoffeeRushGame: React.FC = () => {
     const progression = loadProgression();
     const { upgradeLevels } = progression;
     
-    const blockHpMultiplier = getUpgradeMultiplier(
-      upgradeLevels.towerHpLevel, 
-      GAME_CONFIG.TOWER_HP_BONUS_PER_LEVEL
+    // Calculate multipliers with caps (v3: prevent infinite runs)
+    const blockHpMultiplier = Math.min(
+      getUpgradeMultiplier(upgradeLevels.towerHpLevel, GAME_CONFIG.TOWER_HP_BONUS_PER_LEVEL),
+      GAME_CONFIG.MAX_BLOCK_HP_MULTIPLIER
     );
-    const damageMultiplier = getUpgradeMultiplier(
-      upgradeLevels.espressoDamageLevel, 
-      GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL
+    const damageMultiplier = Math.min(
+      getUpgradeMultiplier(upgradeLevels.espressoDamageLevel, GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL),
+      GAME_CONFIG.MAX_DAMAGE_MULTIPLIER
     );
-    const energyRegenMultiplier = getUpgradeMultiplier(
-      upgradeLevels.energyRegenLevel, 
-      GAME_CONFIG.ENERGY_BONUS_PER_LEVEL
+    const energyRegenMultiplier = Math.min(
+      getUpgradeMultiplier(upgradeLevels.energyRegenLevel, GAME_CONFIG.ENERGY_BONUS_PER_LEVEL),
+      GAME_CONFIG.MAX_ENERGY_MULTIPLIER
     );
     
     // Apply multipliers to effective values (stored in refs)
