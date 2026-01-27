@@ -6,6 +6,12 @@ import { useObjectPool } from './useObjectPool';
 import { MenuScreen } from './MenuScreen';
 import { EndScreen } from './EndScreen';
 import { GameHUD } from './GameHUD';
+import { UpgradesScreen } from './UpgradesScreen';
+import { 
+  loadProgression, 
+  updateBestRecords, 
+  getUpgradeMultiplier 
+} from './persistence';
 import type { 
   GameState, 
   CartBlock, 
@@ -71,7 +77,7 @@ const createParticle = (id: number): Particle => ({
 export const CoffeeRushGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('MENU');
-  const [stats, setStats] = useState<GameStats>({ timeSurvived: 0, customersServed: 0, totalTips: 0 });
+  const [stats, setStats] = useState<GameStats>({ timeSurvived: 0, customersServed: 0, totalTips: 0, beansEarned: 0, isNewRecord: false });
   const [energy, setEnergy] = useState<number>(GAME_CONFIG.MAX_ENERGY);
   const [tips, setTips] = useState(0);
   const [timeSurvived, setTimeSurvived] = useState(0);
@@ -93,6 +99,8 @@ export const CoffeeRushGame: React.FC = () => {
   const timeRef = useRef(0);
   const tipsRef = useRef(0);
   const customersServedRef = useRef(0);
+  const damageMultiplierRef = useRef(1);
+  const energyRegenMultiplierRef = useRef(1);
   
   // Object pools
   const enemyPool = useObjectPool(createEnemy, GAME_CONFIG.MAX_ENEMIES);
@@ -101,16 +109,40 @@ export const CoffeeRushGame: React.FC = () => {
   const particlePool = useObjectPool(createParticle, GAME_CONFIG.MAX_PARTICLES);
   
   const initGame = useCallback(() => {
-    // Reset blocks
+    // Load progression and apply upgrade multipliers
+    const progression = loadProgression();
+    const { upgradeLevels } = progression;
+    
+    const blockHpMultiplier = getUpgradeMultiplier(
+      upgradeLevels.towerHpLevel, 
+      GAME_CONFIG.TOWER_HP_BONUS_PER_LEVEL
+    );
+    const damageMultiplier = getUpgradeMultiplier(
+      upgradeLevels.espressoDamageLevel, 
+      GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL
+    );
+    const energyRegenMultiplier = getUpgradeMultiplier(
+      upgradeLevels.energyRegenLevel, 
+      GAME_CONFIG.ENERGY_BONUS_PER_LEVEL
+    );
+    
+    // Apply multipliers to effective values (stored in refs)
+    const effectiveBlockHp = Math.floor(GAME_CONFIG.BLOCK_MAX_HP * blockHpMultiplier);
+    
+    // Reset blocks with upgraded HP
     const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
     blocksRef.current = Array.from({ length: GAME_CONFIG.BLOCK_COUNT }, (_, i) => ({
       id: i,
-      hp: GAME_CONFIG.BLOCK_MAX_HP,
-      maxHp: GAME_CONFIG.BLOCK_MAX_HP,
+      hp: effectiveBlockHp,
+      maxHp: effectiveBlockHp,
       y: groundY - 30 - (i + 1) * GAME_CONFIG.BLOCK_HEIGHT,
       height: GAME_CONFIG.BLOCK_HEIGHT,
       destroyed: false,
     }));
+    
+    // Store multipliers for use in game loop
+    damageMultiplierRef.current = damageMultiplier;
+    energyRegenMultiplierRef.current = energyRegenMultiplier;
     
     // Reset difficulty
     difficultyRef.current = {
@@ -149,12 +181,29 @@ export const CoffeeRushGame: React.FC = () => {
   }, [initGame]);
   
   const handleGameOver = useCallback(() => {
+    // Update records and earn beans
+    const { isNewTimeRecord, beansEarned } = updateBestRecords(
+      timeRef.current,
+      customersServedRef.current,
+      tipsRef.current
+    );
+    
     setStats({
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
       totalTips: tipsRef.current,
+      beansEarned,
+      isNewRecord: isNewTimeRecord,
     });
     setGameState('END');
+  }, []);
+  
+  const handleHome = useCallback(() => {
+    setGameState('MENU');
+  }, []);
+  
+  const handleUpgrades = useCallback(() => {
+    setGameState('UPGRADES');
   }, []);
   
   const spawnEnemy = useCallback(() => {
@@ -189,7 +238,7 @@ export const CoffeeRushGame: React.FC = () => {
     proj.y = topBlock.y;
     proj.targetX = targetEnemy.x;
     proj.targetY = targetEnemy.y - targetEnemy.height / 2;
-    proj.damage = GAME_CONFIG.PROJECTILE_DAMAGE;
+    proj.damage = Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current);
   }, [projectilePool]);
   
   const spawnParticles = useCallback((x: number, y: number, type: Particle['type'], count: number) => {
@@ -292,11 +341,12 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
-    // Energy regeneration
+    // Energy regeneration (with upgrade multiplier)
     if (energyRef.current < GAME_CONFIG.MAX_ENERGY) {
+      const effectiveRegenRate = GAME_CONFIG.ENERGY_REGEN_RATE * energyRegenMultiplierRef.current;
       energyRef.current = Math.min(
         GAME_CONFIG.MAX_ENERGY,
-        energyRef.current + GAME_CONFIG.ENERGY_REGEN_RATE * deltaTime
+        energyRef.current + effectiveRegenRate * deltaTime
       );
       setEnergy(energyRef.current);
     }
@@ -529,7 +579,12 @@ export const CoffeeRushGame: React.FC = () => {
         
         {/* Menu Screen */}
         {gameState === 'MENU' && (
-          <MenuScreen onPlay={handlePlay} />
+          <MenuScreen onPlay={handlePlay} onUpgrades={handleUpgrades} />
+        )}
+        
+        {/* Upgrades Screen */}
+        {gameState === 'UPGRADES' && (
+          <UpgradesScreen onBack={handleHome} />
         )}
         
         {/* Game HUD */}
@@ -547,7 +602,12 @@ export const CoffeeRushGame: React.FC = () => {
         
         {/* End Screen */}
         {gameState === 'END' && (
-          <EndScreen stats={stats} onPlayAgain={handlePlay} />
+          <EndScreen 
+            stats={stats} 
+            onPlayAgain={handlePlay} 
+            onHome={handleHome}
+            onUpgrades={handleUpgrades}
+          />
         )}
       </div>
     </div>
