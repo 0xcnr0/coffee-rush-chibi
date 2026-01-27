@@ -13,6 +13,9 @@ interface GameHUDProps {
   canUseBomb: boolean;
 }
 
+const CHECKPOINT_INTERVAL = 30; // seconds per checkpoint
+const TOTAL_CHECKPOINTS = 6;
+
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived,
   tips,
@@ -28,31 +31,64 @@ export const GameHUD: React.FC<GameHUDProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const currentCheckpoint = Math.floor(timeSurvived / CHECKPOINT_INTERVAL);
+  const checkpointProgress = (timeSurvived % CHECKPOINT_INTERVAL) / CHECKPOINT_INTERVAL;
+
   return (
     <>
       {/* Top Bar */}
-      <div className={`absolute top-0 left-0 right-0 flex justify-between items-center p-3 z-10 ${isMorningRush ? 'morning-rush-pulse bg-warm-orange/20' : ''}`}>
-        {/* Time Survived */}
-        <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
-          <Clock className="w-5 h-5 text-coffee-cream" />
-          <span className="text-lg font-bold text-coffee-cream font-mono">
-            {formatTime(timeSurvived)}
-          </span>
+      <div className={`absolute top-0 left-0 right-0 flex flex-col gap-2 p-3 z-10 ${isMorningRush ? 'morning-rush-pulse bg-warm-orange/20' : ''}`}>
+        {/* Checkpoint Progress Bar */}
+        <div className="flex gap-1 px-1">
+          {Array.from({ length: TOTAL_CHECKPOINTS }).map((_, i) => (
+            <div 
+              key={i}
+              className="flex-1 h-2 rounded-full overflow-hidden bg-coffee-dark/60"
+            >
+              <div 
+                className={`h-full transition-all duration-300 ${
+                  i < currentCheckpoint 
+                    ? 'bg-gold' 
+                    : i === currentCheckpoint 
+                      ? 'bg-warm-orange' 
+                      : 'bg-transparent'
+                }`}
+                style={{ 
+                  width: i < currentCheckpoint 
+                    ? '100%' 
+                    : i === currentCheckpoint 
+                      ? `${checkpointProgress * 100}%` 
+                      : '0%' 
+                }}
+              />
+            </div>
+          ))}
         </div>
         
-        {/* Morning Rush Indicator */}
-        {isMorningRush && (
-          <div className="absolute left-1/2 -translate-x-1/2 bg-warm-orange text-coffee-foam px-3 py-1 rounded-full text-sm font-bold animate-pulse">
-            ☕ RUSH!
+        {/* Time and Tips Row */}
+        <div className="flex justify-between items-center">
+          {/* Time Survived */}
+          <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
+            <Clock className="w-5 h-5 text-coffee-cream" />
+            <span className="text-lg font-bold text-coffee-cream font-mono">
+              {formatTime(timeSurvived)}
+            </span>
           </div>
-        )}
-        
-        {/* Tips Counter */}
-        <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
-          <span className="text-lg">💰</span>
-          <span className="text-lg font-bold text-gold">
-            ${tips}
-          </span>
+          
+          {/* Morning Rush Indicator */}
+          {isMorningRush && (
+            <div className="absolute left-1/2 -translate-x-1/2 bg-warm-orange text-coffee-foam px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+              ☕ RUSH!
+            </div>
+          )}
+          
+          {/* Tips Counter */}
+          <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
+            <span className="text-lg">💰</span>
+            <span className="text-lg font-bold text-gold">
+              ${tips}
+            </span>
+          </div>
         </div>
       </div>
       

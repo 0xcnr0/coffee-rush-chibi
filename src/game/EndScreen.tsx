@@ -58,7 +58,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
       </div>
       
       {/* Secondary Stats */}
-      <div className="grid grid-cols-3 gap-3 w-full max-w-xs mb-6">
+      <div className="grid grid-cols-2 gap-3 w-full max-w-xs mb-4">
         <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
           <Users className="w-5 h-5 text-secondary mx-auto mb-1" />
           <div className="text-xl font-bold text-coffee-cream">
@@ -73,6 +73,17 @@ export const EndScreen: React.FC<EndScreenProps> = ({
             ${stats.totalTips}
           </div>
           <div className="text-xs text-coffee-light">Tips</div>
+        </div>
+      </div>
+      
+      {/* Checkpoints & Beans Row */}
+      <div className="grid grid-cols-2 gap-3 w-full max-w-xs mb-6">
+        <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
+          <span className="text-lg block mb-1">🏁</span>
+          <div className="text-xl font-bold text-warm-orange">
+            {Math.floor(stats.timeSurvived / 30)}
+          </div>
+          <div className="text-xs text-coffee-light">Checkpoints</div>
         </div>
         
         <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">

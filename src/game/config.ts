@@ -82,6 +82,20 @@ export const GAME_CONFIG = {
   SERVED_EXIT_SPEED: 200,      // pixels/second - happy exit speed
   
   // ─────────────────────────────────────────────────────────────
+  // LATCHED ENEMY SYSTEM (TDS-style panic)
+  // ─────────────────────────────────────────────────────────────
+  MAX_LATCHED_ENEMIES: 5,        // normal max attackers at cart
+  RUSH_LATCHED_BONUS: 2,         // extra slots during Rush (total 7)
+  LATCHED_TICK_INTERVAL: 0.5,    // seconds between damage ticks
+  LATCHED_TICK_DAMAGE: 4,        // damage per tick (stacks with multiple)
+  LATCHED_QUEUE_SPACING: 8,      // pixels between queued enemies
+  
+  // ─────────────────────────────────────────────────────────────
+  // BREATHER (post-rush pause)
+  // ─────────────────────────────────────────────────────────────
+  BREATHER_DURATION: 2,          // seconds of no spawns after Rush
+  
+  // ─────────────────────────────────────────────────────────────
   // PARTICLES & VFX
   // ─────────────────────────────────────────────────────────────
   MAX_PARTICLES: 100,          // hard cap for performance

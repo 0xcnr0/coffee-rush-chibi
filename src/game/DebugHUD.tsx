@@ -1,4 +1,5 @@
 import React from 'react';
+import { GAME_CONFIG } from './config';
 
 interface DebugHUDProps {
   fps: number;
@@ -13,6 +14,8 @@ interface DebugHUDProps {
   effectiveBlockHp: number;
   isVisible: boolean;
   isStressTest: boolean;
+  latchedCount: number;
+  breatherTimer: number;
   onToggle: () => void;
   onStressTestToggle: () => void;
 }
@@ -30,24 +33,29 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
   effectiveBlockHp,
   isVisible,
   isStressTest,
+  latchedCount,
+  breatherTimer,
   onToggle,
   onStressTestToggle,
 }) => {
   const isOverCap = activeEnemies > maxEnemies;
+  const maxLatched = isMorningRush 
+    ? GAME_CONFIG.MAX_LATCHED_ENEMIES + GAME_CONFIG.RUSH_LATCHED_BONUS
+    : GAME_CONFIG.MAX_LATCHED_ENEMIES;
 
   return (
     <>
       {/* Toggle Button */}
       <button
         onClick={onToggle}
-        className="absolute top-14 left-3 z-20 bg-coffee-dark/80 text-coffee-cream px-2 py-1 rounded text-xs font-mono"
+        className="absolute top-20 left-3 z-20 bg-coffee-dark/80 text-coffee-cream px-2 py-1 rounded text-xs font-mono"
       >
         {isVisible ? '🐛 Hide' : '🐛 Debug'}
       </button>
 
       {/* Debug Panel */}
       {isVisible && (
-        <div className="absolute top-24 left-3 z-20 bg-coffee-dark/90 text-coffee-cream p-3 rounded-lg text-xs font-mono space-y-1 min-w-[200px]">
+        <div className="absolute top-28 left-3 z-20 bg-coffee-dark/90 text-coffee-cream p-3 rounded-lg text-xs font-mono space-y-1 min-w-[220px]">
           <div className="text-gold font-bold mb-2">DEBUG INFO</div>
           
           {/* Stress Test Toggle */}
@@ -78,6 +86,23 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
           <div className="text-purple-300">
             Max Seen: {maxActiveEnemiesSeen}
           </div>
+          
+          <div className="border-t border-coffee-cream/20 my-2" />
+          
+          {/* Latched Info (TDS Panic) */}
+          <div className={latchedCount >= maxLatched ? 'text-red-400 font-bold' : 'text-orange-300'}>
+            Latched: {latchedCount}/{maxLatched} {latchedCount >= maxLatched && '🔥'}
+          </div>
+          <div className="text-gray-400">
+            Tick DMG: {GAME_CONFIG.LATCHED_TICK_DAMAGE} / {GAME_CONFIG.LATCHED_TICK_INTERVAL}s
+          </div>
+          {breatherTimer > 0 && (
+            <div className="text-green-400">
+              Breather: {breatherTimer.toFixed(1)}s ☕
+            </div>
+          )}
+          
+          <div className="border-t border-coffee-cream/20 my-2" />
           
           {/* Spawn Info */}
           <div>
