@@ -80,6 +80,23 @@ export const GAME_CONFIG = {
   // PARTICLES & VFX
   // ─────────────────────────────────────────────────────────────
   MAX_PARTICLES: 100,          // hard cap for performance
+  
+  // ─────────────────────────────────────────────────────────────
+  // UPGRADES (Phase 1 Progression)
+  // ─────────────────────────────────────────────────────────────
+  UPGRADE_MAX_LEVEL: 20,       // max level for each upgrade
+  
+  // Tower Reinforcement - increases BLOCK_MAX_HP
+  TOWER_HP_BONUS_PER_LEVEL: 0.06,  // +6% per level (max +120%)
+  TOWER_HP_BASE_COST: 10,          // beans
+  
+  // Espresso Mastery - increases PROJECTILE_DAMAGE
+  ESPRESSO_BONUS_PER_LEVEL: 0.05,  // +5% per level (max +100%)
+  ESPRESSO_BASE_COST: 15,          // beans
+  
+  // Caffeine Flow - increases ENERGY_REGEN_RATE
+  ENERGY_BONUS_PER_LEVEL: 0.05,    // +5% per level (max +100%)
+  ENERGY_BASE_COST: 12,            // beans
 } as const;
 
 // Colors (HSL values matching index.css)

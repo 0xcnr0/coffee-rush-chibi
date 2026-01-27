@@ -1,6 +1,6 @@
 // Game Types for Coffee Rush
 
-export type GameState = 'MENU' | 'PLAY' | 'END';
+export type GameState = 'MENU' | 'PLAY' | 'END' | 'UPGRADES';
 
 export interface Vector2 {
   x: number;
@@ -71,6 +71,8 @@ export interface GameStats {
   timeSurvived: number; // in seconds
   customersServed: number;
   totalTips: number;
+  beansEarned: number;
+  isNewRecord: boolean;
 }
 
 export interface DifficultyState {
@@ -80,4 +82,13 @@ export interface DifficultyState {
   enemySpeedMultiplier: number;
   isMorningRush: boolean;
   rushTimer: number;
+}
+
+export interface UpgradeInfo {
+  key: 'towerHpLevel' | 'espressoDamageLevel' | 'energyRegenLevel';
+  name: string;
+  description: string;
+  icon: string;
+  bonusPerLevel: number;
+  baseCost: number;
 }
