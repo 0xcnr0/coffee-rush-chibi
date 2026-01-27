@@ -14,17 +14,17 @@ export const GAME_CONFIG = {
   CART_X: 60,                  // pixels from left edge
   CART_WIDTH: 80,              // pixels
   BLOCK_HEIGHT: 50,            // pixels per block
-  BLOCK_MAX_HP: 100,           // HP per block
-  BLOCK_COUNT: 3,              // number of stacked blocks
+  BLOCK_MAX_HP: 300,           // HP per block (single block baseline)
+  BLOCK_COUNT: 1,              // number of stacked blocks (v3.1: start with 1)
   
   // ─────────────────────────────────────────────────────────────
   // ENEMIES
   // ─────────────────────────────────────────────────────────────
   ENEMY_WIDTH: 40,             // pixels
   ENEMY_HEIGHT: 50,            // pixels
-  ENEMY_BASE_HP: 35,           // HP at difficulty level 0 (+15% for early tankiness)
+  ENEMY_BASE_HP: 32,           // HP at difficulty level 0 (v3.1: reduced for single block)
   ENEMY_BASE_SPEED: 95,        // pixels/second (v3: very aggressive)
-  ENEMY_DAMAGE: 22,            // damage dealt to cart block on contact
+  ENEMY_DAMAGE: 20,            // damage dealt to cart block on contact (v3.1: reduced)
   MAX_ENEMIES: 30,             // hard cap for performance
   
   // ─────────────────────────────────────────────────────────────
