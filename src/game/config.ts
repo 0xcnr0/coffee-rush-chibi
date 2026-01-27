@@ -30,8 +30,12 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   // SPAWNING
   // ─────────────────────────────────────────────────────────────
-  BASE_SPAWN_INTERVAL: 650,    // ms between spawns (v3: heavy early pressure)
+  BASE_SPAWN_INTERVAL: 650,    // ms between spawns (v3: heavy post-warmup)
   MIN_SPAWN_INTERVAL: 260,     // ms - floor to prevent overload
+  
+  // v3.2: Warmup period before first Rush
+  EARLY_GAME_SECONDS: 18,      // warmup duration in seconds
+  EARLY_BASE_SPAWN_INTERVAL: 950, // ms - relaxed spawning during warmup
   
   // ─────────────────────────────────────────────────────────────
   // COMBAT (auto-attack)

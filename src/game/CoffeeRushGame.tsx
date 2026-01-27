@@ -432,8 +432,15 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
-    // Spawn enemies (stress test uses 300ms base interval)
-    const baseSpawnInterval = isStressTest ? 300 : GAME_CONFIG.BASE_SPAWN_INTERVAL;
+    // Spawn enemies (v3.2: warmup pre-rush uses slower spawn rate)
+    const isWarmup = timeRef.current < GAME_CONFIG.EARLY_GAME_SECONDS 
+      && difficulty.level === 0 
+      && !difficulty.isMorningRush;
+    
+    const baseSpawnInterval = isStressTest 
+      ? 300 
+      : (isWarmup ? GAME_CONFIG.EARLY_BASE_SPAWN_INTERVAL : GAME_CONFIG.BASE_SPAWN_INTERVAL);
+    
     const spawnInterval = baseSpawnInterval / difficulty.spawnRateMultiplier;
     const stressRushMultiplier = isStressTest ? 1.2 : GAME_CONFIG.RUSH_SPAWN_MULTIPLIER;
     const rushMultiplier = difficulty.isMorningRush ? stressRushMultiplier : 1;
