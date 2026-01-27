@@ -83,17 +83,27 @@ export const CoffeeRushGame: React.FC = () => {
   const [tips, setTips] = useState(0);
   const [timeSurvived, setTimeSurvived] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
+  const [isStressTest, setIsStressTest] = useState(false);
   const [debugInfo, setDebugInfo] = useState<{
     fps: number;
+    minFps: number;
     activeEnemies: number;
+    maxActiveEnemiesSeen: number;
     effectiveSpawnInterval: number;
     effectiveBlockHp: number;
   }>({
     fps: 60,
+    minFps: 60,
     activeEnemies: 0,
+    maxActiveEnemiesSeen: 0,
     effectiveSpawnInterval: GAME_CONFIG.BASE_SPAWN_INTERVAL,
     effectiveBlockHp: GAME_CONFIG.BLOCK_MAX_HP,
   });
+  
+  // Stress test tracking refs
+  const minFpsRef = useRef(60);
+  const fpsHistoryRef = useRef<number[]>([]);
+  const maxActiveEnemiesSeenRef = useRef(0);
   // Game state refs (for game loop access without re-renders)
   const blocksRef = useRef<CartBlock[]>([]);
   const difficultyRef = useRef<DifficultyState>({
@@ -178,6 +188,11 @@ export const CoffeeRushGame: React.FC = () => {
     tipsRef.current = 0;
     customersServedRef.current = 0;
     
+    // Reset stress test tracking
+    minFpsRef.current = 60;
+    fpsHistoryRef.current = [];
+    maxActiveEnemiesSeenRef.current = 0;
+    
     // Clear pools
     enemyPool.clear();
     projectilePool.clear();
@@ -253,7 +268,9 @@ export const CoffeeRushGame: React.FC = () => {
     proj.y = topBlock.y;
     proj.targetX = targetEnemy.x;
     proj.targetY = targetEnemy.y - targetEnemy.height / 2;
-    proj.damage = Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current);
+    // Stress test reduces damage to 0.4x to allow enemy accumulation
+    const stressMultiplier = isStressTest ? 0.4 : 1;
+    proj.damage = Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current * stressMultiplier);
   }, [projectilePool]);
   
   const spawnParticles = useCallback((x: number, y: number, type: Particle['type'], count: number) => {
@@ -338,6 +355,19 @@ export const CoffeeRushGame: React.FC = () => {
     const instantFps = 1 / deltaTime;
     fpsRef.current = fpsRef.current * 0.9 + instantFps * 0.1; // Exponential smoothing
     
+    // Track FPS history for min FPS calculation (last 10 seconds)
+    fpsHistoryRef.current.push(fpsRef.current);
+    if (fpsHistoryRef.current.length > 100) { // ~10s at 10Hz updates
+      fpsHistoryRef.current.shift();
+    }
+    minFpsRef.current = Math.min(...fpsHistoryRef.current);
+    
+    // Track max active enemies seen
+    const currentActiveCount = enemyPool.getActive().length;
+    if (currentActiveCount > maxActiveEnemiesSeenRef.current) {
+      maxActiveEnemiesSeenRef.current = currentActiveCount;
+    }
+    
     // Throttle HUD updates to 10 Hz for mobile performance
     hudAccumulatorRef.current += deltaTime;
     const shouldUpdateHUD = hudAccumulatorRef.current >= 0.1;
@@ -345,15 +375,19 @@ export const CoffeeRushGame: React.FC = () => {
       hudAccumulatorRef.current = 0;
       setTimeSurvived(timeRef.current);
       
-      // Update debug info
+      // Calculate effective spawn interval (considering stress test)
+      const baseInterval = isStressTest ? 300 : GAME_CONFIG.BASE_SPAWN_INTERVAL;
+      const rushMultiplier = difficulty.isMorningRush ? (isStressTest ? 1.2 : GAME_CONFIG.RUSH_SPAWN_MULTIPLIER) : 1;
       const effectiveInterval = Math.max(
         GAME_CONFIG.MIN_SPAWN_INTERVAL, 
-        (GAME_CONFIG.BASE_SPAWN_INTERVAL / difficulty.spawnRateMultiplier) / 
-        (difficulty.isMorningRush ? GAME_CONFIG.RUSH_SPAWN_MULTIPLIER : 1)
+        (baseInterval / difficulty.spawnRateMultiplier) / rushMultiplier
       );
+      
       setDebugInfo({
         fps: fpsRef.current,
-        activeEnemies: enemyPool.getActive().length,
+        minFps: minFpsRef.current,
+        activeEnemies: currentActiveCount,
+        maxActiveEnemiesSeen: maxActiveEnemiesSeenRef.current,
         effectiveSpawnInterval: effectiveInterval,
         effectiveBlockHp: effectiveBlockHpRef.current,
       });
@@ -372,12 +406,17 @@ export const CoffeeRushGame: React.FC = () => {
       difficulty.rushTimer = GAME_CONFIG.RUSH_DURATION;
     }
     
-    // Update morning rush timer
+    // Update morning rush timer (stress test uses 12s duration)
     if (difficulty.isMorningRush) {
       difficulty.rushTimer -= deltaTime;
       if (difficulty.rushTimer <= 0) {
         difficulty.isMorningRush = false;
       }
+    }
+    
+    // Start rush with extended duration in stress test
+    if (newLevel > (difficulty.level - 1) && isStressTest) {
+      difficulty.rushTimer = 12; // 12s rush in stress test
     }
     
     // Energy regeneration (with upgrade multiplier)
@@ -392,9 +431,11 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
-    // Spawn enemies
-    const spawnInterval = GAME_CONFIG.BASE_SPAWN_INTERVAL / difficulty.spawnRateMultiplier;
-    const rushMultiplier = difficulty.isMorningRush ? GAME_CONFIG.RUSH_SPAWN_MULTIPLIER : 1;
+    // Spawn enemies (stress test uses 300ms base interval)
+    const baseSpawnInterval = isStressTest ? 300 : GAME_CONFIG.BASE_SPAWN_INTERVAL;
+    const spawnInterval = baseSpawnInterval / difficulty.spawnRateMultiplier;
+    const stressRushMultiplier = isStressTest ? 1.2 : GAME_CONFIG.RUSH_SPAWN_MULTIPLIER;
+    const rushMultiplier = difficulty.isMorningRush ? stressRushMultiplier : 1;
     const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval / rushMultiplier);
     
     if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
@@ -647,15 +688,19 @@ export const CoffeeRushGame: React.FC = () => {
         {gameState === 'PLAY' && (
           <DebugHUD
             fps={debugInfo.fps}
+            minFps={debugInfo.minFps}
             activeEnemies={debugInfo.activeEnemies}
             maxEnemies={GAME_CONFIG.MAX_ENEMIES}
+            maxActiveEnemiesSeen={debugInfo.maxActiveEnemiesSeen}
             effectiveSpawnInterval={debugInfo.effectiveSpawnInterval}
             isMorningRush={difficultyRef.current.isMorningRush}
-            damageMultiplier={damageMultiplierRef.current}
+            damageMultiplier={isStressTest ? damageMultiplierRef.current * 0.4 : damageMultiplierRef.current}
             energyRegenMultiplier={energyRegenMultiplierRef.current}
             effectiveBlockHp={debugInfo.effectiveBlockHp}
             isVisible={showDebug}
+            isStressTest={isStressTest}
             onToggle={() => setShowDebug(prev => !prev)}
+            onStressTestToggle={() => setIsStressTest(prev => !prev)}
           />
         )}
         
