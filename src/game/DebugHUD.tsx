@@ -1,0 +1,79 @@
+import React from 'react';
+import { GAME_CONFIG } from './config';
+
+interface DebugHUDProps {
+  fps: number;
+  activeEnemies: number;
+  maxEnemies: number;
+  effectiveSpawnInterval: number;
+  isMorningRush: boolean;
+  damageMultiplier: number;
+  energyRegenMultiplier: number;
+  effectiveBlockHp: number;
+  isVisible: boolean;
+  onToggle: () => void;
+}
+
+export const DebugHUD: React.FC<DebugHUDProps> = ({
+  fps,
+  activeEnemies,
+  maxEnemies,
+  effectiveSpawnInterval,
+  isMorningRush,
+  damageMultiplier,
+  energyRegenMultiplier,
+  effectiveBlockHp,
+  isVisible,
+  onToggle,
+}) => {
+  const isOverCap = activeEnemies > maxEnemies;
+
+  return (
+    <>
+      {/* Toggle Button */}
+      <button
+        onClick={onToggle}
+        className="absolute top-14 left-3 z-20 bg-coffee-dark/80 text-coffee-cream px-2 py-1 rounded text-xs font-mono"
+      >
+        {isVisible ? '🐛 Hide' : '🐛 Debug'}
+      </button>
+
+      {/* Debug Panel */}
+      {isVisible && (
+        <div className="absolute top-24 left-3 z-20 bg-coffee-dark/90 text-coffee-cream p-3 rounded-lg text-xs font-mono space-y-1 min-w-[180px]">
+          <div className="text-gold font-bold mb-2">DEBUG INFO</div>
+          
+          {/* FPS */}
+          <div className={fps < 30 ? 'text-red-400' : fps < 50 ? 'text-yellow-400' : 'text-green-400'}>
+            FPS: {fps.toFixed(1)}
+          </div>
+          
+          {/* Enemy Count */}
+          <div className={isOverCap ? 'text-red-400 font-bold animate-pulse' : ''}>
+            Enemies: {activeEnemies} / {maxEnemies}
+            {isOverCap && ' ⚠️ OVER CAP!'}
+          </div>
+          
+          {/* Spawn Info */}
+          <div>
+            Spawn: {effectiveSpawnInterval.toFixed(0)}ms
+            {isMorningRush && <span className="text-warm-orange ml-1">☕ RUSH</span>}
+          </div>
+          
+          <div className="border-t border-coffee-cream/20 my-2" />
+          
+          {/* Multipliers */}
+          <div className="text-sky-300">
+            DMG×: {damageMultiplier.toFixed(2)}
+          </div>
+          <div className="text-sky-300">
+            Energy×: {energyRegenMultiplier.toFixed(2)}
+          </div>
+          <div className="text-sky-300">
+            Block HP: {effectiveBlockHp}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};

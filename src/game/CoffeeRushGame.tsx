@@ -6,6 +6,7 @@ import { useObjectPool } from './useObjectPool';
 import { MenuScreen } from './MenuScreen';
 import { EndScreen } from './EndScreen';
 import { GameHUD } from './GameHUD';
+import { DebugHUD } from './DebugHUD';
 import { UpgradesScreen } from './UpgradesScreen';
 import { 
   loadProgression, 
@@ -81,7 +82,18 @@ export const CoffeeRushGame: React.FC = () => {
   const [energy, setEnergy] = useState<number>(GAME_CONFIG.MAX_ENERGY);
   const [tips, setTips] = useState(0);
   const [timeSurvived, setTimeSurvived] = useState(0);
-  
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<{
+    fps: number;
+    activeEnemies: number;
+    effectiveSpawnInterval: number;
+    effectiveBlockHp: number;
+  }>({
+    fps: 60,
+    activeEnemies: 0,
+    effectiveSpawnInterval: GAME_CONFIG.BASE_SPAWN_INTERVAL,
+    effectiveBlockHp: GAME_CONFIG.BLOCK_MAX_HP,
+  });
   // Game state refs (for game loop access without re-renders)
   const blocksRef = useRef<CartBlock[]>([]);
   const difficultyRef = useRef<DifficultyState>({
@@ -102,7 +114,8 @@ export const CoffeeRushGame: React.FC = () => {
   const damageMultiplierRef = useRef(1);
   const energyRegenMultiplierRef = useRef(1);
   const hudAccumulatorRef = useRef(0); // HUD throttle accumulator
-  
+  const fpsRef = useRef(60); // Smoothed FPS
+  const effectiveBlockHpRef = useRef<number>(GAME_CONFIG.BLOCK_MAX_HP); // Store for debug
   // Object pools
   const enemyPool = useObjectPool(createEnemy, GAME_CONFIG.MAX_ENEMIES);
   const projectilePool = useObjectPool(createProjectile, 50);
@@ -129,6 +142,7 @@ export const CoffeeRushGame: React.FC = () => {
     
     // Apply multipliers to effective values (stored in refs)
     const effectiveBlockHp = Math.floor(GAME_CONFIG.BLOCK_MAX_HP * blockHpMultiplier);
+    effectiveBlockHpRef.current = effectiveBlockHp; // Store for debug
     
     // Reset blocks with upgraded HP
     const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
@@ -320,12 +334,29 @@ export const CoffeeRushGame: React.FC = () => {
     // Update time
     timeRef.current += deltaTime;
     
+    // Smooth FPS calculation
+    const instantFps = 1 / deltaTime;
+    fpsRef.current = fpsRef.current * 0.9 + instantFps * 0.1; // Exponential smoothing
+    
     // Throttle HUD updates to 10 Hz for mobile performance
     hudAccumulatorRef.current += deltaTime;
     const shouldUpdateHUD = hudAccumulatorRef.current >= 0.1;
     if (shouldUpdateHUD) {
       hudAccumulatorRef.current = 0;
       setTimeSurvived(timeRef.current);
+      
+      // Update debug info
+      const effectiveInterval = Math.max(
+        GAME_CONFIG.MIN_SPAWN_INTERVAL, 
+        (GAME_CONFIG.BASE_SPAWN_INTERVAL / difficulty.spawnRateMultiplier) / 
+        (difficulty.isMorningRush ? GAME_CONFIG.RUSH_SPAWN_MULTIPLIER : 1)
+      );
+      setDebugInfo({
+        fps: fpsRef.current,
+        activeEnemies: enemyPool.getActive().length,
+        effectiveSpawnInterval: effectiveInterval,
+        effectiveBlockHp: effectiveBlockHpRef.current,
+      });
     }
     
     // Update difficulty every 30 seconds
@@ -609,6 +640,22 @@ export const CoffeeRushGame: React.FC = () => {
             isMorningRush={difficultyRef.current.isMorningRush}
             onTonicBomb={handleTonicBomb}
             canUseBomb={canUseBomb}
+          />
+        )}
+        
+        {/* Debug HUD (optional) */}
+        {gameState === 'PLAY' && (
+          <DebugHUD
+            fps={debugInfo.fps}
+            activeEnemies={debugInfo.activeEnemies}
+            maxEnemies={GAME_CONFIG.MAX_ENEMIES}
+            effectiveSpawnInterval={debugInfo.effectiveSpawnInterval}
+            isMorningRush={difficultyRef.current.isMorningRush}
+            damageMultiplier={damageMultiplierRef.current}
+            energyRegenMultiplier={energyRegenMultiplierRef.current}
+            effectiveBlockHp={debugInfo.effectiveBlockHp}
+            isVisible={showDebug}
+            onToggle={() => setShowDebug(prev => !prev)}
           />
         )}
         
