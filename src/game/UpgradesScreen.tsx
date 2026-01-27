@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Shield, Zap, Battery } from 'lucide-react';
+import { ArrowLeft, Shield, Zap, Battery, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GAME_CONFIG } from './config';
 import { 
@@ -7,6 +7,7 @@ import {
   purchaseUpgrade, 
   getUpgradeCost, 
   getUpgradeMultiplier,
+  resetProgression,
   type ProgressionData 
 } from './persistence';
 import type { UpgradeInfo } from './types';
@@ -53,6 +54,7 @@ const IconComponent: React.FC<{ icon: string; className?: string }> = ({ icon, c
 
 export const UpgradesScreen: React.FC<UpgradesScreenProps> = ({ onBack }) => {
   const [progression, setProgression] = React.useState<ProgressionData>(loadProgression);
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   
   const handleUpgrade = (upgrade: UpgradeInfo) => {
     const currentLevel = progression.upgradeLevels[upgrade.key];
@@ -61,6 +63,12 @@ export const UpgradesScreen: React.FC<UpgradesScreenProps> = ({ onBack }) => {
     if (purchaseUpgrade(upgrade.key, cost)) {
       setProgression(loadProgression());
     }
+  };
+  
+  const handleReset = () => {
+    resetProgression();
+    setProgression(loadProgression());
+    setShowResetConfirm(false);
   };
   
   return (
@@ -156,6 +164,39 @@ export const UpgradesScreen: React.FC<UpgradesScreenProps> = ({ onBack }) => {
       <p className="text-coffee-light/50 text-xs text-center mt-6 max-w-xs">
         Earn beans by collecting tips in runs. 1 tip = 1 bean!
       </p>
+      
+      {/* DEV: Reset Progress Button */}
+      <div className="mt-4 w-full max-w-xs">
+        {!showResetConfirm ? (
+          <Button
+            onClick={() => setShowResetConfirm(true)}
+            variant="ghost"
+            size="sm"
+            className="w-full text-coffee-light/40 hover:text-red-400 hover:bg-red-500/10 text-xs"
+          >
+            <RotateCcw className="w-3 h-3 mr-1" />
+            Reset Progress (DEV)
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button
+              onClick={handleReset}
+              size="sm"
+              className="flex-1 bg-red-500/80 hover:bg-red-500 text-white text-xs"
+            >
+              Confirm Reset
+            </Button>
+            <Button
+              onClick={() => setShowResetConfirm(false)}
+              variant="ghost"
+              size="sm"
+              className="flex-1 text-coffee-light/60 text-xs"
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

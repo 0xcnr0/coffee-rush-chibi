@@ -2,8 +2,10 @@
 // Safely handles localStorage read/write with defaults
 
 const STORAGE_KEY = 'coffee-rush-progress';
+const SAVE_VERSION = 2; // Bump this to reset all player progression
 
 export interface ProgressionData {
+  version: number;
   bestTimeSurvivedSeconds: number;
   bestCustomersServed: number;
   totalBeans: number;
@@ -15,6 +17,7 @@ export interface ProgressionData {
 }
 
 const DEFAULT_PROGRESSION: ProgressionData = {
+  version: SAVE_VERSION,
   bestTimeSurvivedSeconds: 0,
   bestCustomersServed: 0,
   totalBeans: 0,
@@ -31,6 +34,14 @@ export const loadProgression = (): ProgressionData => {
     if (!stored) return { ...DEFAULT_PROGRESSION };
     
     const parsed = JSON.parse(stored);
+    
+    // Version check - reset if version mismatch (hard reset all players)
+    if (!parsed.version || parsed.version !== SAVE_VERSION) {
+      console.info(`Save version mismatch (${parsed.version} !== ${SAVE_VERSION}), resetting progression`);
+      saveProgression({ ...DEFAULT_PROGRESSION });
+      return { ...DEFAULT_PROGRESSION };
+    }
+    
     // Merge with defaults to handle missing fields in old saves
     return {
       ...DEFAULT_PROGRESSION,
@@ -66,6 +77,7 @@ export const updateBestRecords = (
   
   const updated: ProgressionData = {
     ...current,
+    version: SAVE_VERSION,
     bestTimeSurvivedSeconds: Math.max(current.bestTimeSurvivedSeconds, timeSurvived),
     bestCustomersServed: Math.max(current.bestCustomersServed, customersServed),
     totalBeans: current.totalBeans + beansEarned,
@@ -99,4 +111,9 @@ export const getUpgradeCost = (level: number, baseCost: number): number => {
 // Calculate effective multiplier for an upgrade
 export const getUpgradeMultiplier = (level: number, bonusPerLevel: number): number => {
   return 1 + bonusPerLevel * level;
+};
+
+// Reset all progression to defaults (DEV tool)
+export const resetProgression = (): void => {
+  saveProgression({ ...DEFAULT_PROGRESSION });
 };
