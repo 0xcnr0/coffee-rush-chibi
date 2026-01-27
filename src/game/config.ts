@@ -23,15 +23,15 @@ export const GAME_CONFIG = {
   ENEMY_WIDTH: 40,             // pixels
   ENEMY_HEIGHT: 50,            // pixels
   ENEMY_BASE_HP: 30,           // HP at difficulty level 0
-  ENEMY_BASE_SPEED: 60,        // pixels/second (+50% from 40, balanced early game)
-  ENEMY_DAMAGE: 15,            // damage dealt to cart block on contact
+  ENEMY_BASE_SPEED: 85,        // pixels/second (aggressive for shorter runs)
+  ENEMY_DAMAGE: 18,            // damage dealt to cart block on contact
   MAX_ENEMIES: 30,             // hard cap for performance
   
   // ─────────────────────────────────────────────────────────────
   // SPAWNING
   // ─────────────────────────────────────────────────────────────
-  BASE_SPAWN_INTERVAL: 1600,   // ms between spawns (smoother early pacing)
-  MIN_SPAWN_INTERVAL: 400,     // ms - floor to prevent overload
+  BASE_SPAWN_INTERVAL: 900,    // ms between spawns (fast early pressure)
+  MIN_SPAWN_INTERVAL: 320,     // ms - floor to prevent overload
   
   // ─────────────────────────────────────────────────────────────
   // COMBAT (auto-attack)
@@ -51,18 +51,19 @@ export const GAME_CONFIG = {
   ENERGY_REGEN_RATE: 0.5,      // energy/second
   
   // ─────────────────────────────────────────────────────────────
-  // DIFFICULTY RAMP (every 30 seconds, cumulative)
+  // DIFFICULTY RAMP (every 20 seconds, cumulative - aggressive for shorter runs)
   // ─────────────────────────────────────────────────────────────
-  DIFFICULTY_INTERVAL: 30,     // seconds between ramp-ups
-  SPAWN_RATE_INCREASE: 0.08,   // +8% faster spawning per level
-  ENEMY_HP_INCREASE: 0.05,     // +5% more HP per level
-  ENEMY_SPEED_INCREASE: 0.01,  // +1% faster movement per level (subtle)
+  DIFFICULTY_INTERVAL: 20,     // seconds between ramp-ups (faster scaling)
+  SPAWN_RATE_INCREASE: 0.18,   // +18% faster spawning per level
+  ENEMY_HP_INCREASE: 0.10,     // +10% more HP per level
+  ENEMY_SPEED_INCREASE: 0.06,  // +6% faster movement per level
   
   // ─────────────────────────────────────────────────────────────
-  // MORNING RUSH (temporary spawn spike)
+  // MORNING RUSH (temporary spawn spike - now a real threat)
   // ─────────────────────────────────────────────────────────────
-  RUSH_DURATION: 6,            // seconds
-  RUSH_SPAWN_MULTIPLIER: 1.8,  // spawn rate multiplier during rush
+  RUSH_DURATION: 8,            // seconds (longer panic window)
+  RUSH_SPAWN_MULTIPLIER: 2.3,  // spawn rate multiplier during rush
+  RUSH_SPEED_MULTIPLIER: 1.15, // +15% enemy speed during rush
   
   // ─────────────────────────────────────────────────────────────
   // TIPS & REWARDS

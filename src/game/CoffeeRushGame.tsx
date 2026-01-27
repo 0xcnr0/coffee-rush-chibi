@@ -521,8 +521,9 @@ export const CoffeeRushGame: React.FC = () => {
         spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'heart', 3);
         spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 5);
       } else {
-        // Move toward cart
-        enemy.x -= enemy.speed * deltaTime;
+        // Move toward cart (with Rush speed boost)
+        const rushSpeedMultiplier = difficulty.isMorningRush ? GAME_CONFIG.RUSH_SPEED_MULTIPLIER : 1;
+        enemy.x -= enemy.speed * rushSpeedMultiplier * deltaTime;
         
         // Check if reached cart
         if (enemy.x - enemy.width / 2 < cartRightEdge && activeBlocks.length > 0) {
