@@ -16,6 +16,7 @@ import type {
   GameState, 
   CartBlock, 
   Enemy, 
+  EnemyKind,
   Projectile, 
   TipDrop, 
   Particle, 
@@ -39,6 +40,7 @@ const createEnemy = (id: number): Enemy => ({
   state: 'WALKING',
   latchedTimer: 0,
   queuePosition: 0,
+  kind: 'NORMAL', // Phase 2B-1: Default to normal
 });
 
 const createProjectile = (id: number): Projectile => ({
@@ -103,6 +105,8 @@ export const CoffeeRushGame: React.FC = () => {
     // Phase 2A: Shot counters
     shotsFired: number;
     shotsHit: number;
+    // Phase 2B-1: Heavy enemy count
+    heavyCount: number;
   }>({
     fps: 60,
     minFps: 60,
@@ -118,6 +122,7 @@ export const CoffeeRushGame: React.FC = () => {
     activeProjectiles: 0,
     shotsFired: 0,
     shotsHit: 0,
+    heavyCount: 0,
   });
   
   // Stress test tracking refs
@@ -145,6 +150,8 @@ export const CoffeeRushGame: React.FC = () => {
   // Phase 2A: Shot debug counters
   const shotsFiredRef = useRef(0);
   const shotsHitRef = useRef(0);
+  // Phase 2B-1: Spawn counter for heavy enemy scheduling
+  const spawnIndexRef = useRef(0);
   const customersServedRef = useRef(0);
   const damageMultiplierRef = useRef(1);
   const energyRegenMultiplierRef = useRef(1);
@@ -225,6 +232,8 @@ export const CoffeeRushGame: React.FC = () => {
     // Reset shot counters
     shotsFiredRef.current = 0;
     shotsHitRef.current = 0;
+    // Reset spawn index for heavy scheduling
+    spawnIndexRef.current = 0;
     
     // Reset stress test tracking
     minFpsRef.current = 60;
@@ -282,11 +291,28 @@ export const CoffeeRushGame: React.FC = () => {
     const difficulty = difficultyRef.current;
     const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
     
+    // Phase 2B-1: Determine if this spawn is a Heavy enemy
+    spawnIndexRef.current++;
+    const spawnIndex = spawnIndexRef.current;
+    const spawnEvery = difficulty.isMorningRush 
+      ? GAME_CONFIG.HEAVY_RUSH_SPAWN_EVERY 
+      : GAME_CONFIG.HEAVY_SPAWN_EVERY;
+    const isHeavy = spawnIndex % spawnEvery === 0;
+    
+    // Set enemy kind and apply multipliers
+    enemy.kind = isHeavy ? 'HEAVY' : 'NORMAL';
+    
+    const hpMult = isHeavy ? GAME_CONFIG.HEAVY_HP_MULT : 1;
+    const speedMult = isHeavy ? GAME_CONFIG.HEAVY_SPEED_MULT : 1;
+    const sizeMult = isHeavy ? GAME_CONFIG.HEAVY_SIZE_MULT : 1;
+    
     enemy.x = GAME_CONFIG.CANVAS_WIDTH + 30;
     enemy.y = groundY;
-    enemy.maxHp = Math.floor(GAME_CONFIG.ENEMY_BASE_HP * difficulty.enemyHpMultiplier);
+    enemy.maxHp = Math.floor(GAME_CONFIG.ENEMY_BASE_HP * difficulty.enemyHpMultiplier * hpMult);
     enemy.hp = enemy.maxHp;
-    enemy.speed = GAME_CONFIG.ENEMY_BASE_SPEED * difficulty.enemySpeedMultiplier;
+    enemy.speed = GAME_CONFIG.ENEMY_BASE_SPEED * difficulty.enemySpeedMultiplier * speedMult;
+    enemy.width = Math.floor(GAME_CONFIG.ENEMY_WIDTH * sizeMult);
+    enemy.height = Math.floor(GAME_CONFIG.ENEMY_HEIGHT * sizeMult);
     enemy.isServed = false;
     enemy.servedTimer = 0;
     enemy.state = 'WALKING';
@@ -444,6 +470,8 @@ export const CoffeeRushGame: React.FC = () => {
         // Phase 2A: Shot counters
         shotsFired: shotsFiredRef.current,
         shotsHit: shotsHitRef.current,
+        // Phase 2B-1: Heavy count
+        heavyCount: enemyPool.getActive().filter(e => e.kind === 'HEAVY' && !e.isServed && e.state !== 'SERVED').length,
       });
     }
     
@@ -629,9 +657,12 @@ export const CoffeeRushGame: React.FC = () => {
         enemy.latchedTimer -= deltaTime;
         
         if (enemy.latchedTimer <= 0 && activeBlocks.length > 0) {
-          // Deal tick damage to lowest block
+          // Deal tick damage to lowest block (Phase 2B-1: Heavy deals 2x)
           const lowestBlock = activeBlocks[0];
-          lowestBlock.hp -= GAME_CONFIG.LATCHED_TICK_DAMAGE;
+          const tickDamage = enemy.kind === 'HEAVY' 
+            ? GAME_CONFIG.LATCHED_TICK_DAMAGE * GAME_CONFIG.HEAVY_TICK_DAMAGE_MULT
+            : GAME_CONFIG.LATCHED_TICK_DAMAGE;
+          lowestBlock.hp -= tickDamage;
           enemy.latchedTimer = GAME_CONFIG.LATCHED_TICK_INTERVAL;
           
           // Small damage particles
@@ -851,6 +882,7 @@ export const CoffeeRushGame: React.FC = () => {
             activeProjectiles={debugInfo.activeProjectiles}
             shotsFired={debugInfo.shotsFired}
             shotsHit={debugInfo.shotsHit}
+            heavyCount={debugInfo.heavyCount}
             onToggle={() => setShowDebug(prev => !prev)}
             onStressTestToggle={() => setIsStressTest(prev => !prev)}
           />
