@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Zap, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { GAME_CONFIG } from './config';
+import type { GameMode, BossState } from './types';
 
 interface GameHUDProps {
   timeSurvived: number;
@@ -9,9 +11,14 @@ interface GameHUDProps {
   energy: number;
   maxEnergy: number;
   isMorningRush: boolean;
-  breatherTimer: number; // Phase 1.8: for "Nice!" popup
+  breatherTimer: number;
   onTonicBomb: () => void;
   canUseBomb: boolean;
+  // Phase 2B-3: Chapter mode UI
+  gameMode: GameMode;
+  bossState: BossState;
+  bossIncomingTimer: number;
+  checkpointIndex: number;
 }
 
 const CHECKPOINT_INTERVAL = 20; // seconds per checkpoint (v3.3: more frequent milestones)
@@ -26,6 +33,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   breatherTimer,
   onTonicBomb,
   canUseBomb,
+  gameMode,
+  bossState,
+  bossIncomingTimer,
+  checkpointIndex,
 }) => {
   // Phase 1.8: "Nice!" popup shows when breather starts (rush just ended)
   const [showNice, setShowNice] = useState(false);
@@ -50,36 +61,87 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   const currentCheckpoint = Math.floor(timeSurvived / CHECKPOINT_INTERVAL);
   const checkpointProgress = (timeSurvived % CHECKPOINT_INTERVAL) / CHECKPOINT_INTERVAL;
 
+  // Chapter mode specific UI
+  const isChapter = gameMode === 'CHAPTER';
+  const bossCheckpoint = GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT;
+  
   return (
     <>
-      {/* Top Bar */}
-      <div className={`absolute top-0 left-0 right-0 flex flex-col gap-2 p-3 z-10 ${isMorningRush ? 'morning-rush-pulse bg-warm-orange/20' : ''}`}>
-        {/* Checkpoint Progress Bar */}
-        <div className="flex gap-1 px-1">
-          {Array.from({ length: TOTAL_CHECKPOINTS }).map((_, i) => (
-            <div 
-              key={i}
-              className="flex-1 h-2 rounded-full overflow-hidden bg-coffee-dark/60"
-            >
+      {/* BOSS INCOMING Banner */}
+      {bossIncomingTimer > 0 && (
+        <div className="absolute top-1/3 left-0 right-0 z-30 flex justify-center">
+          <div className="bg-red-600/90 text-white px-8 py-4 rounded-xl text-2xl font-bold animate-pulse shadow-2xl border-2 border-red-400">
+            👑 BOSS INCOMING! 👑
+          </div>
+        </div>
+      )}
+      
+      {/* Boss HP Bar (when active) */}
+      {bossState.isActive && (
+        <div className="absolute top-14 left-3 right-3 z-20">
+          <div className="bg-coffee-dark/90 rounded-lg p-2 border border-red-500/50">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-red-400 font-bold text-sm flex items-center gap-1">
+                👑 BOSS
+              </span>
+              <span className="text-red-300 text-xs font-mono">
+                {bossState.hp}/{bossState.maxHp}
+              </span>
+            </div>
+            <div className="h-3 bg-hp-bg rounded-full overflow-hidden">
               <div 
-                className={`h-full transition-all duration-300 ${
-                  i < currentCheckpoint 
-                    ? 'bg-gold' 
-                    : i === currentCheckpoint 
-                      ? 'bg-warm-orange' 
-                      : 'bg-transparent'
-                }`}
-                style={{ 
-                  width: i < currentCheckpoint 
-                    ? '100%' 
-                    : i === currentCheckpoint 
-                      ? `${checkpointProgress * 100}%` 
-                      : '0%' 
-                }}
+                className="h-full bg-red-500 transition-all duration-200 rounded-full"
+                style={{ width: `${(bossState.hp / bossState.maxHp) * 100}%` }}
               />
             </div>
-          ))}
+          </div>
         </div>
+      )}
+      
+      {/* Top Bar */}
+      <div className={`absolute top-0 left-0 right-0 flex flex-col gap-2 p-3 z-10 ${isMorningRush && !bossState.isActive ? 'morning-rush-pulse bg-warm-orange/20' : ''} ${bossState.isActive ? 'bg-red-900/20' : ''}`}>
+        {/* Chapter Mode: CP indicator instead of endless bar */}
+        {isChapter ? (
+          <div className="flex items-center justify-between px-1">
+            <div className="bg-coffee-dark/80 rounded-lg px-3 py-1.5 flex items-center gap-2">
+              <span className="text-warm-orange font-bold text-sm">Chapter 1</span>
+              <span className="text-coffee-cream/60">•</span>
+              <span className="text-coffee-cream text-sm">
+                CP <span className="text-gold font-bold">{checkpointIndex}</span>/{bossCheckpoint}
+              </span>
+            </div>
+            {checkpointIndex >= bossCheckpoint && !bossState.isActive && !bossIncomingTimer && (
+              <span className="text-gold text-sm font-bold animate-pulse">Boss Soon!</span>
+            )}
+          </div>
+        ) : (
+          /* Endless Mode: Original checkpoint bar */
+          <div className="flex gap-1 px-1">
+            {Array.from({ length: TOTAL_CHECKPOINTS }).map((_, i) => (
+              <div 
+                key={i}
+                className="flex-1 h-2 rounded-full overflow-hidden bg-coffee-dark/60"
+              >
+                <div 
+                  className={`h-full transition-all duration-300 ${
+                    i < currentCheckpoint 
+                      ? 'bg-gold' 
+                      : i === currentCheckpoint 
+                        ? 'bg-warm-orange' 
+                        : 'bg-transparent'
+                  }`}
+                  style={{ 
+                    width: i < currentCheckpoint 
+                      ? '100%' 
+                      : i === currentCheckpoint 
+                        ? `${checkpointProgress * 100}%` 
+                        : '0%' 
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
         
         {/* Time and Tips Row */}
         <div className="flex justify-between items-center">
@@ -91,19 +153,22 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </span>
           </div>
           
-          {/* Morning Rush Indicator */}
-          {isMorningRush && (
-            <div className="absolute left-1/2 -translate-x-1/2 bg-warm-orange text-coffee-foam px-3 py-1 rounded-full text-sm font-bold animate-pulse">
-              ☕ RUSH!
-            </div>
-          )}
-          
-          {/* Phase 1.8: "Nice!" popup during breather */}
-          {showNice && (
-            <div className="absolute left-1/2 -translate-x-1/2 bg-energy/90 text-coffee-foam px-4 py-2 rounded-full text-sm font-bold animate-fade-in shadow-lg">
-              ☕ Nice!
-            </div>
-          )}
+          {/* Mode indicator + Rush */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+            {/* Morning Rush Indicator (not during boss) */}
+            {isMorningRush && !bossState.isActive && (
+              <div className="bg-warm-orange text-coffee-foam px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+                ☕ RUSH!
+              </div>
+            )}
+            
+            {/* "Nice!" popup during breather */}
+            {showNice && (
+              <div className="bg-energy/90 text-coffee-foam px-4 py-2 rounded-full text-sm font-bold animate-fade-in shadow-lg">
+                ☕ Nice!
+              </div>
+            )}
+          </div>
           
           {/* Tips Counter */}
           <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
