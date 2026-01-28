@@ -3,11 +3,10 @@ import { GAME_CONFIG, COLORS } from './config';
 import { drawGame } from './renderer';
 import { useGameLoop } from './useGameLoop';
 import { useObjectPool } from './useObjectPool';
-import { MenuScreen } from './MenuScreen';
+import { GarageScreen } from './GarageScreen';
 import { EndScreen } from './EndScreen';
 import { GameHUD } from './GameHUD';
 import { DebugHUD } from './DebugHUD';
-import { UpgradesScreen } from './UpgradesScreen';
 import { 
   loadProgression, 
   updateBestRecords, 
@@ -82,7 +81,7 @@ export const CoffeeRushGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('MENU');
   const [stats, setStats] = useState<GameStats>({ timeSurvived: 0, customersServed: 0, totalTips: 0, beansEarned: 0, isNewRecord: false });
-  const [energy, setEnergy] = useState<number>(GAME_CONFIG.MAX_ENERGY);
+  const [energy, setEnergy] = useState<number>(0); // Phase 1.6A: Start at 0 (TDS pacing)
   const [tips, setTips] = useState(0);
   const [timeSurvived, setTimeSurvived] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
@@ -126,7 +125,7 @@ export const CoffeeRushGame: React.FC = () => {
   const screenShakeRef = useRef({ x: 0, y: 0, duration: 0 });
   const lastAttackRef = useRef(0);
   const lastSpawnRef = useRef(0);
-  const energyRef = useRef<number>(GAME_CONFIG.MAX_ENERGY);
+  const energyRef = useRef<number>(0); // Phase 1.6A: Start at 0 (TDS pacing)
   const timeRef = useRef(0);
   const tipsRef = useRef(0);
   const customersServedRef = useRef(0);
@@ -164,9 +163,12 @@ export const CoffeeRushGame: React.FC = () => {
     const effectiveBlockHp = Math.floor(GAME_CONFIG.BLOCK_MAX_HP * blockHpMultiplier);
     effectiveBlockHpRef.current = effectiveBlockHp; // Store for debug
     
+    // Phase 1.7: Calculate block count from upgrade level
+    const blockCount = 1 + (upgradeLevels.blockCountLevel ?? 0); // 1, 2, or 3
+    
     // Reset blocks with upgraded HP
     const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
-    blocksRef.current = Array.from({ length: GAME_CONFIG.BLOCK_COUNT }, (_, i) => ({
+    blocksRef.current = Array.from({ length: blockCount }, (_, i) => ({
       id: i,
       hp: effectiveBlockHp,
       maxHp: effectiveBlockHp,
@@ -197,7 +199,7 @@ export const CoffeeRushGame: React.FC = () => {
     screenShakeRef.current = { x: 0, y: 0, duration: 0 };
     lastAttackRef.current = 0;
     lastSpawnRef.current = 0;
-    energyRef.current = GAME_CONFIG.MAX_ENERGY;
+    energyRef.current = 0; // Phase 1.6A: Start at 0 (TDS pacing)
     timeRef.current = 0;
     tipsRef.current = 0;
     customersServedRef.current = 0;
@@ -214,7 +216,7 @@ export const CoffeeRushGame: React.FC = () => {
     particlePool.clear();
     
     // Reset state
-    setEnergy(GAME_CONFIG.MAX_ENERGY);
+    setEnergy(0); // Phase 1.6A: Start at 0 (TDS pacing)
     setTips(0);
     setTimeSurvived(0);
   }, [enemyPool, projectilePool, tipPool, particlePool]);
@@ -246,9 +248,7 @@ export const CoffeeRushGame: React.FC = () => {
     setGameState('MENU');
   }, []);
   
-  const handleUpgrades = useCallback(() => {
-    setGameState('UPGRADES');
-  }, []);
+  // Phase 1.6B: handleUpgrades removed - upgrades now on GarageScreen
   
   const spawnEnemy = useCallback(() => {
     const activeCount = enemyPool.getActive().length;
@@ -766,14 +766,9 @@ export const CoffeeRushGame: React.FC = () => {
           style={{ imageRendering: 'pixelated' }}
         />
         
-        {/* Menu Screen */}
+        {/* Garage Screen (Menu + Upgrades combined) */}
         {gameState === 'MENU' && (
-          <MenuScreen onPlay={handlePlay} onUpgrades={handleUpgrades} />
-        )}
-        
-        {/* Upgrades Screen */}
-        {gameState === 'UPGRADES' && (
-          <UpgradesScreen onBack={handleHome} />
+          <GarageScreen onPlay={handlePlay} />
         )}
         
         {/* Game HUD */}
@@ -817,7 +812,6 @@ export const CoffeeRushGame: React.FC = () => {
             stats={stats} 
             onPlayAgain={handlePlay} 
             onHome={handleHome}
-            onUpgrades={handleUpgrades}
           />
         )}
       </div>

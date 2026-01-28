@@ -1,6 +1,6 @@
 // Game Types for Coffee Rush
 
-export type GameState = 'MENU' | 'PLAY' | 'END' | 'UPGRADES';
+export type GameState = 'MENU' | 'PLAY' | 'END'; // Phase 1.6B: Removed UPGRADES (merged into Garage)
 
 export interface Vector2 {
   x: number;
@@ -91,10 +91,12 @@ export interface DifficultyState {
 }
 
 export interface UpgradeInfo {
-  key: 'towerHpLevel' | 'espressoDamageLevel' | 'energyRegenLevel';
+  key: 'towerHpLevel' | 'espressoDamageLevel' | 'energyRegenLevel' | 'blockCountLevel';
   name: string;
   description: string;
   icon: string;
   bonusPerLevel: number;
   baseCost: number;
+  maxLevel?: number; // Optional override (defaults to UPGRADE_MAX_LEVEL)
+  isCount?: boolean; // For block count - shows "+1" instead of percentage
 }
