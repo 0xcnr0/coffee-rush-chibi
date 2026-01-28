@@ -81,7 +81,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
         <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
           <span className="text-lg block mb-1">🏁</span>
           <div className="text-xl font-bold text-warm-orange">
-            {Math.floor(stats.timeSurvived / 30)}
+            {Math.floor(stats.timeSurvived / 20)}
           </div>
           <div className="text-xs text-coffee-light">Checkpoints</div>
         </div>
