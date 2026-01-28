@@ -131,14 +131,29 @@ export const EndScreen: React.FC<EndScreenProps> = ({
     );
   }
   
+  // Calculate checkpoints reached for failed Chapter
+  const checkpointsReached = Math.floor(stats.timeSurvived / GAME_CONFIG.CHECKPOINT_SECONDS);
+  const bossCheckpoint = GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT;
+  
   // Normal Game Over Screen (Endless or failed Chapter)
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-coffee-dark/95 to-coffee-espresso/95 p-4 z-20">
       {/* Game Over Title */}
       <div className="mb-6 animate-pop-in">
-        <h2 className="text-2xl font-bold text-coffee-cream text-center">
-          {gameMode === 'CHAPTER' ? 'Cart Overwhelmed! 😴' : 'Game Over! 😴'}
-        </h2>
+        {gameMode === 'CHAPTER' ? (
+          <>
+            <h2 className="text-2xl font-bold text-red-400 text-center">
+              Chapter Failed! 😴
+            </h2>
+            <p className="text-coffee-cream/70 text-center mt-2">
+              Reached CP <span className="text-gold font-bold">{checkpointsReached}</span>/{bossCheckpoint}
+            </p>
+          </>
+        ) : (
+          <h2 className="text-2xl font-bold text-coffee-cream text-center">
+            Game Over! 😴
+          </h2>
+        )}
         {stats.isNewRecord && (
           <div className="flex items-center justify-center gap-2 mt-2">
             <span className="text-gold text-lg font-bold animate-pulse">🏆 NEW RECORD!</span>

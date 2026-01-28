@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GAME_CONFIG } from './config';
+import { loadProgression, saveProgression } from './persistence';
 import type { BossState, GameMode } from './types';
 
 interface DebugHUDProps {
@@ -67,6 +68,29 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
   const maxLatched = isMorningRush 
     ? GAME_CONFIG.MAX_LATCHED_ENEMIES + GAME_CONFIG.RUSH_LATCHED_BONUS
     : GAME_CONFIG.MAX_LATCHED_ENEMIES;
+  
+  // Phase 2B-3: Dev/test tools state
+  const [showDevTools, setShowDevTools] = useState(false);
+  
+  // Dev tool handlers
+  const handleAddBeans = () => {
+    const prog = loadProgression();
+    prog.totalBeans += 200;
+    saveProgression(prog);
+    alert(`+200 beans! Total: ${prog.totalBeans}`);
+  };
+  
+  const handleSetUpgradePreset = (level: number) => {
+    const prog = loadProgression();
+    prog.upgradeLevels = {
+      towerHpLevel: Math.min(level, GAME_CONFIG.UPGRADE_MAX_LEVEL),
+      espressoDamageLevel: Math.min(level, GAME_CONFIG.UPGRADE_MAX_LEVEL),
+      energyRegenLevel: Math.min(level, GAME_CONFIG.UPGRADE_MAX_LEVEL),
+      blockCountLevel: Math.min(level, GAME_CONFIG.BLOCK_COUNT_MAX_LEVEL),
+    };
+    saveProgression(prog);
+    alert(`Upgrades set to level ${level}. Restart game to apply.`);
+  };
 
   return (
     <>
@@ -190,6 +214,52 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
           {isStressTest && (
             <div className="mt-2 text-red-400 text-[10px] border-t border-red-500/50 pt-2">
               ⚠️ Stress mode: DMG↓ Spawn↑ Rush↑
+            </div>
+          )}
+          
+          {/* Phase 2B-3: Dev/Test Tools */}
+          <div className="border-t border-coffee-cream/20 my-2" />
+          <button
+            onClick={() => setShowDevTools(!showDevTools)}
+            className="w-full py-1 px-2 rounded text-xs font-bold bg-purple-600 text-white mb-2"
+          >
+            {showDevTools ? '🛠️ Hide Dev Tools' : '🛠️ Dev Tools'}
+          </button>
+          
+          {showDevTools && (
+            <div className="space-y-2 border border-purple-500/50 rounded p-2 bg-purple-900/30">
+              <div className="text-purple-300 text-[10px] font-bold">BALANCE TESTING</div>
+              
+              {/* +200 Beans */}
+              <button
+                onClick={handleAddBeans}
+                className="w-full py-1 px-2 rounded text-xs bg-gold text-coffee-espresso font-bold"
+              >
+                💰 +200 Beans
+              </button>
+              
+              {/* Upgrade Presets */}
+              <div className="text-[10px] text-purple-300 mt-1">Set All Upgrades:</div>
+              <div className="flex gap-1">
+                {[0, 1, 2, 3].map(level => (
+                  <button
+                    key={level}
+                    onClick={() => handleSetUpgradePreset(level)}
+                    className="flex-1 py-1 rounded text-xs bg-purple-700 text-white font-bold hover:bg-purple-600"
+                  >
+                    L{level}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Test Checklist */}
+              <div className="text-[10px] text-purple-200 mt-2 border-t border-purple-500/30 pt-2">
+                <div className="font-bold mb-1">Test Targets:</div>
+                <div>• L0: Die before/during Rush1</div>
+                <div>• L1: Survive Rush1</div>
+                <div>• L2: Reach Boss</div>
+                <div>• L3: Clear Chapter</div>
+              </div>
             </div>
           )}
         </div>

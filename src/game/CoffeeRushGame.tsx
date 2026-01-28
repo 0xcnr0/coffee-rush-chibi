@@ -1015,6 +1015,10 @@ export const CoffeeRushGame: React.FC = () => {
             breatherTimer={difficultyRef.current.breatherTimer}
             onTonicBomb={handleTonicBomb}
             canUseBomb={canUseBomb}
+            gameMode={gameMode}
+            bossState={bossState}
+            bossIncomingTimer={bossIncomingRef.current}
+            checkpointIndex={debugInfo.checkpointIndex}
           />
         )}
         
