@@ -95,6 +95,11 @@ export const CoffeeRushGame: React.FC = () => {
     effectiveBlockHp: number;
     latchedCount: number;
     breatherTimer: number;
+    // Phase 1.8: Combat debug
+    currentTargetId: number | null;
+    currentTargetX: number | null;
+    lastAttackDelta: number;
+    activeProjectiles: number;
   }>({
     fps: 60,
     minFps: 60,
@@ -104,6 +109,10 @@ export const CoffeeRushGame: React.FC = () => {
     effectiveBlockHp: GAME_CONFIG.BLOCK_MAX_HP,
     latchedCount: 0,
     breatherTimer: 0,
+    currentTargetId: null,
+    currentTargetX: null,
+    lastAttackDelta: 0,
+    activeProjectiles: 0,
   });
   
   // Stress test tracking refs
@@ -134,6 +143,8 @@ export const CoffeeRushGame: React.FC = () => {
   const hudAccumulatorRef = useRef(0); // HUD throttle accumulator
   const fpsRef = useRef(60); // Smoothed FPS
   const effectiveBlockHpRef = useRef<number>(GAME_CONFIG.BLOCK_MAX_HP); // Store for debug
+  // Phase 1.8: Combat debug tracking refs
+  const currentTargetRef = useRef<{ id: number; x: number } | null>(null);
   // Object pools
   const enemyPool = useObjectPool(createEnemy, GAME_CONFIG.MAX_ENEMIES);
   const projectilePool = useObjectPool(createProjectile, 50);
@@ -414,6 +425,11 @@ export const CoffeeRushGame: React.FC = () => {
         effectiveBlockHp: effectiveBlockHpRef.current,
         latchedCount: latchedCountRef.current,
         breatherTimer: difficulty.breatherTimer,
+        // Phase 1.8: Combat debug
+        currentTargetId: currentTargetRef.current?.id ?? null,
+        currentTargetX: currentTargetRef.current?.x ?? null,
+        lastAttackDelta: currentTime - lastAttackRef.current,
+        activeProjectiles: projectilePool.getActive().length,
       });
     }
     
@@ -485,9 +501,9 @@ export const CoffeeRushGame: React.FC = () => {
     }
     
     // Auto-attack
-    const enemies = enemyPool.getActive().filter(e => !e.isServed);
+    const enemies = enemyPool.getActive().filter(e => !e.isServed && e.state !== 'SERVED');
     if (enemies.length > 0 && currentTime - lastAttackRef.current > GAME_CONFIG.AUTO_ATTACK_INTERVAL / 1000) {
-      // Find nearest enemy
+      // Find nearest enemy (lowest x = closest to cart)
       const cartX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
       let nearest = enemies[0];
       let minDist = Math.abs(enemies[0].x - cartX);
@@ -500,39 +516,50 @@ export const CoffeeRushGame: React.FC = () => {
         }
       });
       
+      // Phase 1.8: Track current target for debug
+      currentTargetRef.current = { id: nearest.id, x: nearest.x };
+      
       fireProjectile(nearest);
       lastAttackRef.current = currentTime;
+    } else if (enemies.length === 0) {
+      currentTargetRef.current = null;
     }
     
-    // Update projectiles
+    // Update projectiles - FIX: Check collision continuously during flight, not just at destination
     projectilePool.getActive().forEach(proj => {
+      // Move projectile toward target
       const dx = proj.targetX - proj.x;
       const dy = proj.targetY - proj.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       
-      if (dist < 10) {
-        // Check collision with enemies
-        enemyPool.getActive().forEach(enemy => {
-          if (enemy.isServed) return;
-          
-          const ex = enemy.x;
-          const ey = enemy.y - enemy.height / 2;
-          const hitDist = Math.sqrt((proj.x - ex) ** 2 + (proj.y - ey) ** 2);
-          
-          if (hitDist < enemy.width / 2 + proj.radius) {
-            enemy.hp -= proj.damage;
-            spawnParticles(proj.x, proj.y, 'sparkle', 3);
-            projectilePool.release(proj);
-          }
-        });
-        
-        if (proj.active) {
-          projectilePool.release(proj);
-        }
-      } else {
+      // Move projectile
+      if (dist > 1) {
         const speed = proj.speed * deltaTime;
         proj.x += (dx / dist) * speed;
         proj.y += (dy / dist) * speed;
+      }
+      
+      // Check collision with ALL active enemies (not just at destination)
+      let hitEnemy = false;
+      enemyPool.getActive().forEach(enemy => {
+        if (hitEnemy || enemy.isServed || enemy.state === 'SERVED') return;
+        
+        const ex = enemy.x;
+        const ey = enemy.y - enemy.height / 2;
+        const hitDist = Math.sqrt((proj.x - ex) ** 2 + (proj.y - ey) ** 2);
+        
+        // Larger hit radius for reliable collision
+        if (hitDist < enemy.width / 2 + proj.radius + 5) {
+          enemy.hp -= proj.damage;
+          spawnParticles(proj.x, proj.y, 'sparkle', 3);
+          projectilePool.release(proj);
+          hitEnemy = true;
+        }
+      });
+      
+      // Release if past screen right edge OR reached destination without hitting
+      if (!hitEnemy && (proj.x > GAME_CONFIG.CANVAS_WIDTH + 50 || dist <= 1)) {
+        projectilePool.release(proj);
       }
     });
     
@@ -802,6 +829,10 @@ export const CoffeeRushGame: React.FC = () => {
             isStressTest={isStressTest}
             latchedCount={debugInfo.latchedCount}
             breatherTimer={debugInfo.breatherTimer}
+            currentTargetId={debugInfo.currentTargetId}
+            currentTargetX={debugInfo.currentTargetX}
+            lastAttackDelta={debugInfo.lastAttackDelta}
+            activeProjectiles={debugInfo.activeProjectiles}
             onToggle={() => setShowDebug(prev => !prev)}
             onStressTestToggle={() => setIsStressTest(prev => !prev)}
           />
