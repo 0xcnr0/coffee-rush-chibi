@@ -57,11 +57,13 @@ const getIcon = (iconName: string) => {
 };
 
 // Soft guidance: returns the key of the recommended upgrade
+// Phase 1.8: Prioritize Add Cargo Box early, then Tower HP
 const getRecommendedUpgrade = (levels: Record<string, number>): string | null => {
+  // Early game: Cargo Box is most impactful for surviving first Rush
+  if (levels.blockCountLevel === 0) return 'blockCountLevel';
   if (levels.towerHpLevel === 0) return 'towerHpLevel';
   if (levels.espressoDamageLevel === 0) return 'espressoDamageLevel';
   if (levels.energyRegenLevel === 0) return 'energyRegenLevel';
-  if (levels.blockCountLevel === 0) return 'blockCountLevel';
   return null;
 };
 

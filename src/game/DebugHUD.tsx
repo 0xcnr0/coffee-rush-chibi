@@ -16,6 +16,11 @@ interface DebugHUDProps {
   isStressTest: boolean;
   latchedCount: number;
   breatherTimer: number;
+  // Phase 1.8: Combat debug info
+  currentTargetId: number | null;
+  currentTargetX: number | null;
+  lastAttackDelta: number;
+  activeProjectiles: number;
   onToggle: () => void;
   onStressTestToggle: () => void;
 }
@@ -35,6 +40,10 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
   isStressTest,
   latchedCount,
   breatherTimer,
+  currentTargetId,
+  currentTargetX,
+  lastAttackDelta,
+  activeProjectiles,
   onToggle,
   onStressTestToggle,
 }) => {
@@ -108,6 +117,20 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
           <div>
             Spawn: {effectiveSpawnInterval.toFixed(0)}ms
             {isMorningRush && <span className="text-warm-orange ml-1">☕ RUSH</span>}
+          </div>
+          
+          <div className="border-t border-coffee-cream/20 my-2" />
+          
+          {/* Phase 1.8: Combat Debug */}
+          <div className="text-gold font-bold mb-1">COMBAT</div>
+          <div className="text-cyan-300">
+            Target: {currentTargetId !== null ? `#${currentTargetId} @ ${currentTargetX?.toFixed(0)}px` : 'none'}
+          </div>
+          <div className="text-cyan-300">
+            Last Atk Δ: {lastAttackDelta.toFixed(2)}s
+          </div>
+          <div className="text-cyan-300">
+            Projectiles: {activeProjectiles}
           </div>
           
           <div className="border-t border-coffee-cream/20 my-2" />

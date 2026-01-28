@@ -17,6 +17,9 @@ export const EndScreen: React.FC<EndScreenProps> = ({
 }) => {
   const progression = loadProgression();
   
+  // Phase 1.8: Show hint after first death if no cargo box purchased
+  const showCargoHint = progression.upgradeLevels.blockCountLevel === 0;
+  
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -113,6 +116,15 @@ export const EndScreen: React.FC<EndScreenProps> = ({
           Home (Upgrades)
         </Button>
       </div>
+      
+      {/* Phase 1.8: Hint tooltip for first-time players */}
+      {showCargoHint && (
+        <div className="bg-warm-orange/20 border border-warm-orange/40 rounded-lg px-3 py-2 mt-4 max-w-xs">
+          <p className="text-warm-orange text-xs text-center">
+            💡 Tip: Buy your first <strong>Cargo Box</strong> to survive the first Rush!
+          </p>
+        </div>
+      )}
       
       {/* Share hint */}
       <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4">
