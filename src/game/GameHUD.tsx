@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Zap, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GAME_CONFIG } from './config';
@@ -9,6 +9,7 @@ interface GameHUDProps {
   energy: number;
   maxEnergy: number;
   isMorningRush: boolean;
+  breatherTimer: number; // Phase 1.8: for "Nice!" popup
   onTonicBomb: () => void;
   canUseBomb: boolean;
 }
@@ -22,9 +23,24 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   energy,
   maxEnergy,
   isMorningRush,
+  breatherTimer,
   onTonicBomb,
   canUseBomb,
 }) => {
+  // Phase 1.8: "Nice!" popup shows when breather starts (rush just ended)
+  const [showNice, setShowNice] = useState(false);
+  const [lastBreatherTimer, setLastBreatherTimer] = useState(0);
+  
+  useEffect(() => {
+    // Detect when breather just started (timer went from 0 to > 0)
+    if (breatherTimer > 0 && lastBreatherTimer === 0) {
+      setShowNice(true);
+      const timeout = setTimeout(() => setShowNice(false), 900);
+      return () => clearTimeout(timeout);
+    }
+    setLastBreatherTimer(breatherTimer);
+  }, [breatherTimer, lastBreatherTimer]);
+  
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -79,6 +95,13 @@ export const GameHUD: React.FC<GameHUDProps> = ({
           {isMorningRush && (
             <div className="absolute left-1/2 -translate-x-1/2 bg-warm-orange text-coffee-foam px-3 py-1 rounded-full text-sm font-bold animate-pulse">
               ☕ RUSH!
+            </div>
+          )}
+          
+          {/* Phase 1.8: "Nice!" popup during breather */}
+          {showNice && (
+            <div className="absolute left-1/2 -translate-x-1/2 bg-energy/90 text-coffee-foam px-4 py-2 rounded-full text-sm font-bold animate-fade-in shadow-lg">
+              ☕ Nice!
             </div>
           )}
           

@@ -2,7 +2,7 @@
 // Safely handles localStorage read/write with defaults
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 4; // Bump: Phase 1.6A caps + Phase 1.7 block progression
+const SAVE_VERSION = 5; // Bump: Phase 1.8 TDS pacing polish
 
 export interface ProgressionData {
   version: number;
