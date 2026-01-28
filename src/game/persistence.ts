@@ -2,7 +2,7 @@
 // Safely handles localStorage read/write with defaults
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 3; // Bump this to reset all player progression (v3: TDS panic system)
+const SAVE_VERSION = 4; // Bump: Phase 1.6A caps + Phase 1.7 block progression
 
 export interface ProgressionData {
   version: number;
@@ -13,6 +13,7 @@ export interface ProgressionData {
     towerHpLevel: number;
     espressoDamageLevel: number;
     energyRegenLevel: number;
+    blockCountLevel: number; // Phase 1.7: 0=1block, 1=2blocks, 2=3blocks
   };
 }
 
@@ -25,6 +26,7 @@ const DEFAULT_PROGRESSION: ProgressionData = {
     towerHpLevel: 0,
     espressoDamageLevel: 0,
     energyRegenLevel: 0,
+    blockCountLevel: 0,
   },
 };
 

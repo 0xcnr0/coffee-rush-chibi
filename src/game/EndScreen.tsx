@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Coffee, Users, Home, ArrowUp } from 'lucide-react';
+import { Clock, Coffee, Users, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { loadProgression } from './persistence';
 import type { GameStats } from './types';
@@ -8,14 +8,12 @@ interface EndScreenProps {
   stats: GameStats;
   onPlayAgain: () => void;
   onHome: () => void;
-  onUpgrades: () => void;
 }
 
 export const EndScreen: React.FC<EndScreenProps> = ({ 
   stats, 
   onPlayAgain, 
-  onHome, 
-  onUpgrades 
+  onHome,
 }) => {
   const progression = loadProgression();
   
@@ -105,27 +103,15 @@ export const EndScreen: React.FC<EndScreenProps> = ({
           ☕ Play Again
         </Button>
         
-        <div className="flex gap-2">
-          <Button
-            onClick={onHome}
-            variant="outline"
-            size="default"
-            className="flex-1 border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30 hover:text-coffee-foam rounded-lg"
-          >
-            <Home className="w-4 h-4 mr-1" />
-            Home
-          </Button>
-          
-          <Button
-            onClick={onUpgrades}
-            variant="outline"
-            size="default"
-            className="flex-1 border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30 hover:text-coffee-foam rounded-lg"
-          >
-            <ArrowUp className="w-4 h-4 mr-1" />
-            Upgrades
-          </Button>
-        </div>
+        <Button
+          onClick={onHome}
+          variant="outline"
+          size="default"
+          className="border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30 hover:text-coffee-foam rounded-lg"
+        >
+          <Home className="w-4 h-4 mr-1" />
+          Home (Upgrades)
+        </Button>
       </div>
       
       {/* Share hint */}

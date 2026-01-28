@@ -109,33 +109,67 @@ function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   // Draw each active block
   activeBlocks.forEach((block, index) => {
     const blockY = groundY - 30 - (index + 1) * BLOCK_HEIGHT;
-    const colors = [COLORS.darkRoast, COLORS.mediumRoast, COLORS.lightRoast];
     
-    // Block body
-    ctx.fillStyle = colors[block.id] || COLORS.mediumRoast;
-    ctx.beginPath();
-    roundRect(ctx, CART_X, blockY, CART_WIDTH, BLOCK_HEIGHT - 4, 8);
-    ctx.fill();
-    
-    // Block highlight
-    ctx.fillStyle = 'hsla(0, 0%, 100%, 0.2)';
-    ctx.fillRect(CART_X + 5, blockY + 5, CART_WIDTH - 10, 8);
-    
-    // HP bar background
-    const hpBarWidth = CART_WIDTH - 20;
-    const hpBarHeight = 6;
-    const hpBarX = CART_X + 10;
-    const hpBarY = blockY + BLOCK_HEIGHT - 15;
-    
-    ctx.fillStyle = COLORS.hpBarBg;
-    roundRect(ctx, hpBarX, hpBarY, hpBarWidth, hpBarHeight, 3);
-    ctx.fill();
-    
-    // HP bar fill
-    const hpPercent = block.hp / block.maxHp;
-    ctx.fillStyle = hpPercent > 0.3 ? COLORS.energyBar : COLORS.hpBar;
-    roundRect(ctx, hpBarX, hpBarY, hpBarWidth * hpPercent, hpBarHeight, 3);
-    ctx.fill();
+    // Phase 1.7: Block 0 is the chassis (thin bar), others are cargo boxes
+    if (block.id === 0) {
+      // CHASSIS - thin metallic bar
+      const chassisHeight = Math.floor(BLOCK_HEIGHT * 0.4); // 40% of normal height
+      const chassisY = groundY - 30 - chassisHeight; // Positioned at base
+      
+      // Chassis body (dark metallic)
+      ctx.fillStyle = 'hsl(25, 30%, 18%)'; // Dark brown-gray
+      ctx.beginPath();
+      roundRect(ctx, CART_X - 3, chassisY, CART_WIDTH + 6, chassisHeight, 4);
+      ctx.fill();
+      
+      // Chassis highlight (metallic shine)
+      ctx.fillStyle = 'hsla(30, 20%, 40%, 0.4)';
+      ctx.fillRect(CART_X, chassisY + 2, CART_WIDTH, 4);
+      
+      // HP bar for chassis
+      const hpBarWidth = CART_WIDTH - 10;
+      const hpBarHeight = 4;
+      const hpBarX = CART_X + 5;
+      const hpBarY = chassisY + chassisHeight - 8;
+      
+      ctx.fillStyle = COLORS.hpBarBg;
+      roundRect(ctx, hpBarX, hpBarY, hpBarWidth, hpBarHeight, 2);
+      ctx.fill();
+      
+      const hpPercent = block.hp / block.maxHp;
+      ctx.fillStyle = hpPercent > 0.3 ? COLORS.energyBar : COLORS.hpBar;
+      roundRect(ctx, hpBarX, hpBarY, hpBarWidth * hpPercent, hpBarHeight, 2);
+      ctx.fill();
+    } else {
+      // CARGO BOX - normal box visual (stacks above chassis)
+      const colors = [COLORS.darkRoast, COLORS.mediumRoast, COLORS.lightRoast];
+      
+      // Block body
+      ctx.fillStyle = colors[block.id] || COLORS.mediumRoast;
+      ctx.beginPath();
+      roundRect(ctx, CART_X, blockY, CART_WIDTH, BLOCK_HEIGHT - 4, 8);
+      ctx.fill();
+      
+      // Block highlight
+      ctx.fillStyle = 'hsla(0, 0%, 100%, 0.2)';
+      ctx.fillRect(CART_X + 5, blockY + 5, CART_WIDTH - 10, 8);
+      
+      // HP bar background
+      const hpBarWidth = CART_WIDTH - 20;
+      const hpBarHeight = 6;
+      const hpBarX = CART_X + 10;
+      const hpBarY = blockY + BLOCK_HEIGHT - 15;
+      
+      ctx.fillStyle = COLORS.hpBarBg;
+      roundRect(ctx, hpBarX, hpBarY, hpBarWidth, hpBarHeight, 3);
+      ctx.fill();
+      
+      // HP bar fill
+      const hpPercent = block.hp / block.maxHp;
+      ctx.fillStyle = hpPercent > 0.3 ? COLORS.energyBar : COLORS.hpBar;
+      roundRect(ctx, hpBarX, hpBarY, hpBarWidth * hpPercent, hpBarHeight, 3);
+      ctx.fill();
+    }
   });
 }
 
@@ -145,10 +179,15 @@ function drawBarista(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   
   const { CART_X, CART_WIDTH, BLOCK_HEIGHT } = GAME_CONFIG;
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
-  const topBlockY = groundY - 30 - activeBlocks.length * BLOCK_HEIGHT;
+  
+  // Phase 1.7: Calculate barista position based on block structure
+  // Block 0 is chassis (40% height), blocks 1+ are cargo boxes
+  const chassisHeight = Math.floor(BLOCK_HEIGHT * 0.4);
+  const cargoBlockCount = activeBlocks.filter(b => b.id > 0).length;
+  const topY = groundY - 30 - chassisHeight - (cargoBlockCount * BLOCK_HEIGHT);
   
   const baristaX = CART_X + CART_WIDTH / 2;
-  const baristaY = topBlockY - 25;
+  const baristaY = topY - 25;
   
   // Body
   ctx.fillStyle = COLORS.cream;
