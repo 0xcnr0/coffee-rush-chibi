@@ -100,6 +100,9 @@ export const CoffeeRushGame: React.FC = () => {
     currentTargetX: number | null;
     lastAttackDelta: number;
     activeProjectiles: number;
+    // Phase 2A: Shot counters
+    shotsFired: number;
+    shotsHit: number;
   }>({
     fps: 60,
     minFps: 60,
@@ -113,6 +116,8 @@ export const CoffeeRushGame: React.FC = () => {
     currentTargetX: null,
     lastAttackDelta: 0,
     activeProjectiles: 0,
+    shotsFired: 0,
+    shotsHit: 0,
   });
   
   // Stress test tracking refs
@@ -132,11 +137,14 @@ export const CoffeeRushGame: React.FC = () => {
   });
   const latchedCountRef = useRef(0); // Track latched enemies for TDS panic system
   const screenShakeRef = useRef({ x: 0, y: 0, duration: 0 });
-  const lastAttackRef = useRef(0);
-  const lastSpawnRef = useRef(0);
+  const lastAttackRef = useRef(-999); // Start negative to allow immediate first shot
+  const lastSpawnRef = useRef(-999); // Start negative to allow immediate first spawn
   const energyRef = useRef<number>(0); // Phase 1.6A: Start at 0 (TDS pacing)
   const timeRef = useRef(0);
   const tipsRef = useRef(0);
+  // Phase 2A: Shot debug counters
+  const shotsFiredRef = useRef(0);
+  const shotsHitRef = useRef(0);
   const customersServedRef = useRef(0);
   const damageMultiplierRef = useRef(1);
   const energyRegenMultiplierRef = useRef(1);
@@ -208,12 +216,15 @@ export const CoffeeRushGame: React.FC = () => {
     
     // Reset refs
     screenShakeRef.current = { x: 0, y: 0, duration: 0 };
-    lastAttackRef.current = 0;
-    lastSpawnRef.current = 0;
+    lastAttackRef.current = -999; // Negative to allow immediate first shot
+    lastSpawnRef.current = -999; // Negative to allow immediate first spawn
     energyRef.current = 0; // Phase 1.6A: Start at 0 (TDS pacing)
     timeRef.current = 0;
     tipsRef.current = 0;
     customersServedRef.current = 0;
+    // Reset shot counters
+    shotsFiredRef.current = 0;
+    shotsHitRef.current = 0;
     
     // Reset stress test tracking
     minFpsRef.current = 60;
@@ -430,6 +441,9 @@ export const CoffeeRushGame: React.FC = () => {
         currentTargetX: currentTargetRef.current?.x ?? null,
         lastAttackDelta: currentTime - lastAttackRef.current,
         activeProjectiles: projectilePool.getActive().length,
+        // Phase 2A: Shot counters
+        shotsFired: shotsFiredRef.current,
+        shotsHit: shotsHitRef.current,
       });
     }
     
@@ -520,6 +534,7 @@ export const CoffeeRushGame: React.FC = () => {
       currentTargetRef.current = { id: nearest.id, x: nearest.x };
       
       fireProjectile(nearest);
+      shotsFiredRef.current++; // Phase 2A: Track shots fired
       lastAttackRef.current = currentTime;
     } else if (enemies.length === 0) {
       currentTargetRef.current = null;
@@ -551,6 +566,7 @@ export const CoffeeRushGame: React.FC = () => {
         // Larger hit radius for reliable collision
         if (hitDist < enemy.width / 2 + proj.radius + 5) {
           enemy.hp -= proj.damage;
+          shotsHitRef.current++; // Phase 2A: Track shots hit
           spawnParticles(proj.x, proj.y, 'sparkle', 3);
           projectilePool.release(proj);
           hitEnemy = true;
@@ -833,6 +849,8 @@ export const CoffeeRushGame: React.FC = () => {
             currentTargetX={debugInfo.currentTargetX}
             lastAttackDelta={debugInfo.lastAttackDelta}
             activeProjectiles={debugInfo.activeProjectiles}
+            shotsFired={debugInfo.shotsFired}
+            shotsHit={debugInfo.shotsHit}
             onToggle={() => setShowDebug(prev => !prev)}
             onStressTestToggle={() => setIsStressTest(prev => !prev)}
           />
