@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Coffee, Trophy, Shield, Zap, Package } from 'lucide-react';
+import { Coffee, Trophy, Shield, Zap, Package, Play, Infinity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchaseUpgrade, getUpgradeCost, getUpgradeMultiplier } from './persistence';
+import { loadProgression, purchaseUpgrade, getUpgradeCost, getUpgradeMultiplier, setLastGameMode } from './persistence';
 import { GAME_CONFIG } from './config';
-import type { UpgradeInfo } from './types';
+import type { UpgradeInfo, GameMode } from './types';
 
 interface GarageScreenProps {
-  onPlay: () => void;
+  onPlay: (mode: GameMode) => void;
 }
 
 const UPGRADES: UpgradeInfo[] = [
@@ -69,6 +69,7 @@ const getRecommendedUpgrade = (levels: Record<string, number>): string | null =>
 
 export const GarageScreen: React.FC<GarageScreenProps> = ({ onPlay }) => {
   const [progression, setProgression] = useState(loadProgression());
+  const [selectedMode, setSelectedMode] = useState<GameMode>(progression.lastGameMode || 'CHAPTER');
   
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -85,6 +86,11 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({ onPlay }) => {
     if (purchaseUpgrade(upgrade.key, cost)) {
       setProgression(loadProgression());
     }
+  };
+  
+  const handlePlay = () => {
+    setLastGameMode(selectedMode);
+    onPlay(selectedMode);
   };
   
   const recommendedKey = getRecommendedUpgrade(progression.upgradeLevels);
@@ -227,13 +233,53 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({ onPlay }) => {
         </div>
       </div>
       
+      {/* Game Mode Toggle */}
+      <div className="w-full max-w-xs mb-4">
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setSelectedMode('CHAPTER')}
+            variant={selectedMode === 'CHAPTER' ? 'default' : 'outline'}
+            className={`flex-1 ${
+              selectedMode === 'CHAPTER' 
+                ? 'bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam' 
+                : 'border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30'
+            }`}
+          >
+            <Play className="w-4 h-4 mr-1" />
+            Chapter 1
+          </Button>
+          <Button
+            onClick={() => setSelectedMode('ENDLESS')}
+            variant={selectedMode === 'ENDLESS' ? 'default' : 'outline'}
+            className={`flex-1 ${
+              selectedMode === 'ENDLESS' 
+                ? 'bg-gold hover:bg-gold/90 text-coffee-espresso' 
+                : 'border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30'
+            }`}
+          >
+            <Infinity className="w-4 h-4 mr-1" />
+            Endless
+          </Button>
+        </div>
+        <p className="text-coffee-cream/60 text-xs text-center mt-2">
+          {selectedMode === 'CHAPTER' 
+            ? '☕ Beat the Boss to clear Chapter 1!' 
+            : '♾️ Survive as long as you can!'}
+        </p>
+        {selectedMode === 'CHAPTER' && progression.chapter1Cleared && (
+          <p className="text-gold text-xs text-center mt-1">
+            🏆 Best Clear: {formatTime(progression.bestChapter1Time)}
+          </p>
+        )}
+      </div>
+      
       {/* Play Button */}
       <Button
-        onClick={onPlay}
+        onClick={handlePlay}
         size="lg"
         className="w-full max-w-xs bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam text-xl px-10 py-6 rounded-2xl shadow-lg transform hover:scale-105 transition-transform mb-4"
       >
-        ☕ Play
+        ☕ Play {selectedMode === 'CHAPTER' ? 'Chapter 1' : 'Endless'}
       </Button>
       
       {/* Instructions hint */}

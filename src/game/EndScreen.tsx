@@ -1,24 +1,28 @@
 import React from 'react';
-import { Clock, Coffee, Users, Home } from 'lucide-react';
+import { Clock, Coffee, Users, Home, Trophy, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { loadProgression } from './persistence';
-import type { GameStats } from './types';
+import { GAME_CONFIG } from './config';
+import type { GameStats, GameMode } from './types';
 
 interface EndScreenProps {
   stats: GameStats;
   onPlayAgain: () => void;
   onHome: () => void;
+  gameMode: GameMode;
 }
 
 export const EndScreen: React.FC<EndScreenProps> = ({ 
   stats, 
   onPlayAgain, 
   onHome,
+  gameMode,
 }) => {
   const progression = loadProgression();
+  const isChapterClear = stats.isChapterClear;
   
   // Phase 1.8: Show hint after first death if no cargo box purchased
-  const showCargoHint = progression.upgradeLevels.blockCountLevel === 0;
+  const showCargoHint = !isChapterClear && progression.upgradeLevels.blockCountLevel === 0;
   
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -26,14 +30,114 @@ export const EndScreen: React.FC<EndScreenProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
-  const shareText = `I survived ${formatTime(stats.timeSurvived)} and served ${stats.customersServed} customers ☕️ #CoffeeRush`;
+  const shareText = isChapterClear
+    ? `I cleared Chapter 1 in ${formatTime(stats.timeSurvived)}! ☕️🏆 #CoffeeRush`
+    : `I survived ${formatTime(stats.timeSurvived)} and served ${stats.customersServed} customers ☕️ #CoffeeRush`;
   
+  // Chapter Clear Screen
+  if (isChapterClear) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-gold/20 to-coffee-espresso/95 p-4 z-20">
+        {/* Victory Title */}
+        <div className="mb-6 animate-pop-in">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Star className="w-8 h-8 text-gold animate-pulse" />
+            <h2 className="text-3xl font-bold text-gold text-center">
+              Chapter 1 Clear!
+            </h2>
+            <Star className="w-8 h-8 text-gold animate-pulse" />
+          </div>
+          <p className="text-coffee-cream text-center text-lg">
+            ☕ The Boss has been served! ☕
+          </p>
+        </div>
+        
+        {/* Primary Score - Time */}
+        <div className="bg-gold/20 border-2 border-gold rounded-2xl p-5 mb-4 w-full max-w-xs animate-pop-in">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Trophy className="w-6 h-6 text-gold" />
+            <span className="text-coffee-cream">Clear Time</span>
+          </div>
+          <div className="text-4xl font-bold text-gold text-center">
+            {formatTime(stats.timeSurvived)}
+          </div>
+          {progression.bestChapter1Time > 0 && progression.bestChapter1Time < stats.timeSurvived && (
+            <div className="text-coffee-light/60 text-sm text-center mt-1">
+              Best: {formatTime(progression.bestChapter1Time)}
+            </div>
+          )}
+        </div>
+        
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-3 w-full max-w-xs mb-4">
+          <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
+            <Users className="w-5 h-5 text-secondary mx-auto mb-1" />
+            <div className="text-xl font-bold text-coffee-cream">
+              {stats.customersServed}
+            </div>
+            <div className="text-xs text-coffee-light">Served</div>
+          </div>
+          
+          <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
+            <span className="text-lg block mb-1">🏁</span>
+            <div className="text-xl font-bold text-warm-orange">
+              {stats.checkpointsCleared || Math.floor(stats.timeSurvived / GAME_CONFIG.CHECKPOINT_SECONDS)}
+            </div>
+            <div className="text-xs text-coffee-light">Checkpoints</div>
+          </div>
+        </div>
+        
+        {/* Beans Earned (with bonus) */}
+        <div className="bg-gold/30 border border-gold/50 rounded-xl p-4 w-full max-w-xs mb-6 animate-pop-in">
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-2xl">🫘</span>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gold">
+                +{stats.beansEarned}
+              </div>
+              <div className="text-xs text-coffee-cream/70">
+                (Tips + {GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS} Clear Bonus)
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Buttons */}
+        <div className="flex flex-col gap-2 w-full max-w-xs">
+          <Button
+            onClick={onPlayAgain}
+            size="lg"
+            className="bg-gold hover:bg-gold/90 text-coffee-espresso text-lg px-8 py-5 rounded-xl shadow-lg transform hover:scale-105 transition-transform"
+          >
+            🏆 Play Again
+          </Button>
+          
+          <Button
+            onClick={onHome}
+            variant="outline"
+            size="default"
+            className="border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30 hover:text-coffee-foam rounded-lg"
+          >
+            <Home className="w-4 h-4 mr-1" />
+            Home (Upgrades)
+          </Button>
+        </div>
+        
+        {/* Share hint */}
+        <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4">
+          {shareText}
+        </p>
+      </div>
+    );
+  }
+  
+  // Normal Game Over Screen (Endless or failed Chapter)
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-coffee-dark/95 to-coffee-espresso/95 p-4 z-20">
       {/* Game Over Title */}
       <div className="mb-6 animate-pop-in">
         <h2 className="text-2xl font-bold text-coffee-cream text-center">
-          Cart Overwhelmed! 😴
+          {gameMode === 'CHAPTER' ? 'Cart Overwhelmed! 😴' : 'Game Over! 😴'}
         </h2>
         {stats.isNewRecord && (
           <div className="flex items-center justify-center gap-2 mt-2">
@@ -82,7 +186,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
         <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
           <span className="text-lg block mb-1">🏁</span>
           <div className="text-xl font-bold text-warm-orange">
-            {Math.floor(stats.timeSurvived / 20)}
+            {Math.floor(stats.timeSurvived / GAME_CONFIG.CHECKPOINT_SECONDS)}
           </div>
           <div className="text-xs text-coffee-light">Checkpoints</div>
         </div>

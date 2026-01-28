@@ -141,6 +141,22 @@ export const GAME_CONFIG = {
   HEAVY_SPEED_MULT: 0.75,          // 75% speed of normal enemies
   HEAVY_TICK_DAMAGE_MULT: 2.0,     // 2x latched tick damage
   HEAVY_SIZE_MULT: 1.15,           // 15% larger visually
+  
+  // ─────────────────────────────────────────────────────────────
+  // CHAPTER MODE + BOSS (Phase 2B-2: TDS-style win condition)
+  // ─────────────────────────────────────────────────────────────
+  CHAPTER1_BOSS_CHECKPOINT: 3,     // Boss spawns after 3 checkpoints (60s)
+  CHECKPOINT_SECONDS: 20,          // Seconds per checkpoint segment
+  
+  // Boss stats
+  BOSS_HP: 600,                    // High HP pool (tunable)
+  BOSS_SPEED_MULT: 0.6,            // 60% of normal speed
+  BOSS_SIZE_MULT: 1.4,             // 40% larger than normal
+  BOSS_TICK_DAMAGE_MULT: 3.0,      // 3x latched tick damage
+  BOSS_LATCH_SLOTS: 2,             // Counts as 2 latched slots
+  BOSS_ADD_SPAWN_INTERVAL: 2.0,    // Spawn adds every 2 seconds during boss fight
+  BOSS_INCOMING_BANNER_DURATION: 1.5, // Seconds to show "BOSS INCOMING" banner
+  CHAPTER_CLEAR_BONUS_BEANS: 50,   // Bonus beans for clearing chapter
 } as const;
 
 // Colors (HSL values matching index.css)
