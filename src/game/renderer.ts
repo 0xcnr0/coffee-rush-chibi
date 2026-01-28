@@ -1,5 +1,5 @@
 import { GAME_CONFIG, COLORS } from './config';
-import type { CartBlock, Enemy, Projectile, TipDrop, Particle, DifficultyState } from './types';
+import type { CartBlock, Enemy, EnemyKind, Projectile, TipDrop, Particle, DifficultyState } from './types';
 
 export function drawGame(
   ctx: CanvasRenderingContext2D,
@@ -221,7 +221,7 @@ function drawBarista(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
 }
 
 function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
-  const { x, y, width, height, isServed, hp, maxHp, state } = enemy;
+  const { x, y, width, height, isServed, hp, maxHp, state, kind } = enemy;
   
   // Calculate shake for latched enemies
   const isLatched = state === 'LATCHED';
@@ -231,9 +231,12 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
   const drawX = x + shakeX;
   const drawY = y + shakeY;
   
+  // Phase 2B-1: Heavy enemy visual adjustments
+  const isHeavy = kind === 'HEAVY';
+  
   if (isServed || state === 'SERVED') {
     // Happy served customer - colorful!
-    ctx.fillStyle = COLORS.awake;
+    ctx.fillStyle = isHeavy ? 'hsl(40, 70%, 55%)' : COLORS.awake; // Heavier gold for heavy
     
     // Body
     ctx.beginPath();
@@ -261,24 +264,31 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
     ctx.fillRect(drawX + width/2 - 3, drawY - height + 27, 8, 8);
     
   } else if (isLatched) {
-    // LATCHED enemy - angry/attacking, red tint
-    ctx.fillStyle = 'hsl(0, 50%, 55%)'; // Red tint
+    // LATCHED enemy - angry/attacking, red tint (darker for heavy)
+    ctx.fillStyle = isHeavy ? 'hsl(0, 60%, 40%)' : 'hsl(0, 50%, 55%)';
     
     // Body
     ctx.beginPath();
     roundRect(ctx, drawX - width/2, drawY - height, width, height, 10);
     ctx.fill();
     
+    // Heavy badge
+    if (isHeavy) {
+      ctx.fillStyle = 'hsl(45, 90%, 55%)';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText('⚠️', drawX - 10, drawY - height - 18);
+    }
+    
     // Angry eyes (open, aggressive)
-    ctx.fillStyle = 'hsl(0, 70%, 30%)';
+    ctx.fillStyle = isHeavy ? 'hsl(0, 80%, 20%)' : 'hsl(0, 70%, 30%)';
     ctx.beginPath();
-    ctx.arc(drawX - 8, drawY - height + 20, 5, 0, Math.PI * 2);
-    ctx.arc(drawX + 8, drawY - height + 20, 5, 0, Math.PI * 2);
+    ctx.arc(drawX - 8, drawY - height + 20, isHeavy ? 6 : 5, 0, Math.PI * 2);
+    ctx.arc(drawX + 8, drawY - height + 20, isHeavy ? 6 : 5, 0, Math.PI * 2);
     ctx.fill();
     
     // Angry eyebrows
-    ctx.strokeStyle = 'hsl(0, 70%, 30%)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = isHeavy ? 'hsl(0, 80%, 20%)' : 'hsl(0, 70%, 30%)';
+    ctx.lineWidth = isHeavy ? 3 : 2;
     ctx.beginPath();
     ctx.moveTo(drawX - 14, drawY - height + 12);
     ctx.lineTo(drawX - 4, drawY - height + 16);
@@ -291,34 +301,45 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
     ctx.arc(drawX, drawY - height + 38, 6, Math.PI + 0.5, -0.5);
     ctx.stroke();
     
-    // Exclamation mark
-    ctx.fillStyle = 'hsl(0, 80%, 50%)';
+    // Exclamation mark (double for heavy)
+    ctx.fillStyle = isHeavy ? 'hsl(0, 90%, 45%)' : 'hsl(0, 80%, 50%)';
     ctx.font = 'bold 16px sans-serif';
-    ctx.fillText('!', drawX - 4, drawY - height - 5);
+    ctx.fillText(isHeavy ? '!!' : '!', drawX - (isHeavy ? 8 : 4), drawY - height - 5);
     
     // HP indicator
     const hpPercent = hp / maxHp;
     if (hpPercent < 1) {
       const barWidth = width - 10;
       ctx.fillStyle = COLORS.hpBarBg;
-      ctx.fillRect(drawX - barWidth/2, drawY - height - 16, barWidth, 4);
-      ctx.fillStyle = 'hsl(0, 70%, 55%)';
-      ctx.fillRect(drawX - barWidth/2, drawY - height - 16, barWidth * hpPercent, 4);
+      ctx.fillRect(drawX - barWidth/2, drawY - height - 16, barWidth, isHeavy ? 6 : 4);
+      ctx.fillStyle = isHeavy ? 'hsl(25, 80%, 50%)' : 'hsl(0, 70%, 55%)';
+      ctx.fillRect(drawX - barWidth/2, drawY - height - 16, barWidth * hpPercent, isHeavy ? 6 : 4);
     }
     
   } else {
-    // Sleepy customer (WALKING or QUEUED) - desaturated
+    // Sleepy customer (WALKING or QUEUED) - desaturated (darker for heavy)
     const isQueued = state === 'QUEUED';
-    ctx.fillStyle = isQueued ? 'hsl(220, 15%, 55%)' : COLORS.sleepy;
+    if (isHeavy) {
+      ctx.fillStyle = isQueued ? 'hsl(220, 20%, 45%)' : 'hsl(220, 15%, 50%)';
+    } else {
+      ctx.fillStyle = isQueued ? 'hsl(220, 15%, 55%)' : COLORS.sleepy;
+    }
     
     // Body
     ctx.beginPath();
     roundRect(ctx, drawX - width/2, drawY - height, width, height, 10);
     ctx.fill();
     
+    // Heavy badge for walking/queued
+    if (isHeavy) {
+      ctx.fillStyle = 'hsl(220, 40%, 70%)';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('⚠️', drawX - 8, drawY - height - 5);
+    }
+    
     // Tired eyes (closed lines)
-    ctx.strokeStyle = 'hsl(220, 10%, 40%)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = isHeavy ? 'hsl(220, 15%, 30%)' : 'hsl(220, 10%, 40%)';
+    ctx.lineWidth = isHeavy ? 3 : 2;
     ctx.beginPath();
     ctx.moveTo(drawX - 12, drawY - height + 20);
     ctx.lineTo(drawX - 4, drawY - height + 20);
@@ -332,7 +353,7 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
     ctx.stroke();
     
     // Zzz icon (only for walking, not queued)
-    if (!isQueued) {
+    if (!isQueued && !isHeavy) {
       ctx.fillStyle = 'hsl(220, 30%, 70%)';
       ctx.font = 'bold 14px sans-serif';
       ctx.fillText('💤', drawX - 8, drawY - height - 5);
@@ -343,9 +364,9 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
     if (hpPercent < 1) {
       const barWidth = width - 10;
       ctx.fillStyle = COLORS.hpBarBg;
-      ctx.fillRect(drawX - barWidth/2, drawY - height - 12, barWidth, 4);
-      ctx.fillStyle = COLORS.hpBar;
-      ctx.fillRect(drawX - barWidth/2, drawY - height - 12, barWidth * hpPercent, 4);
+      ctx.fillRect(drawX - barWidth/2, drawY - height - 12, barWidth, isHeavy ? 6 : 4);
+      ctx.fillStyle = isHeavy ? 'hsl(25, 70%, 50%)' : COLORS.hpBar;
+      ctx.fillRect(drawX - barWidth/2, drawY - height - 12, barWidth * hpPercent, isHeavy ? 6 : 4);
     }
   }
 }

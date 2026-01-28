@@ -17,6 +17,7 @@ export interface CartBlock {
 }
 
 export type EnemyState = 'WALKING' | 'LATCHED' | 'QUEUED' | 'SERVED';
+export type EnemyKind = 'NORMAL' | 'HEAVY'; // Phase 2B-1: Enemy types
 
 export interface Enemy {
   id: number;
@@ -34,6 +35,7 @@ export interface Enemy {
   state: EnemyState; // TDS-style state machine
   latchedTimer: number; // time until next tick damage
   queuePosition: number; // X position when queued (behind latched enemies)
+  kind: EnemyKind; // Phase 2B-1: NORMAL or HEAVY
 }
 
 export interface Projectile {

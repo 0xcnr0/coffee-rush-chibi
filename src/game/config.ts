@@ -131,6 +131,16 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   BLOCK_COUNT_MAX_LEVEL: 2,        // 0→1→2 (gives 1→2→3 blocks)
   BLOCK_COUNT_BASE_COST: 25,       // beans - significant investment
+  
+  // ─────────────────────────────────────────────────────────────
+  // HEAVY ENEMY (Phase 2B-1: mini-boss style)
+  // ─────────────────────────────────────────────────────────────
+  HEAVY_SPAWN_EVERY: 7,            // every 7 spawns, 1 heavy
+  HEAVY_RUSH_SPAWN_EVERY: 4,       // during Rush, every 4 spawns, 1 heavy
+  HEAVY_HP_MULT: 3.0,              // 3x HP of normal enemies
+  HEAVY_SPEED_MULT: 0.75,          // 75% speed of normal enemies
+  HEAVY_TICK_DAMAGE_MULT: 2.0,     // 2x latched tick damage
+  HEAVY_SIZE_MULT: 1.15,           // 15% larger visually
 } as const;
 
 // Colors (HSL values matching index.css)

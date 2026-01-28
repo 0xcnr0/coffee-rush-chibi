@@ -24,6 +24,8 @@ interface DebugHUDProps {
   // Phase 2A: Shot counters
   shotsFired: number;
   shotsHit: number;
+  // Phase 2B-1: Heavy enemy count
+  heavyCount: number;
   onToggle: () => void;
   onStressTestToggle: () => void;
 }
@@ -49,6 +51,7 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
   activeProjectiles,
   shotsFired,
   shotsHit,
+  heavyCount,
   onToggle,
   onStressTestToggle,
 }) => {
@@ -95,6 +98,7 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
           {/* Enemy Count */}
           <div className={isOverCap ? 'text-red-400 font-bold animate-pulse' : ''}>
             Enemies: {activeEnemies} / {maxEnemies}
+            {heavyCount > 0 && <span className="text-amber-400 ml-1">(Heavy: {heavyCount})</span>}
             {isOverCap && ' ⚠️ OVER CAP!'}
           </div>
           <div className="text-purple-300">
