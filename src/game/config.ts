@@ -11,17 +11,17 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   // CART (player tower)
   // ─────────────────────────────────────────────────────────────
-  CART_X: 60,                  // pixels from left edge
-  CART_WIDTH: 80,              // pixels
-  BLOCK_HEIGHT: 50,            // pixels per block
+  CART_X: 30,                  // pixels from left edge (v3.3: moved left for longer approach)
+  CART_WIDTH: 75,              // pixels (v3.3: slightly smaller)
+  BLOCK_HEIGHT: 45,            // pixels per block (v3.3: proportional)
   BLOCK_MAX_HP: 330,           // HP per block (v3.2: +10% for single block survivability)
   BLOCK_COUNT: 1,              // number of stacked blocks (v3.1: start with 1)
   
   // ─────────────────────────────────────────────────────────────
   // ENEMIES
   // ─────────────────────────────────────────────────────────────
-  ENEMY_WIDTH: 40,             // pixels
-  ENEMY_HEIGHT: 50,            // pixels
+  ENEMY_WIDTH: 36,             // pixels (v3.3: -10% for crowd feel)
+  ENEMY_HEIGHT: 45,            // pixels (v3.3: -10% for crowd feel)
   ENEMY_BASE_HP: 32,           // HP at difficulty level 0 (v3.1: reduced for single block)
   ENEMY_BASE_SPEED: 95,        // pixels/second (v3: very aggressive)
   ENEMY_DAMAGE: 18,            // damage dealt to cart block on contact (v3.2: reduced for fairness)
@@ -88,7 +88,7 @@ export const GAME_CONFIG = {
   RUSH_LATCHED_BONUS: 2,         // extra slots during Rush (total 7)
   LATCHED_TICK_INTERVAL: 0.5,    // seconds between damage ticks
   LATCHED_TICK_DAMAGE: 4,        // damage per tick (stacks with multiple)
-  LATCHED_QUEUE_SPACING: 8,      // pixels between queued enemies
+  LATCHED_QUEUE_SPACING: 12,     // pixels between queued enemies (v3.3: clearer queue)
   
   // ─────────────────────────────────────────────────────────────
   // BREATHER (post-rush pause)

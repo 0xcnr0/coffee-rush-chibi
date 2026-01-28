@@ -622,8 +622,14 @@ export const CoffeeRushGame: React.FC = () => {
           enemy.x = cartRightEdge + enemy.width / 2;
           latchedCountRef.current++;
         } else {
-          // Update queue position (stay in line)
+          // Walk slowly toward queue position (TDS-style visible line)
           queuedCount++;
+          const targetX = cartRightEdge + enemy.width / 2 + queuedCount * (enemy.width + GAME_CONFIG.LATCHED_QUEUE_SPACING);
+          if (enemy.x > targetX) {
+            // Walk toward queue position (slower than normal)
+            enemy.x -= enemy.speed * 0.3 * deltaTime;
+            enemy.x = Math.max(enemy.x, targetX);
+          }
         }
         return;
       }
@@ -641,10 +647,9 @@ export const CoffeeRushGame: React.FC = () => {
           enemy.x = cartRightEdge + enemy.width / 2;
           latchedCountRef.current++;
         } else if (activeBlocks.length > 0) {
-          // Queue behind - stop at queue position
+          // Queue behind - enter queue state (TDS-style line formation)
           enemy.state = 'QUEUED';
-          enemy.queuePosition = cartRightEdge + enemy.width / 2 + GAME_CONFIG.LATCHED_QUEUE_SPACING;
-          enemy.x = Math.max(enemy.x, enemy.queuePosition);
+          // Will walk to proper position in QUEUED state update
         } else {
           // No blocks left - game over already handled
         }

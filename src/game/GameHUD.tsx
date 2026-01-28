@@ -13,8 +13,8 @@ interface GameHUDProps {
   canUseBomb: boolean;
 }
 
-const CHECKPOINT_INTERVAL = 30; // seconds per checkpoint
-const TOTAL_CHECKPOINTS = 6;
+const CHECKPOINT_INTERVAL = 20; // seconds per checkpoint (v3.3: more frequent milestones)
+const TOTAL_CHECKPOINTS = 9;   // 3 minutes total display
 
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived,
