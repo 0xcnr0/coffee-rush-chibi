@@ -1,8 +1,10 @@
 // Persistence helper for Coffee Rush progression data
 // Safely handles localStorage read/write with defaults
 
+import type { GameMode } from './types';
+
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 5; // Bump: Phase 1.8 TDS pacing polish
+const SAVE_VERSION = 6; // Bump: Phase 2B-2 Chapter Mode
 
 export interface ProgressionData {
   version: number;
@@ -15,6 +17,10 @@ export interface ProgressionData {
     energyRegenLevel: number;
     blockCountLevel: number; // Phase 1.7: 0=1block, 1=2blocks, 2=3blocks
   };
+  // Phase 2B-2: Chapter mode tracking
+  chapter1Cleared: boolean;
+  bestChapter1Time: number;
+  lastGameMode: GameMode;
 }
 
 const DEFAULT_PROGRESSION: ProgressionData = {
@@ -28,6 +34,9 @@ const DEFAULT_PROGRESSION: ProgressionData = {
     energyRegenLevel: 0,
     blockCountLevel: 0,
   },
+  chapter1Cleared: false,
+  bestChapter1Time: 0,
+  lastGameMode: 'CHAPTER',
 };
 
 export const loadProgression = (): ProgressionData => {
@@ -113,6 +122,37 @@ export const getUpgradeCost = (level: number, baseCost: number): number => {
 // Calculate effective multiplier for an upgrade
 export const getUpgradeMultiplier = (level: number, bonusPerLevel: number): number => {
   return 1 + bonusPerLevel * level;
+};
+
+// Phase 2B-2: Update chapter clear records
+export const updateChapterClear = (
+  timeSurvived: number,
+  tipsEarned: number
+): { beansEarned: number; isNewChapterRecord: boolean } => {
+  const current = loadProgression();
+  
+  const isNewChapterRecord = !current.chapter1Cleared || timeSurvived < current.bestChapter1Time;
+  const beansEarned = tipsEarned; // Base beans from tips (bonus added separately)
+  
+  const updated: ProgressionData = {
+    ...current,
+    version: SAVE_VERSION,
+    chapter1Cleared: true,
+    bestChapter1Time: current.bestChapter1Time > 0 
+      ? Math.min(current.bestChapter1Time, timeSurvived) 
+      : timeSurvived,
+    totalBeans: current.totalBeans + beansEarned,
+  };
+  
+  saveProgression(updated);
+  
+  return { beansEarned, isNewChapterRecord };
+};
+
+// Phase 2B-2: Save last game mode preference
+export const setLastGameMode = (mode: GameMode): void => {
+  const current = loadProgression();
+  saveProgression({ ...current, lastGameMode: mode });
 };
 
 // Reset all progression to defaults (DEV tool)

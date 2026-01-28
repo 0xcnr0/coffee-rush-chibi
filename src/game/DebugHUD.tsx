@@ -1,5 +1,6 @@
 import React from 'react';
 import { GAME_CONFIG } from './config';
+import type { BossState, GameMode } from './types';
 
 interface DebugHUDProps {
   fps: number;
@@ -26,6 +27,10 @@ interface DebugHUDProps {
   shotsHit: number;
   // Phase 2B-1: Heavy enemy count
   heavyCount: number;
+  // Phase 2B-2: Boss and Chapter state
+  gameMode: GameMode;
+  bossState: BossState;
+  checkpointIndex: number;
   onToggle: () => void;
   onStressTestToggle: () => void;
 }
@@ -52,6 +57,9 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
   shotsFired,
   shotsHit,
   heavyCount,
+  gameMode,
+  bossState,
+  checkpointIndex,
   onToggle,
   onStressTestToggle,
 }) => {
@@ -144,6 +152,27 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
           <div className={shotsHit > 0 ? 'text-green-300' : 'text-red-400'}>
             Shots: {shotsFired} fired / {shotsHit} hit
           </div>
+          
+          <div className="border-t border-coffee-cream/20 my-2" />
+          
+          {/* Phase 2B-2: Chapter/Boss Debug */}
+          <div className="text-gold font-bold mb-1">CHAPTER</div>
+          <div className="text-purple-300">
+            Mode: {gameMode}
+          </div>
+          <div className="text-purple-300">
+            Checkpoint: {checkpointIndex}/{GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT}
+          </div>
+          {bossState.isActive && (
+            <>
+              <div className="text-red-400 font-bold animate-pulse">
+                🔥 BOSS ACTIVE
+              </div>
+              <div className="text-red-300">
+                Boss HP: {bossState.hp}/{bossState.maxHp} ({Math.round(bossState.hp / bossState.maxHp * 100)}%)
+              </div>
+            </>
+          )}
           
           <div className="border-t border-coffee-cream/20 my-2" />
           

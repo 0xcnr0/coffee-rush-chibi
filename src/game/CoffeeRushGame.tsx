@@ -9,11 +9,13 @@ import { GameHUD } from './GameHUD';
 import { DebugHUD } from './DebugHUD';
 import { 
   loadProgression, 
-  updateBestRecords, 
+  updateBestRecords,
+  updateChapterClear,
   getUpgradeMultiplier 
 } from './persistence';
 import type { 
   GameState, 
+  GameMode,
   CartBlock, 
   Enemy, 
   EnemyKind,
@@ -21,7 +23,8 @@ import type {
   TipDrop, 
   Particle, 
   GameStats,
-  DifficultyState 
+  DifficultyState,
+  BossState
 } from './types';
 
 const createEnemy = (id: number): Enemy => ({
@@ -82,12 +85,32 @@ const createParticle = (id: number): Particle => ({
 export const CoffeeRushGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('MENU');
+  const [gameMode, setGameMode] = useState<GameMode>('CHAPTER');
   const [stats, setStats] = useState<GameStats>({ timeSurvived: 0, customersServed: 0, totalTips: 0, beansEarned: 0, isNewRecord: false });
   const [energy, setEnergy] = useState<number>(0); // Phase 1.6A: Start at 0 (TDS pacing)
   const [tips, setTips] = useState(0);
   const [timeSurvived, setTimeSurvived] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
   const [isStressTest, setIsStressTest] = useState(false);
+  
+  // Phase 2B-2: Boss state
+  const [bossState, setBossState] = useState<BossState>({
+    isActive: false,
+    hp: 0,
+    maxHp: GAME_CONFIG.BOSS_HP,
+    spawnedAt: 0,
+    addSpawnTimer: 0,
+  });
+  const bossStateRef = useRef<BossState>({
+    isActive: false,
+    hp: 0,
+    maxHp: GAME_CONFIG.BOSS_HP,
+    spawnedAt: 0,
+    addSpawnTimer: 0,
+  });
+  const bossIncomingRef = useRef<number>(0); // Timer for "BOSS INCOMING" banner
+  const bossEnemyRef = useRef<Enemy | null>(null); // Track the boss enemy entity
+  
   const [debugInfo, setDebugInfo] = useState<{
     fps: number;
     minFps: number;
@@ -107,6 +130,8 @@ export const CoffeeRushGame: React.FC = () => {
     shotsHit: number;
     // Phase 2B-1: Heavy enemy count
     heavyCount: number;
+    // Phase 2B-2: Checkpoint index
+    checkpointIndex: number;
   }>({
     fps: 60,
     minFps: 60,
@@ -123,6 +148,7 @@ export const CoffeeRushGame: React.FC = () => {
     shotsFired: 0,
     shotsHit: 0,
     heavyCount: 0,
+    checkpointIndex: 0,
   });
   
   // Stress test tracking refs
@@ -250,12 +276,47 @@ export const CoffeeRushGame: React.FC = () => {
     setEnergy(0); // Phase 1.6A: Start at 0 (TDS pacing)
     setTips(0);
     setTimeSurvived(0);
+    
+    // Phase 2B-2: Reset boss state
+    bossStateRef.current = {
+      isActive: false,
+      hp: 0,
+      maxHp: GAME_CONFIG.BOSS_HP,
+      spawnedAt: 0,
+      addSpawnTimer: 0,
+    };
+    setBossState(bossStateRef.current);
+    bossIncomingRef.current = 0;
+    bossEnemyRef.current = null;
   }, [enemyPool, projectilePool, tipPool, particlePool]);
   
-  const handlePlay = useCallback(() => {
+  const handlePlay = useCallback((mode: GameMode) => {
+    setGameMode(mode);
     initGame();
     setGameState('PLAY');
   }, [initGame]);
+  
+  // Phase 2B-2: Chapter Clear handler
+  const handleChapterClear = useCallback(() => {
+    const { beansEarned } = updateChapterClear(
+      timeRef.current,
+      tipsRef.current
+    );
+    
+    // Add chapter clear bonus
+    const totalBeans = beansEarned + GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
+    
+    setStats({
+      timeSurvived: timeRef.current,
+      customersServed: customersServedRef.current,
+      totalTips: tipsRef.current,
+      beansEarned: totalBeans,
+      isNewRecord: false,
+      isChapterClear: true,
+      checkpointsCleared: GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT,
+    });
+    setGameState('END');
+  }, []);
   
   const handleGameOver = useCallback(() => {
     // Update records and earn beans
@@ -472,7 +533,12 @@ export const CoffeeRushGame: React.FC = () => {
         shotsHit: shotsHitRef.current,
         // Phase 2B-1: Heavy count
         heavyCount: enemyPool.getActive().filter(e => e.kind === 'HEAVY' && !e.isServed && e.state !== 'SERVED').length,
+        // Phase 2B-2: Checkpoint index
+        checkpointIndex: Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS),
       });
+      
+      // Phase 2B-2: Update boss state for UI
+      setBossState({ ...bossStateRef.current });
     }
     
     // Update difficulty every 30 seconds
@@ -520,9 +586,84 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
+    // Phase 2B-2: Boss spawn logic (Chapter mode only)
+    const checkpointIndex = Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS);
+    const shouldSpawnBoss = gameMode === 'CHAPTER' 
+      && checkpointIndex >= GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT 
+      && !bossStateRef.current.isActive 
+      && bossEnemyRef.current === null;
+    
+    // Boss incoming banner countdown
+    if (bossIncomingRef.current > 0) {
+      bossIncomingRef.current -= deltaTime;
+    }
+    
+    if (shouldSpawnBoss && bossIncomingRef.current <= 0) {
+      // Start boss incoming banner
+      if (bossIncomingRef.current === 0) {
+        bossIncomingRef.current = GAME_CONFIG.BOSS_INCOMING_BANNER_DURATION;
+      } else {
+        // Spawn the boss
+        const bossEnemy = enemyPool.acquire();
+        if (bossEnemy) {
+          const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
+          bossEnemy.kind = 'BOSS';
+          bossEnemy.x = GAME_CONFIG.CANVAS_WIDTH + 50;
+          bossEnemy.y = groundY;
+          bossEnemy.maxHp = GAME_CONFIG.BOSS_HP;
+          bossEnemy.hp = GAME_CONFIG.BOSS_HP;
+          bossEnemy.speed = GAME_CONFIG.ENEMY_BASE_SPEED * GAME_CONFIG.BOSS_SPEED_MULT;
+          bossEnemy.width = Math.floor(GAME_CONFIG.ENEMY_WIDTH * GAME_CONFIG.BOSS_SIZE_MULT);
+          bossEnemy.height = Math.floor(GAME_CONFIG.ENEMY_HEIGHT * GAME_CONFIG.BOSS_SIZE_MULT);
+          bossEnemy.isServed = false;
+          bossEnemy.servedTimer = 0;
+          bossEnemy.state = 'WALKING';
+          bossEnemy.latchedTimer = 0;
+          bossEnemy.queuePosition = 0;
+          
+          bossEnemyRef.current = bossEnemy;
+          bossStateRef.current = {
+            isActive: true,
+            hp: GAME_CONFIG.BOSS_HP,
+            maxHp: GAME_CONFIG.BOSS_HP,
+            spawnedAt: currentTime,
+            addSpawnTimer: GAME_CONFIG.BOSS_ADD_SPAWN_INTERVAL,
+          };
+          
+          // Trigger rush during boss fight
+          difficulty.isMorningRush = true;
+          difficulty.rushTimer = 999; // Boss fight is continuous rush
+        }
+      }
+    }
+    
+    // Update boss state if boss is active
+    if (bossStateRef.current.isActive && bossEnemyRef.current) {
+      const boss = bossEnemyRef.current;
+      
+      // Sync boss HP
+      bossStateRef.current.hp = boss.hp;
+      
+      // Check boss defeat (Chapter Clear!)
+      if (boss.hp <= 0 || boss.isServed || boss.state === 'SERVED') {
+        bossStateRef.current.isActive = false;
+        bossEnemyRef.current = null;
+        difficulty.isMorningRush = false;
+        handleChapterClear();
+        return; // Exit game loop - chapter complete
+      }
+      
+      // Spawn adds during boss fight
+      bossStateRef.current.addSpawnTimer -= deltaTime;
+      if (bossStateRef.current.addSpawnTimer <= 0 && enemyPool.getActive().length < GAME_CONFIG.MAX_ENEMIES - 1) {
+        spawnEnemy();
+        bossStateRef.current.addSpawnTimer = GAME_CONFIG.BOSS_ADD_SPAWN_INTERVAL;
+      }
+    }
+    
     // Spawn enemies (v3.2: warmup pre-rush uses slower spawn rate)
-    // Block spawning during breather period
-    const canSpawn = difficulty.breatherTimer <= 0;
+    // Block spawning during breather period OR when boss incoming banner is showing
+    const canSpawn = difficulty.breatherTimer <= 0 && bossIncomingRef.current <= 0 && !bossStateRef.current.isActive;
     
     const isWarmup = timeRef.current < GAME_CONFIG.EARLY_GAME_SECONDS 
       && difficulty.level === 0 
@@ -633,9 +774,10 @@ export const CoffeeRushGame: React.FC = () => {
       
       // Check if just served (HP <= 0)
       if (enemy.hp <= 0) {
-        // Was latched? Decrement count
+        // Was latched? Decrement count (Boss counts as 2 slots)
         if (enemy.state === 'LATCHED') {
-          latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+          const slotsUsed = enemy.kind === 'BOSS' ? GAME_CONFIG.BOSS_LATCH_SLOTS : 1;
+          latchedCountRef.current = Math.max(0, latchedCountRef.current - slotsUsed);
         }
         
         enemy.state = 'SERVED';
@@ -643,12 +785,17 @@ export const CoffeeRushGame: React.FC = () => {
         enemy.servedTimer = GAME_CONFIG.SERVED_EXIT_DURATION;
         customersServedRef.current++;
         
-        // Drop tip
-        spawnTip(enemy.x, enemy.y - enemy.height);
+        // Drop tip (boss drops bigger tip)
+        const tipCount = enemy.kind === 'BOSS' ? 5 : 1;
+        for (let i = 0; i < tipCount; i++) {
+          spawnTip(enemy.x + (i - 2) * 15, enemy.y - enemy.height);
+        }
         
-        // Celebration particles
-        spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'heart', 3);
-        spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 5);
+        // Celebration particles (more for boss)
+        const particleCount = enemy.kind === 'BOSS' ? 10 : 3;
+        spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'heart', particleCount);
+        spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', particleCount + 2);
+        spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'confetti', enemy.kind === 'BOSS' ? 20 : 0);
         return;
       }
       
@@ -657,16 +804,19 @@ export const CoffeeRushGame: React.FC = () => {
         enemy.latchedTimer -= deltaTime;
         
         if (enemy.latchedTimer <= 0 && activeBlocks.length > 0) {
-          // Deal tick damage to lowest block (Phase 2B-1: Heavy deals 2x)
+          // Deal tick damage to lowest block (Phase 2B-1/2: Heavy 2x, Boss 3x)
           const lowestBlock = activeBlocks[0];
-          const tickDamage = enemy.kind === 'HEAVY' 
-            ? GAME_CONFIG.LATCHED_TICK_DAMAGE * GAME_CONFIG.HEAVY_TICK_DAMAGE_MULT
-            : GAME_CONFIG.LATCHED_TICK_DAMAGE;
+          let tickDamage = GAME_CONFIG.LATCHED_TICK_DAMAGE;
+          if (enemy.kind === 'BOSS') {
+            tickDamage *= GAME_CONFIG.BOSS_TICK_DAMAGE_MULT;
+          } else if (enemy.kind === 'HEAVY') {
+            tickDamage *= GAME_CONFIG.HEAVY_TICK_DAMAGE_MULT;
+          }
           lowestBlock.hp -= tickDamage;
           enemy.latchedTimer = GAME_CONFIG.LATCHED_TICK_INTERVAL;
           
-          // Small damage particles
-          spawnParticles(cartRightEdge, lowestBlock.y + GAME_CONFIG.BLOCK_HEIGHT / 2, 'steam', 2);
+          // Small damage particles (more for boss)
+          spawnParticles(cartRightEdge, lowestBlock.y + GAME_CONFIG.BLOCK_HEIGHT / 2, 'steam', enemy.kind === 'BOSS' ? 5 : 2);
           
           // Check block destruction
           if (lowestBlock.hp <= 0) {
@@ -714,12 +864,15 @@ export const CoffeeRushGame: React.FC = () => {
       
       // Check if reached cart edge
       if (enemy.x - enemy.width / 2 < cartRightEdge) {
-        if (latchedCountRef.current < maxLatched && activeBlocks.length > 0) {
+        // Boss counts as 2 latched slots
+        const slotsNeeded = enemy.kind === 'BOSS' ? GAME_CONFIG.BOSS_LATCH_SLOTS : 1;
+        
+        if (latchedCountRef.current + slotsNeeded <= maxLatched && activeBlocks.length > 0) {
           // Become latched
           enemy.state = 'LATCHED';
           enemy.latchedTimer = GAME_CONFIG.LATCHED_TICK_INTERVAL;
           enemy.x = cartRightEdge + enemy.width / 2;
-          latchedCountRef.current++;
+          latchedCountRef.current += slotsNeeded;
         } else if (activeBlocks.length > 0) {
           // Queue behind - enter queue state (TDS-style line formation)
           enemy.state = 'QUEUED';
@@ -776,7 +929,9 @@ export const CoffeeRushGame: React.FC = () => {
       tipPool.getActive(),
       particlePool.getActive(),
       difficulty,
-      screenShakeRef.current
+      screenShakeRef.current,
+      bossStateRef.current,
+      bossIncomingRef.current
     );
   }, [
     enemyPool, 
@@ -787,7 +942,9 @@ export const CoffeeRushGame: React.FC = () => {
     fireProjectile, 
     spawnParticles, 
     spawnTip, 
-    handleGameOver
+    handleGameOver,
+    handleChapterClear,
+    gameMode
   ]);
   
   useGameLoop(gameLoop, gameState === 'PLAY');
@@ -814,7 +971,9 @@ export const CoffeeRushGame: React.FC = () => {
         [],
         [],
         difficultyRef.current,
-        { x: 0, y: 0 }
+        { x: 0, y: 0 },
+        undefined,
+        0
       );
     }
   }, [gameState]);
@@ -883,6 +1042,9 @@ export const CoffeeRushGame: React.FC = () => {
             shotsFired={debugInfo.shotsFired}
             shotsHit={debugInfo.shotsHit}
             heavyCount={debugInfo.heavyCount}
+            gameMode={gameMode}
+            bossState={bossState}
+            checkpointIndex={debugInfo.checkpointIndex}
             onToggle={() => setShowDebug(prev => !prev)}
             onStressTestToggle={() => setIsStressTest(prev => !prev)}
           />
@@ -892,8 +1054,9 @@ export const CoffeeRushGame: React.FC = () => {
         {gameState === 'END' && (
           <EndScreen 
             stats={stats} 
-            onPlayAgain={handlePlay} 
+            onPlayAgain={() => handlePlay(gameMode)} 
             onHome={handleHome}
+            gameMode={gameMode}
           />
         )}
       </div>
