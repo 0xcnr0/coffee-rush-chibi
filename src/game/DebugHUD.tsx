@@ -21,6 +21,9 @@ interface DebugHUDProps {
   currentTargetX: number | null;
   lastAttackDelta: number;
   activeProjectiles: number;
+  // Phase 2A: Shot counters
+  shotsFired: number;
+  shotsHit: number;
   onToggle: () => void;
   onStressTestToggle: () => void;
 }
@@ -44,6 +47,8 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
   currentTargetX,
   lastAttackDelta,
   activeProjectiles,
+  shotsFired,
+  shotsHit,
   onToggle,
   onStressTestToggle,
 }) => {
@@ -131,6 +136,9 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
           </div>
           <div className="text-cyan-300">
             Projectiles: {activeProjectiles}
+          </div>
+          <div className={shotsHit > 0 ? 'text-green-300' : 'text-red-400'}>
+            Shots: {shotsFired} fired / {shotsHit} hit
           </div>
           
           <div className="border-t border-coffee-cream/20 my-2" />
