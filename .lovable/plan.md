@@ -81,14 +81,34 @@ May need to adjust:
 
 ---
 
+## ✅ PHASE 1.8 - TDS Pacing Polish (COMPLETED)
+
+### Changes Made:
+1. **SAVE_VERSION bumped to 5** - Clean slate for all players
+2. **CART_X_OFFSET and ENEMY_SCALE constants** - Added to config.ts as placeholders for Phase 2
+3. **"☕ Nice!" popup** - Shows for 0.9s when breather starts (after Rush ends)
+4. **breatherTimer passed to GameHUD** - Enables breather feedback
+
+### Notes:
+- Energy already starts at 0 (from Phase 1.6A)
+- Checkpoint interval already 20s (from previous updates)
+- Cart position and enemy scale unchanged (Phase 2)
+
+---
+
 ## Future Phases (Not Yet Implemented)
 
-### Phase 2 - Weapons/Attachments
+### Phase 2 - Layout & Pacing Tweaks
+- Cart position adjustment (CART_X_OFFSET)
+- Enemy size scaling (ENEMY_SCALE -10%)
+- Speed/spawn micro-rebalance
+
+### Phase 2.5 - Weapons/Attachments
 - Saw blade or other attachments for cargo boxes
 - Heavy enemy / mini-boss variants
 - Chapter/Boss system (optional)
 
-### Phase 2.5 - Polish
+### Phase 3 - Polish
 - Tutorial hints (first run guidance)
 - More particle effects for upgrades
 - Sound effects integration

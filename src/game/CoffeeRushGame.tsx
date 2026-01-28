@@ -779,6 +779,7 @@ export const CoffeeRushGame: React.FC = () => {
             energy={energy}
             maxEnergy={GAME_CONFIG.MAX_ENERGY}
             isMorningRush={difficultyRef.current.isMorningRush}
+            breatherTimer={difficultyRef.current.breatherTimer}
             onTonicBomb={handleTonicBomb}
             canUseBomb={canUseBomb}
           />
