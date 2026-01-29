@@ -677,12 +677,12 @@ export const CoffeeRushGame: React.FC = () => {
       
       if (difficulty.rushTimer <= 0) {
         difficulty.isMorningRush = false;
-        // Start breather period - pause spawns after Rush
-        difficulty.breatherTimer = GAME_CONFIG.BREATHER_DURATION;
+        // Start post-rush recovery period - gradual spawn ramp-up
+        difficulty.breatherTimer = GAME_CONFIG.POST_RUSH_RECOVERY_DURATION;
       }
     }
     
-    // Update breather timer
+    // Update recovery timer (gradual ramp-up)
     if (difficulty.breatherTimer > 0) {
       difficulty.breatherTimer -= deltaTime;
     }
@@ -774,17 +774,20 @@ export const CoffeeRushGame: React.FC = () => {
         return; // Exit game loop - chapter complete
       }
       
-      // Spawn adds during boss fight
-      bossStateRef.current.addSpawnTimer -= deltaTime;
-      if (bossStateRef.current.addSpawnTimer <= 0 && enemyPool.getActive().length < GAME_CONFIG.MAX_ENEMIES - 1) {
-        spawnEnemy();
-        bossStateRef.current.addSpawnTimer = GAME_CONFIG.BOSS_ADD_SPAWN_INTERVAL;
+      // Chapter 1 boss is 1v1 - no add spawns (BOSS_ADD_SPAWN_INTERVAL = 0)
+      // Only spawn adds if interval > 0 (for future Chapter 2+ bosses)
+      if (GAME_CONFIG.BOSS_ADD_SPAWN_INTERVAL > 0) {
+        bossStateRef.current.addSpawnTimer -= deltaTime;
+        if (bossStateRef.current.addSpawnTimer <= 0 && enemyPool.getActive().length < GAME_CONFIG.MAX_ENEMIES - 1) {
+          spawnEnemy();
+          bossStateRef.current.addSpawnTimer = GAME_CONFIG.BOSS_ADD_SPAWN_INTERVAL;
+        }
       }
     }
     
     // Spawn enemies (v3.2: warmup pre-rush uses slower spawn rate)
-    // Block spawning during breather period OR when boss incoming banner is showing
-    const canSpawn = difficulty.breatherTimer <= 0 && bossIncomingRef.current <= 0 && !bossStateRef.current.isActive;
+    // Block spawning when boss incoming banner is showing or boss is active (1v1 fight)
+    const canSpawn = bossIncomingRef.current <= 0 && !bossStateRef.current.isActive;
     
     const isWarmup = timeRef.current < GAME_CONFIG.EARLY_GAME_SECONDS 
       && difficulty.level === 0 
@@ -801,7 +804,17 @@ export const CoffeeRushGame: React.FC = () => {
     const chapterRushMult = isChapterPreBossSpawn ? 2.5 : GAME_CONFIG.RUSH_SPAWN_MULTIPLIER;
     const stressRushMultiplier = isStressTest ? 1.2 : chapterRushMult;
     const rushMultiplier = difficulty.isMorningRush ? stressRushMultiplier : 1;
-    const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval / rushMultiplier);
+    
+    // Post-rush recovery: gradual spawn rate ramp-up (30% → 100% over recovery duration)
+    let recoveryMultiplier = 1;
+    if (difficulty.breatherTimer > 0 && !difficulty.isMorningRush) {
+      const recoveryProgress = 1 - (difficulty.breatherTimer / GAME_CONFIG.POST_RUSH_RECOVERY_DURATION);
+      const startMult = GAME_CONFIG.POST_RUSH_SPAWN_MULT_START;
+      const endMult = GAME_CONFIG.POST_RUSH_SPAWN_MULT_END;
+      recoveryMultiplier = startMult + (endMult - startMult) * recoveryProgress;
+    }
+    
+    const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval / rushMultiplier / recoveryMultiplier);
     
     if (canSpawn && currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
       spawnEnemy();

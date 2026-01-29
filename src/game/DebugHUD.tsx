@@ -185,7 +185,7 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
                 <div>Last Atk Δ: {lastAttackDelta.toFixed(2)}s</div>
                 <div>Target: {currentTargetId !== null ? `#${currentTargetId}` : 'none'}</div>
                 {breatherTimer > 0 && (
-                  <div className="text-green-400">Breather: {breatherTimer.toFixed(1)}s</div>
+                  <div className="text-cyan-400">Recovery: {breatherTimer.toFixed(1)}s</div>
                 )}
               </div>
 
