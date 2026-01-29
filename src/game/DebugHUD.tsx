@@ -18,17 +18,13 @@ interface DebugHUDProps {
   isStressTest: boolean;
   latchedCount: number;
   breatherTimer: number;
-  // Phase 1.8: Combat debug info
   currentTargetId: number | null;
   currentTargetX: number | null;
   lastAttackDelta: number;
   activeProjectiles: number;
-  // Phase 2A: Shot counters
   shotsFired: number;
   shotsHit: number;
-  // Phase 2B-1: Heavy enemy count
   heavyCount: number;
-  // Phase 2B-2: Boss and Chapter state
   gameMode: GameMode;
   bossState: BossState;
   checkpointIndex: number;
@@ -64,14 +60,13 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
   onToggle,
   onStressTestToggle,
 }) => {
-  const isOverCap = activeEnemies > maxEnemies;
+  const [isCompact, setIsCompact] = useState(true);
+  const [showDevTools, setShowDevTools] = useState(false);
+  
   const maxLatched = isMorningRush 
     ? GAME_CONFIG.MAX_LATCHED_ENEMIES + GAME_CONFIG.RUSH_LATCHED_BONUS
     : GAME_CONFIG.MAX_LATCHED_ENEMIES;
-  
-  // Phase 2B-3: Dev/test tools state
-  const [showDevTools, setShowDevTools] = useState(false);
-  
+
   // Dev tool handlers
   const handleAddBeans = () => {
     const prog = loadProgression();
@@ -92,173 +87,147 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
     alert(`Upgrades set to level ${level}. Restart game to apply.`);
   };
 
+  // FPS color helper
+  const getFpsColor = (value: number) => {
+    if (value < 30) return 'text-red-400';
+    if (value < 50) return 'text-yellow-400';
+    return 'text-green-400';
+  };
+
   return (
     <>
-      {/* Toggle Button */}
+      {/* Toggle Button - Always visible */}
       <button
         onClick={onToggle}
-        className="absolute top-20 left-3 z-20 bg-coffee-dark/80 text-coffee-cream px-2 py-1 rounded text-xs font-mono"
+        className="fixed top-2 left-2 z-50 bg-black/70 text-white px-2 py-1 rounded text-xs font-mono backdrop-blur-sm"
       >
         {isVisible ? '🐛 Hide' : '🐛 Debug'}
       </button>
 
-      {/* Debug Panel */}
+      {/* Compact Debug Panel */}
       {isVisible && (
-        <div className="absolute top-28 left-3 z-20 bg-coffee-dark/90 text-coffee-cream p-3 rounded-lg text-xs font-mono space-y-1 min-w-[220px]">
-          <div className="text-gold font-bold mb-2">DEBUG INFO</div>
-          
-          {/* Stress Test Toggle */}
-          <button
-            onClick={onStressTestToggle}
-            className={`w-full py-1 px-2 rounded text-xs font-bold mb-2 ${
-              isStressTest 
-                ? 'bg-red-500 text-white animate-pulse' 
-                : 'bg-gray-600 text-gray-300'
-            }`}
-          >
-            {isStressTest ? '🔥 STRESS TEST ON' : '⚡ Enable Stress Test'}
-          </button>
-          
-          {/* FPS */}
-          <div className={fps < 30 ? 'text-red-400' : fps < 50 ? 'text-yellow-400' : 'text-green-400'}>
-            FPS: {fps.toFixed(1)}
-          </div>
-          <div className={minFps < 30 ? 'text-red-400' : minFps < 50 ? 'text-yellow-400' : 'text-gray-400'}>
-            Min FPS (10s): {minFps.toFixed(1)}
-          </div>
-          
-          {/* Enemy Count */}
-          <div className={isOverCap ? 'text-red-400 font-bold animate-pulse' : ''}>
-            Enemies: {activeEnemies} / {maxEnemies}
-            {heavyCount > 0 && <span className="text-amber-400 ml-1">(Heavy: {heavyCount})</span>}
-            {isOverCap && ' ⚠️ OVER CAP!'}
-          </div>
-          <div className="text-purple-300">
-            Max Seen: {maxActiveEnemiesSeen}
-          </div>
-          
-          <div className="border-t border-coffee-cream/20 my-2" />
-          
-          {/* Latched Info (TDS Panic) */}
-          <div className={latchedCount >= maxLatched ? 'text-red-400 font-bold' : 'text-orange-300'}>
-            Latched: {latchedCount}/{maxLatched} {latchedCount >= maxLatched && '🔥'}
-          </div>
-          <div className="text-gray-400">
-            Tick DMG: {GAME_CONFIG.LATCHED_TICK_DAMAGE} / {GAME_CONFIG.LATCHED_TICK_INTERVAL}s
-          </div>
-          {breatherTimer > 0 && (
-            <div className="text-green-400">
-              Breather: {breatherTimer.toFixed(1)}s ☕
-            </div>
-          )}
-          
-          <div className="border-t border-coffee-cream/20 my-2" />
-          
-          {/* Spawn Info */}
-          <div>
-            Spawn: {effectiveSpawnInterval.toFixed(0)}ms
-            {isMorningRush && <span className="text-warm-orange ml-1">☕ RUSH</span>}
-          </div>
-          
-          <div className="border-t border-coffee-cream/20 my-2" />
-          
-          {/* Phase 1.8: Combat Debug */}
-          <div className="text-gold font-bold mb-1">COMBAT</div>
-          <div className="text-cyan-300">
-            Target: {currentTargetId !== null ? `#${currentTargetId} @ ${currentTargetX?.toFixed(0)}px` : 'none'}
-          </div>
-          <div className="text-cyan-300">
-            Last Atk Δ: {lastAttackDelta.toFixed(2)}s
-          </div>
-          <div className="text-cyan-300">
-            Projectiles: {activeProjectiles}
-          </div>
-          <div className={shotsHit > 0 ? 'text-green-300' : 'text-red-400'}>
-            Shots: {shotsFired} fired / {shotsHit} hit
-          </div>
-          
-          <div className="border-t border-coffee-cream/20 my-2" />
-          
-          {/* Phase 2B-2: Chapter/Boss Debug */}
-          <div className="text-gold font-bold mb-1">CHAPTER</div>
-          <div className="text-purple-300">
-            Mode: {gameMode}
-          </div>
-          <div className="text-purple-300">
-            Checkpoint: {checkpointIndex}/{GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT}
-          </div>
-          {bossState.isActive && (
-            <>
-              <div className="text-red-400 font-bold animate-pulse">
-                🔥 BOSS ACTIVE
-              </div>
-              <div className="text-red-300">
-                Boss HP: {bossState.hp}/{bossState.maxHp} ({Math.round(bossState.hp / bossState.maxHp * 100)}%)
-              </div>
-            </>
-          )}
-          
-          <div className="border-t border-coffee-cream/20 my-2" />
-          
-          {/* Multipliers */}
-          <div className={isStressTest ? 'text-red-300' : 'text-sky-300'}>
-            DMG×: {damageMultiplier.toFixed(2)} {isStressTest && '(stress)'}
-          </div>
-          <div className="text-sky-300">
-            Energy×: {energyRegenMultiplier.toFixed(2)}
-          </div>
-          <div className="text-sky-300">
-            Block HP: {effectiveBlockHp}
-          </div>
-          
-          {isStressTest && (
-            <div className="mt-2 text-red-400 text-[10px] border-t border-red-500/50 pt-2">
-              ⚠️ Stress mode: DMG↓ Spawn↑ Rush↑
-            </div>
-          )}
-          
-          {/* Phase 2B-3: Dev/Test Tools */}
-          <div className="border-t border-coffee-cream/20 my-2" />
-          <button
-            onClick={() => setShowDevTools(!showDevTools)}
-            className="w-full py-1 px-2 rounded text-xs font-bold bg-purple-600 text-white mb-2"
-          >
-            {showDevTools ? '🛠️ Hide Dev Tools' : '🛠️ Dev Tools'}
-          </button>
-          
-          {showDevTools && (
-            <div className="space-y-2 border border-purple-500/50 rounded p-2 bg-purple-900/30">
-              <div className="text-purple-300 text-[10px] font-bold">BALANCE TESTING</div>
-              
-              {/* +200 Beans */}
+        <div 
+          className="fixed top-10 left-2 z-50 w-[92vw] max-w-[420px] max-h-[35vh] 
+                     rounded-xl bg-black/75 text-white text-[11px] leading-4 
+                     backdrop-blur-sm px-3 py-2 overflow-y-auto pointer-events-auto"
+        >
+          {/* Header with mode toggle */}
+          <div className="flex items-center justify-between mb-2 pb-1 border-b border-white/20">
+            <span className="font-bold text-gold">DEBUG</span>
+            <div className="flex gap-1">
               <button
-                onClick={handleAddBeans}
-                className="w-full py-1 px-2 rounded text-xs bg-gold text-coffee-espresso font-bold"
+                onClick={() => setIsCompact(!isCompact)}
+                className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px]"
               >
-                💰 +200 Beans
+                {isCompact ? '📖 Full' : '📑 Compact'}
               </button>
-              
-              {/* Upgrade Presets */}
-              <div className="text-[10px] text-purple-300 mt-1">Set All Upgrades:</div>
-              <div className="flex gap-1">
-                {[0, 1, 2, 3].map(level => (
-                  <button
-                    key={level}
-                    onClick={() => handleSetUpgradePreset(level)}
-                    className="flex-1 py-1 rounded text-xs bg-purple-700 text-white font-bold hover:bg-purple-600"
-                  >
-                    L{level}
-                  </button>
-                ))}
+              <button
+                onClick={onStressTestToggle}
+                className={`px-2 py-0.5 rounded text-[10px] ${
+                  isStressTest 
+                    ? 'bg-red-500 text-white animate-pulse' 
+                    : 'bg-white/10 hover:bg-white/20'
+                }`}
+              >
+                {isStressTest ? '🔥' : '⚡'}
+              </button>
+            </div>
+          </div>
+
+          {/* Core Metrics Grid - Always visible */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+            {/* FPS */}
+            <div className={getFpsColor(fps)}>FPS: {fps.toFixed(0)}</div>
+            <div className={getFpsColor(minFps)}>Min: {minFps.toFixed(0)}</div>
+            
+            {/* Enemies */}
+            <div className={activeEnemies > maxEnemies ? 'text-red-400 font-bold' : ''}>
+              Enemies: {activeEnemies}/{maxEnemies}
+            </div>
+            <div className="text-amber-400">Heavy: {heavyCount}</div>
+            
+            {/* Latched & Rush */}
+            <div className={latchedCount >= maxLatched ? 'text-red-400 font-bold' : 'text-orange-300'}>
+              Latched: {latchedCount}/{maxLatched}
+            </div>
+            <div className={isMorningRush ? 'text-warm-orange font-bold' : 'text-gray-400'}>
+              Rush: {isMorningRush ? '☕ ON' : 'OFF'}
+            </div>
+            
+            {/* Shots */}
+            <div className="text-cyan-300">
+              Shots: {shotsFired}/{shotsHit}
+            </div>
+            <div className="text-cyan-300">Proj: {activeProjectiles}</div>
+            
+            {/* Chapter */}
+            <div className="text-purple-300">CP: {checkpointIndex}/{GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT}</div>
+            <div className="text-purple-300">Mode: {gameMode}</div>
+            
+            {/* Boss HP - spans 2 cols when active */}
+            {bossState.isActive && (
+              <div className="col-span-2 text-red-400 font-bold animate-pulse">
+                🔥 Boss HP: {bossState.hp}/{bossState.maxHp} ({Math.round(bossState.hp / bossState.maxHp * 100)}%)
               </div>
-              
-              {/* Test Checklist */}
-              <div className="text-[10px] text-purple-200 mt-2 border-t border-purple-500/30 pt-2">
-                <div className="font-bold mb-1">Test Targets:</div>
-                <div>• L0: Die before/during Rush1</div>
-                <div>• L1: Survive Rush1</div>
-                <div>• L2: Reach Boss</div>
-                <div>• L3: Clear Chapter</div>
+            )}
+          </div>
+
+          {/* Expandable Full Mode */}
+          {!isCompact && (
+            <div className="mt-2 pt-2 border-t border-white/20 space-y-2">
+              {/* Extended Stats */}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-gray-300">
+                <div>Max Seen: {maxActiveEnemiesSeen}</div>
+                <div>Spawn: {effectiveSpawnInterval.toFixed(0)}ms</div>
+                <div>DMG×: {damageMultiplier.toFixed(2)}</div>
+                <div>Energy×: {energyRegenMultiplier.toFixed(2)}</div>
+                <div>Block HP: {effectiveBlockHp}</div>
+                <div>Last Atk Δ: {lastAttackDelta.toFixed(2)}s</div>
+                <div>Target: {currentTargetId !== null ? `#${currentTargetId}` : 'none'}</div>
+                {breatherTimer > 0 && (
+                  <div className="text-green-400">Breather: {breatherTimer.toFixed(1)}s</div>
+                )}
+              </div>
+
+              {/* Dev Tools Section */}
+              <div className="pt-2 border-t border-white/20">
+                <button
+                  onClick={() => setShowDevTools(!showDevTools)}
+                  className="w-full py-1 px-2 rounded text-[10px] font-bold bg-purple-600/80 text-white mb-2"
+                >
+                  {showDevTools ? '🛠️ Hide Dev Tools' : '🛠️ Dev Tools'}
+                </button>
+                
+                {showDevTools && (
+                  <div className="space-y-2 border border-purple-500/50 rounded p-2 bg-purple-900/30">
+                    <button
+                      onClick={handleAddBeans}
+                      className="w-full py-1 px-2 rounded text-[10px] bg-gold text-coffee-espresso font-bold"
+                    >
+                      💰 +200 Beans
+                    </button>
+                    
+                    <div className="text-[10px] text-purple-300">Set All Upgrades:</div>
+                    <div className="flex gap-1">
+                      {[0, 1, 2, 3].map(level => (
+                        <button
+                          key={level}
+                          onClick={() => handleSetUpgradePreset(level)}
+                          className="flex-1 py-1 rounded text-[10px] bg-purple-700 text-white font-bold hover:bg-purple-600"
+                        >
+                          L{level}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="text-[9px] text-purple-200 mt-1 border-t border-purple-500/30 pt-1">
+                      <div className="font-bold mb-0.5">Test Targets:</div>
+                      <div>• L0: Die @ Rush1</div>
+                      <div>• L2: Reach CP2</div>
+                      <div>• L4: Beat Boss</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
