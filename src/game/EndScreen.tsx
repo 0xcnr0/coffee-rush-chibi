@@ -40,7 +40,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-start overflow-y-auto bg-gradient-to-b from-gold/20 to-coffee-espresso/95 p-4 pt-8 z-20">
         {/* Victory Title */}
-        <div className="mb-6 animate-pop-in">
+        <div className="mb-4 animate-pop-in">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Star className="w-8 h-8 text-gold animate-pulse" />
             <h2 className="text-3xl font-bold text-gold text-center">
@@ -54,61 +54,76 @@ export const EndScreen: React.FC<EndScreenProps> = ({
         </div>
         
         {/* Primary Score - Time */}
-        <div className="bg-gold/20 border-2 border-gold rounded-2xl p-5 mb-4 w-full max-w-xs animate-pop-in">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Trophy className="w-6 h-6 text-gold" />
-            <span className="text-coffee-cream">Clear Time</span>
+        <div className="bg-gold/20 border-2 border-gold rounded-2xl p-4 mb-3 w-full max-w-xs animate-pop-in">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Trophy className="w-5 h-5 text-gold" />
+            <span className="text-coffee-cream text-sm">Clear Time</span>
           </div>
-          <div className="text-4xl font-bold text-gold text-center">
+          <div className="text-3xl font-bold text-gold text-center">
             {formatTime(stats.timeSurvived)}
           </div>
           {progression.bestChapter1Time > 0 && progression.bestChapter1Time < stats.timeSurvived && (
-            <div className="text-coffee-light/60 text-sm text-center mt-1">
+            <div className="text-coffee-light/60 text-xs text-center mt-1">
               Best: {formatTime(progression.bestChapter1Time)}
             </div>
           )}
         </div>
         
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 w-full max-w-xs mb-4">
-          <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
-            <Users className="w-5 h-5 text-secondary mx-auto mb-1" />
-            <div className="text-xl font-bold text-coffee-cream">
+        <div className="grid grid-cols-2 gap-2 w-full max-w-xs mb-3">
+          <div className="bg-coffee-dark/50 rounded-xl p-2 text-center animate-pop-in">
+            <Users className="w-4 h-4 text-secondary mx-auto mb-1" />
+            <div className="text-lg font-bold text-coffee-cream">
               {stats.customersServed}
             </div>
-            <div className="text-xs text-coffee-light">Served</div>
+            <div className="text-[10px] text-coffee-light">Served</div>
           </div>
           
-          <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
-            <span className="text-lg block mb-1">🏁</span>
-            <div className="text-xl font-bold text-warm-orange">
+          <div className="bg-coffee-dark/50 rounded-xl p-2 text-center animate-pop-in">
+            <span className="text-base block mb-1">🏁</span>
+            <div className="text-lg font-bold text-warm-orange">
               {stats.checkpointsCleared || Math.floor(stats.timeSurvived / GAME_CONFIG.CHECKPOINT_SECONDS)}
             </div>
-            <div className="text-xs text-coffee-light">Checkpoints</div>
+            <div className="text-[10px] text-coffee-light">Checkpoints</div>
           </div>
         </div>
         
         {/* Beans Earned (with bonus) */}
-        <div className="bg-gold/30 border border-gold/50 rounded-xl p-4 w-full max-w-xs mb-6 animate-pop-in">
+        <div className="bg-gold/30 border border-gold/50 rounded-xl p-3 w-full max-w-xs mb-3 animate-pop-in">
           <div className="flex items-center justify-center gap-3">
-            <span className="text-2xl">🫘</span>
+            <span className="text-xl">🫘</span>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gold">
+              <div className="text-xl font-bold text-gold">
                 +{stats.beansEarned}
               </div>
-              <div className="text-xs text-coffee-cream/70">
+              <div className="text-[10px] text-coffee-cream/70">
                 (Tips + {GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS} Clear Bonus)
               </div>
             </div>
           </div>
         </div>
         
+        {/* Chapter 2 Teaser */}
+        <div className="bg-coffee-dark/60 border border-coffee-cream/20 rounded-xl p-3 w-full max-w-xs mb-4 animate-pop-in">
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-lg">🔒</span>
+            <div className="text-center">
+              <div className="text-sm font-bold text-coffee-cream/70">
+                Chapter 2
+              </div>
+              <div className="text-[10px] text-coffee-cream/50">
+                Coming Soon...
+              </div>
+            </div>
+          </div>
+        </div>
+        
         {/* Buttons */}
-        <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
+        <div className="flex flex-col gap-2 w-full max-w-xs">
           <Button
             onClick={onPlayAgain}
             size="lg"
-            className="bg-gold hover:bg-gold/90 text-coffee-espresso text-lg px-8 py-5 rounded-xl shadow-lg transform hover:scale-105 transition-transform"
+            className="bg-gold hover:bg-gold/90 text-coffee-espresso text-lg px-8 py-4 rounded-xl shadow-lg transform hover:scale-105 transition-transform"
           >
             🏆 Play Again
           </Button>
@@ -132,7 +147,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
         )}
         
         {/* Share hint */}
-        <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4">
+        <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4 pb-4">
           {shareText}
         </p>
       </div>

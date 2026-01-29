@@ -22,7 +22,7 @@ interface GameHUDProps {
 }
 
 const CHECKPOINT_INTERVAL = 20; // seconds per checkpoint (v3.3: more frequent milestones)
-const TOTAL_CHECKPOINTS = 9;   // 3 minutes total display
+const TOTAL_CHECKPOINTS = 9;   // 3 minutes total display for endless
 
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived,
@@ -100,19 +100,43 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       
       {/* Top Bar */}
       <div className={`absolute top-0 left-0 right-0 flex flex-col gap-2 p-3 z-10 ${isMorningRush && !bossState.isActive ? 'morning-rush-pulse bg-warm-orange/20' : ''} ${bossState.isActive ? 'bg-red-900/20' : ''}`}>
-        {/* Chapter Mode: CP indicator instead of endless bar */}
+        {/* Chapter Mode: CP1/CP2/CP3/BOSS segment bar */}
         {isChapter ? (
-          <div className="flex items-center justify-between px-1">
-            <div className="bg-coffee-dark/80 rounded-lg px-3 py-1.5 flex items-center gap-2">
-              <span className="text-warm-orange font-bold text-sm">Chapter 1</span>
-              <span className="text-coffee-cream/60">•</span>
-              <span className="text-coffee-cream text-sm">
-                CP <span className="text-gold font-bold">{checkpointIndex}</span>/{bossCheckpoint}
-              </span>
+          <div className="flex flex-col gap-1 px-1">
+            {/* Chapter Progress Segments */}
+            <div className="flex gap-1">
+              {/* CP1, CP2, CP3 segments */}
+              {[1, 2, 3].map((cp) => {
+                const cpProgress = checkpointIndex >= cp ? 100 : 
+                                   checkpointIndex === cp - 1 ? 
+                                   ((timeSurvived % GAME_CONFIG.CHECKPOINT_SECONDS) / GAME_CONFIG.CHECKPOINT_SECONDS) * 100 : 0;
+                return (
+                  <div key={cp} className="flex-1 flex flex-col items-center">
+                    <div className="w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60">
+                      <div 
+                        className="h-full transition-all duration-300 bg-gold"
+                        style={{ width: `${cpProgress}%` }}
+                      />
+                    </div>
+                    <span className={`text-[10px] mt-0.5 ${checkpointIndex >= cp ? 'text-gold' : 'text-coffee-cream/40'}`}>
+                      CP{cp}
+                    </span>
+                  </div>
+                );
+              })}
+              {/* BOSS segment */}
+              <div className="flex-1 flex flex-col items-center">
+                <div className={`w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60 ${bossIncomingTimer > 0 || bossState.isActive ? 'ring-1 ring-red-500 animate-pulse' : ''}`}>
+                  <div 
+                    className={`h-full transition-all duration-300 ${bossState.isActive ? 'bg-red-500' : 'bg-red-400'}`}
+                    style={{ width: `${bossState.isActive ? (bossState.hp / bossState.maxHp) * 100 : (checkpointIndex >= bossCheckpoint ? 100 : 0)}%` }}
+                  />
+                </div>
+                <span className={`text-[10px] mt-0.5 ${bossState.isActive ? 'text-red-400 font-bold animate-pulse' : checkpointIndex >= bossCheckpoint ? 'text-red-400' : 'text-coffee-cream/40'}`}>
+                  👑BOSS
+                </span>
+              </div>
             </div>
-            {checkpointIndex >= bossCheckpoint && !bossState.isActive && !bossIncomingTimer && (
-              <span className="text-gold text-sm font-bold animate-pulse">Boss Soon!</span>
-            )}
           </div>
         ) : (
           /* Endless Mode: Original checkpoint bar */
@@ -153,8 +177,15 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </span>
           </div>
           
-          {/* Mode indicator + Rush */}
+          {/* Mode indicator + Rush/Boss Phase */}
           <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+            {/* BOSS PHASE indicator (replaces Rush during boss) */}
+            {bossState.isActive && (
+              <div className="bg-red-600 text-coffee-foam px-4 py-1.5 rounded-full text-sm font-bold animate-pulse shadow-lg border border-red-400">
+                👑 BOSS PHASE
+              </div>
+            )}
+            
             {/* Morning Rush Indicator (not during boss) */}
             {isMorningRush && !bossState.isActive && (
               <div className="bg-warm-orange text-coffee-foam px-3 py-1 rounded-full text-sm font-bold animate-pulse">
@@ -163,7 +194,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             )}
             
             {/* "Nice!" popup during breather */}
-            {showNice && (
+            {showNice && !bossState.isActive && (
               <div className="bg-energy/90 text-coffee-foam px-4 py-2 rounded-full text-sm font-bold animate-fade-in shadow-lg">
                 ☕ Nice!
               </div>
@@ -206,9 +237,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
           
-          {/* Tonic Bomb Button - Phase 2C: Show bomb charges */}
+          {/* Tonic Bomb Button - Phase 2D: Show capped bomb charges */}
           {(() => {
-            const bombCharges = Math.floor(energy / GAME_CONFIG.TONIC_BOMB_COST);
+            const rawCharges = Math.floor(energy / GAME_CONFIG.TONIC_BOMB_COST);
+            const bombCharges = Math.min(rawCharges, GAME_CONFIG.MAX_BOMB_CHARGES);
             return (
               <Button
                 onClick={onTonicBomb}
