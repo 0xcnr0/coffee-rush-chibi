@@ -98,9 +98,11 @@ export const GAME_CONFIG = {
   LATCHED_QUEUE_SPACING: 12,     // pixels between queued enemies (v3.3: clearer queue)
   
   // ─────────────────────────────────────────────────────────────
-  // BREATHER (post-rush pause)
+  // POST-RUSH RECOVERY (gradual ramp-up instead of hard pause)
   // ─────────────────────────────────────────────────────────────
-  BREATHER_DURATION: 2,          // seconds of no spawns after Rush
+  POST_RUSH_RECOVERY_DURATION: 8, // seconds of gradual spawn ramp-up after Rush
+  POST_RUSH_SPAWN_MULT_START: 0.3, // spawn rate multiplier at start of recovery (30%)
+  POST_RUSH_SPAWN_MULT_END: 1.0,   // spawn rate multiplier at end of recovery (100%)
   
   // ─────────────────────────────────────────────────────────────
   // PARTICLES & VFX
@@ -163,7 +165,7 @@ export const GAME_CONFIG = {
   BOSS_SIZE_MULT: 1.4,             // 40% larger than normal
   BOSS_TICK_DAMAGE_MULT: 3.0,      // 3x latched tick damage
   BOSS_LATCH_SLOTS: 2,             // Counts as 2 latched slots
-  BOSS_ADD_SPAWN_INTERVAL: 2.0,    // Spawn adds every 2 seconds during boss fight
+  BOSS_ADD_SPAWN_INTERVAL: 0,      // No add spawns during Chapter 1 boss (1v1 fight)
   BOSS_INCOMING_BANNER_DURATION: 1.5, // Seconds to show "BOSS INCOMING" banner
   CHAPTER_CLEAR_BONUS_BEANS: 50,   // Bonus beans for clearing chapter
 } as const;
