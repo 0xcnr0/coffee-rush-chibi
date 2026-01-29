@@ -1,89 +1,60 @@
 
 
-# Phase 2C: Balance & Feel Polish - Upgrade Impact Tuning
+# Fix: Run Summary Görünmüyor - Scroll Ekleme
 
-## Problem Summary
+## Sorun
 
-ChatGPT'nin video analizine gore: tum presetler (0-4) CP1 civarinda (20-40s) oluyor. Bu, L2-L3 upgrade'lerin dramatik sekilde daha guclu hissetmesi gerektigini gosteriyor.
+Screenshot'ta görüldüğü gibi, EndScreen içeriği ekranı tam dolduruyor:
+- Chapter Failed başlığı
+- Time Survived kartı  
+- Served / Tips / Checkpoints / Beans istatistikleri
+- Play Again ve Home butonları
+- Cargo Box tip'i
 
-| Preset | Gerceklesen | Hedef |
-|--------|------------|-------|
-| 0 | ~24s (CP1) | Rush1'de ol |
-| 1 | ~28s (CP1) | Rush1 gecilebilir |
-| 2 | ~32s (CP1) | CP2'ye ulasmali |
-| 4 | ~38s (CP1) | Boss'a (60s) ulasmali |
+**RunSummary bileşeni** kodda butonların altında yer alıyor (satır 255-257) ama ekran scroll edilemediği için görünmüyor.
 
-## Cozum: Upgrade Etkisini Artir
+## Çözüm
 
-### A) Upgrade Bonus Degerleri (config.ts satir 117-135)
+EndScreen container'a scroll özelliği ekle:
+- `flex-col` yerine `overflow-y-auto` ile scroll container
+- Content'i içeride tutarak mobil ekranlarda RunSummary'e ulaşılabilsin
+- Ayrıca RunSummary'i butonların hemen üstüne taşı (daha görünür konum)
 
-**Mevcut -> Yeni:**
+## Teknik Değişiklikler
 
-```text
-ESPRESSO_BONUS_PER_LEVEL: 0.20 -> 0.25  (L3: +60% -> +75%)
-TOWER_HP_BONUS_PER_LEVEL: 0.25 -> 0.30  (L3: +75% -> +90%)
-ENERGY_BONUS_PER_LEVEL: 0.15 -> 0.22    (L3: +45% -> +66%)
+### 1. EndScreen.tsx - Scroll Ekleme
+
+**Satır 146** - Ana container'a scroll ekle:
+
+```typescript
+// Mevcut:
+<div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-coffee-dark/95 to-coffee-espresso/95 p-4 z-20">
+
+// Yeni:
+<div className="absolute inset-0 flex flex-col items-center justify-start overflow-y-auto bg-gradient-to-b from-coffee-dark/95 to-coffee-espresso/95 p-4 pt-8 z-20">
 ```
 
-### B) Multiplier Cap'leri Guncelle
+`justify-center` → `justify-start` + `overflow-y-auto` + `pt-8` padding
 
-Mevcut cap'ler cok dusuk, L3'un tam etkisini engelliyor:
+### 2. RunSummary Konumunu Değiştir (Opsiyonel)
 
-```text
-MAX_DAMAGE_MULTIPLIER: 1.65 -> 1.80     (L3 + base = 1.75 desteklensin)
-MAX_BLOCK_HP_MULTIPLIER: 1.8 -> 2.0     (L3 + base = 1.90 desteklensin)
-MAX_ENERGY_MULTIPLIER: 1.5 -> 1.70      (L3 + base = 1.66 desteklensin)
-```
+RunSummary'i butonların üstüne taşı ki kullanıcı hemen görsün:
+- Mevcut: Butonlar → Cargo Hint → RunSummary → Share text
+- Yeni: Butonlar → RunSummary → Cargo Hint → Share text
 
-### C) Rush Yumusatma (Opsiyonel)
+Veya RunSummary'e margin-top ekleyerek daha görünür yap.
 
-Eger hala CP1'de boguluyor olunursa:
+### 3. Chapter Clear Screen için Aynı Fix
 
-```text
-RUSH_SPAWN_MULTIPLIER: 2.8 -> 2.5
-```
+Satır 41'deki Chapter Clear screen'i de aynı scroll fix'ini almalı.
 
-Bu degisikligi simdilik YAPMIYORUZ, once upgrade buff'i test edilecek.
+## Beklenen Sonuç
 
-## Degistirilecek Dosya
-
-Sadece `src/game/config.ts` - 6 satir degerini degistir.
-
-## Beklenen Sonuc
-
-| Preset | Yeni Hedef |
-|--------|-----------|
-| L0 | Rush1'de ol veya zar zor gec |
-| L1 (Cargo +1) | Rush1 gecilebilir, CP2 oncesi ol |
-| L2 (Cargo max) | CP1 rahat, CP2'de zorlan |
-| L3 (Dengeli) | CP2'ye ulas (40s+), boss'a yaklas |
-| L4 (Full) | Boss'a kesin ulas (60s), clear sansi |
-
-## Test Proseduru
-
-1. Debug HUD ac -> Dev Tools -> L0 sec -> Oyna
-2. Rush1'de ol veya zar zor gec
-3. L2 sec -> Oyunu yeniden baslat
-4. CP2'ye (40s) ulasabildigin dogrula
-5. L4 sec -> Oyunu yeniden baslat
-6. Boss spawn (60s) gorulecek mi kontrol et
+- Mobil ekranlarda EndScreen scroll edilebilir olacak
+- RunSummary kartı görünecek ve "📊 Run Summary" başlığına tıklayarak açılabilecek
+- Copy Line / Copy JSON butonları çalışacak
 
 ## Risk
 
-Cok dusuk - sadece 6 sayi degisikligi, mekanik degisikligi yok.
-
-## Teknik Detaylar
-
-### Degistirilecek Satirlar (config.ts)
-
-**Satir 121:** `TOWER_HP_BONUS_PER_LEVEL: 0.25 -> 0.30`
-**Satir 123:** `MAX_BLOCK_HP_MULTIPLIER: 1.8 -> 2.0`
-**Satir 127:** `ESPRESSO_BONUS_PER_LEVEL: 0.20 -> 0.25`
-**Satir 129:** `MAX_DAMAGE_MULTIPLIER: 1.65 -> 1.80`
-**Satir 133:** `ENERGY_BONUS_PER_LEVEL: 0.15 -> 0.22`
-**Satir 135:** `MAX_ENERGY_MULTIPLIER: 1.5 -> 1.70`
-
-### Yorum Guncellemeleri
-
-Her degisiklikte yorum satirlarini da guncelle (ornegin "+30% per level (Lv3 = +90%)").
+Düşük - sadece CSS değişikliği, layout düzeltmesi.
 
