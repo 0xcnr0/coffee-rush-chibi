@@ -83,6 +83,52 @@ export interface GameStats {
   isNewRecord: boolean;
   isChapterClear?: boolean; // Phase 2B-2: Chapter clear flag
   checkpointsCleared?: number; // Phase 2B-2
+  
+  // Phase 2C: Run Telemetry
+  telemetry?: RunTelemetry;
+}
+
+// Phase 2C: Full run telemetry for balance tuning
+export interface RunTelemetry {
+  // Run result
+  gameMode: GameMode;
+  checkpointsReached: number;
+  reachedBoss: boolean;
+  bossOutcome: 'not_spawned' | 'spawned' | 'defeated' | 'died_during_boss';
+  bossHpPercent: number; // 0-100, HP% at death/clear
+  
+  // Upgrade snapshot
+  upgradeLevels: {
+    blockCountLevel: number;
+    towerHpLevel: number;
+    espressoDamageLevel: number;
+    energyRegenLevel: number;
+  };
+  effectiveMultipliers: {
+    damage: number;
+    blockHp: number;
+    energy: number;
+  };
+  
+  // Combat data
+  shotsFired: number;
+  shotsHit: number;
+  hitRate: number; // 0-100%
+  
+  // Pressure / Panic
+  maxLatchedPeak: number;
+  timeAtMaxLatched: number; // seconds
+  rushCount: number;
+  totalRushDuration: number; // seconds
+  
+  // Survivability
+  blocksLost: number;
+  timeToFirstBlockLost: number; // seconds, -1 if none lost
+  tonicBombUses: number;
+  
+  // Spawn distribution
+  enemiesSpawned: { normal: number; heavy: number; boss: number };
+  enemiesKilled: { normal: number; heavy: number; boss: number };
 }
 
 export interface DifficultyState {
