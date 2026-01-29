@@ -104,18 +104,31 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
               <div>Boss HP: <span className="text-red-400">{telemetry.bossHpPercent}%</span></div>
             )}
             
-            {/* Upgrades */}
-            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Upgrades</div>
-            <div>Block: L{telemetry.upgradeLevels.blockCountLevel}</div>
-            <div>HP: L{telemetry.upgradeLevels.towerHpLevel}</div>
-            <div>DMG: L{telemetry.upgradeLevels.espressoDamageLevel}</div>
-            <div>Energy: L{telemetry.upgradeLevels.energyRegenLevel}</div>
-            
-            {/* Effective Multipliers */}
-            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Multipliers</div>
-            <div>DMG: <span className="text-secondary">{telemetry.effectiveMultipliers.damage.toFixed(2)}×</span></div>
-            <div>HP: <span className="text-secondary">{telemetry.effectiveMultipliers.blockHp.toFixed(2)}×</span></div>
-            <div className="col-span-2">Energy: <span className="text-secondary">{telemetry.effectiveMultipliers.energy.toFixed(2)}×</span></div>
+            {/* Upgrades with Multipliers */}
+            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Build (Upgrade Levels)</div>
+            <div className="col-span-2 bg-coffee-medium/30 rounded px-2 py-1">
+              <div className="grid grid-cols-4 gap-1 text-center">
+                <div>
+                  <div className="text-coffee-light/50 text-[9px]">Box</div>
+                  <div className="text-gold font-bold">L{telemetry.upgradeLevels.blockCountLevel}</div>
+                </div>
+                <div>
+                  <div className="text-coffee-light/50 text-[9px]">HP</div>
+                  <div className="text-gold font-bold">L{telemetry.upgradeLevels.towerHpLevel}</div>
+                  <div className="text-secondary text-[9px]">{telemetry.effectiveMultipliers.blockHp.toFixed(2)}×</div>
+                </div>
+                <div>
+                  <div className="text-coffee-light/50 text-[9px]">DMG</div>
+                  <div className="text-gold font-bold">L{telemetry.upgradeLevels.espressoDamageLevel}</div>
+                  <div className="text-secondary text-[9px]">{telemetry.effectiveMultipliers.damage.toFixed(2)}×</div>
+                </div>
+                <div>
+                  <div className="text-coffee-light/50 text-[9px]">Energy</div>
+                  <div className="text-gold font-bold">L{telemetry.upgradeLevels.energyRegenLevel}</div>
+                  <div className="text-secondary text-[9px]">{telemetry.effectiveMultipliers.energy.toFixed(2)}×</div>
+                </div>
+              </div>
+            </div>
             
             {/* Combat */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Combat</div>
