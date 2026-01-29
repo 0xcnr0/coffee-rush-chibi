@@ -53,6 +53,10 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
         : 'never',
       bombUses: telemetry.tonicBombUses,
       
+      // Pacing telemetry
+      recoveryTime: Math.round(telemetry.recoveryTimeTotal * 10) / 10,
+      bossAdds: telemetry.bossAddsSpawned,
+      
       // Spawns
       spawned: telemetry.enemiesSpawned,
       killed: telemetry.enemiesKilled,
@@ -61,7 +65,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
   
   const getCompactSummary = () => {
     const { upgradeLevels: u, effectiveMultipliers: m } = telemetry;
-    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}`;
+    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Recovery:${telemetry.recoveryTimeTotal.toFixed(1)}s | BossAdds:${telemetry.bossAddsSpawned} | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}`;
   };
   
   const handleCopy = async (format: 'json' | 'compact') => {
@@ -141,6 +145,11 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             <div>@MaxLatched: {telemetry.timeAtMaxLatched.toFixed(1)}s</div>
             <div>Rush Count: {telemetry.rushCount}</div>
             <div>Rush Total: {telemetry.totalRushDuration.toFixed(1)}s</div>
+            
+            {/* Pacing (Phase 2D telemetry) */}
+            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Pacing</div>
+            <div>Recovery: <span className="text-cyan-400">{telemetry.recoveryTimeTotal.toFixed(1)}s</span></div>
+            <div>Boss Adds: <span className={telemetry.bossAddsSpawned === 0 ? 'text-green-400' : 'text-red-400'}>{telemetry.bossAddsSpawned}</span></div>
             
             {/* Survivability */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Survivability</div>
