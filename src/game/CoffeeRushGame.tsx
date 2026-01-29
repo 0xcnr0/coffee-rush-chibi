@@ -1199,7 +1199,7 @@ export const CoffeeRushGame: React.FC = () => {
         {/* End Screen */}
         {gameState === 'END' && (
           <EndScreen 
-            stats={stats} 
+            stats={stats.telemetry ? stats : { ...stats, telemetry: buildTelemetry() }} 
             onPlayAgain={() => handlePlay(gameMode)} 
             onHome={handleHome}
             gameMode={gameMode}
