@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Coffee, Trophy, Shield, Zap, Package, Play, Infinity } from 'lucide-react';
+import React, { useState } from 'react';
+import { Coffee, Trophy, Shield, Zap, Package, Play, Infinity, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchaseUpgrade, getUpgradeCost, getUpgradeMultiplier, setLastGameMode } from './persistence';
+import { loadProgression, purchaseUpgrade, getUpgradeCost, getUpgradeMultiplier, setLastGameMode, resetProgression } from './persistence';
 import { GAME_CONFIG } from './config';
 import type { UpgradeInfo, GameMode } from './types';
 
@@ -287,6 +287,22 @@ export const GarageScreen: React.FC<GarageScreenProps> = ({ onPlay }) => {
         <p>Auto-attack serves customers</p>
         <p className="mt-0.5">Tap ⚡ for Tonic Bomb (costs 2 energy)</p>
       </div>
+      
+      {/* Reset Button */}
+      <Button
+        onClick={() => {
+          if (confirm('Reset all upgrades and beans? This cannot be undone!')) {
+            resetProgression();
+            setProgression(loadProgression());
+          }
+        }}
+        variant="ghost"
+        size="sm"
+        className="mt-4 text-coffee-cream/40 hover:text-red-400 hover:bg-red-400/10"
+      >
+        <RotateCcw className="w-3 h-3 mr-1" />
+        Reset Progress
+      </Button>
     </div>
   );
 };
