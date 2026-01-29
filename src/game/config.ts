@@ -59,6 +59,7 @@ export const GAME_CONFIG = {
   TONIC_BOMB_DAMAGE: 28,       // damage to enemies in radius (v3: +10%)
   MAX_ENERGY: 4,               // maximum energy capacity
   ENERGY_REGEN_RATE: 0.5,      // energy/second
+  MAX_BOMB_CHARGES: 3,         // cap bomb stacking to prevent spam (Phase 2D)
   
   // ─────────────────────────────────────────────────────────────
   // DIFFICULTY RAMP (every 20 seconds, cumulative - v3 aggressive)
