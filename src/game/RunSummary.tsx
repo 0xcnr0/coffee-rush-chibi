@@ -9,7 +9,7 @@ interface RunSummaryProps {
 }
 
 export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
   
   const formatTime = (seconds: number): string => {
