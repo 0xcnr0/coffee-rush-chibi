@@ -198,6 +198,8 @@ export const CoffeeRushGame: React.FC = () => {
     blocksLost: 0,
     timeToFirstBlockLost: -1,
     tonicBombUses: 0,
+    recoveryTimeTotal: 0,
+    bossAddsSpawned: 0,
     enemiesSpawned: { normal: 0, heavy: 0, boss: 0 },
     enemiesKilled: { normal: 0, heavy: 0, boss: 0 },
     wasInRush: false, // Track rush state transitions
@@ -302,6 +304,8 @@ export const CoffeeRushGame: React.FC = () => {
       blocksLost: 0,
       timeToFirstBlockLost: -1,
       tonicBombUses: 0,
+      recoveryTimeTotal: 0,
+      bossAddsSpawned: 0,
       enemiesSpawned: { normal: 0, heavy: 0, boss: 0 },
       enemiesKilled: { normal: 0, heavy: 0, boss: 0 },
       wasInRush: false,
@@ -382,6 +386,8 @@ export const CoffeeRushGame: React.FC = () => {
       blocksLost: t.blocksLost,
       timeToFirstBlockLost: t.timeToFirstBlockLost,
       tonicBombUses: t.tonicBombUses,
+      recoveryTimeTotal: t.recoveryTimeTotal,
+      bossAddsSpawned: t.bossAddsSpawned,
       enemiesSpawned: { ...t.enemiesSpawned },
       enemiesKilled: { ...t.enemiesKilled },
     };
@@ -682,8 +688,9 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
-    // Update recovery timer (gradual ramp-up)
+    // Update recovery timer (gradual ramp-up) and track total recovery time
     if (difficulty.breatherTimer > 0) {
+      telemetryRef.current.recoveryTimeTotal += deltaTime;
       difficulty.breatherTimer -= deltaTime;
     }
     

@@ -126,6 +126,10 @@ export interface RunTelemetry {
   timeToFirstBlockLost: number; // seconds, -1 if none lost
   tonicBombUses: number;
   
+  // Pacing telemetry (Phase 2D)
+  recoveryTimeTotal: number; // total seconds in post-rush recovery
+  bossAddsSpawned: number; // should be 0 in Chapter 1
+  
   // Spawn distribution
   enemiesSpawned: { normal: number; heavy: number; boss: number };
   enemiesKilled: { normal: number; heavy: number; boss: number };
