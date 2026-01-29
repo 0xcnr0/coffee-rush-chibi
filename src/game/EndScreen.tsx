@@ -103,8 +103,13 @@ export const EndScreen: React.FC<EndScreenProps> = ({
           </div>
         </div>
         
+        {/* Run Summary Telemetry */}
+        {stats.telemetry && (
+          <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
+        )}
+
         {/* Buttons */}
-        <div className="flex flex-col gap-2 w-full max-w-xs">
+        <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
           <Button
             onClick={onPlayAgain}
             size="lg"
@@ -123,11 +128,6 @@ export const EndScreen: React.FC<EndScreenProps> = ({
             Home (Upgrades)
           </Button>
         </div>
-        
-        {/* Run Summary Telemetry */}
-        {stats.telemetry && (
-          <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
-        )}
         
         {/* Share hint */}
         <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4">
@@ -221,8 +221,13 @@ export const EndScreen: React.FC<EndScreenProps> = ({
         </div>
       </div>
       
+      {/* Run Summary Telemetry */}
+      {stats.telemetry && (
+        <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
+      )}
+
       {/* Buttons */}
-      <div className="flex flex-col gap-2 w-full max-w-xs">
+      <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
         <Button
           onClick={onPlayAgain}
           size="lg"
@@ -241,7 +246,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
           Home (Upgrades)
         </Button>
       </div>
-      
+
       {/* Phase 1.8: Hint tooltip for first-time players */}
       {showCargoHint && (
         <div className="bg-warm-orange/20 border border-warm-orange/40 rounded-lg px-3 py-2 mt-4 max-w-xs">
@@ -249,11 +254,6 @@ export const EndScreen: React.FC<EndScreenProps> = ({
             💡 Tip: Buy your first <strong>Cargo Box</strong> to survive the first Rush!
           </p>
         </div>
-      )}
-      
-      {/* Run Summary Telemetry */}
-      {stats.telemetry && (
-        <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
       )}
       
       {/* Share hint */}
