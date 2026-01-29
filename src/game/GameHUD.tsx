@@ -206,21 +206,26 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
           
-          {/* Tonic Bomb Button */}
-          <Button
-            onClick={onTonicBomb}
-            disabled={!canUseBomb}
-            className={`h-16 w-24 rounded-xl text-lg font-bold shadow-lg transition-all ${
-              canUseBomb 
-                ? 'bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam' 
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            <div className="flex flex-col items-center">
-              <span className="text-2xl">⚡</span>
-              <span className="text-xs">-{GAME_CONFIG.TONIC_BOMB_COST}</span>
-            </div>
-          </Button>
+          {/* Tonic Bomb Button - Phase 2C: Show bomb charges */}
+          {(() => {
+            const bombCharges = Math.floor(energy / GAME_CONFIG.TONIC_BOMB_COST);
+            return (
+              <Button
+                onClick={onTonicBomb}
+                disabled={bombCharges === 0}
+                className={`h-16 w-24 rounded-xl text-lg font-bold shadow-lg transition-all ${
+                  bombCharges > 0
+                    ? 'bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam' 
+                    : 'bg-muted text-muted-foreground'
+                }`}
+              >
+                <div className="flex flex-col items-center">
+                  <span className="text-2xl">⚡</span>
+                  <span className="text-xs font-bold">×{bombCharges}</span>
+                </div>
+              </Button>
+            );
+          })()}
         </div>
       </div>
     </>

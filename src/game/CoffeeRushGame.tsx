@@ -450,13 +450,16 @@ export const CoffeeRushGame: React.FC = () => {
     const difficulty = difficultyRef.current;
     const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
     
-    // Phase 2B-1: Determine if this spawn is a Heavy enemy
+    // Phase 2C: Determine if this spawn is a Heavy enemy
+    // Disable HEAVY in Chapter 1 before boss (only Endless or after boss checkpoint)
     spawnIndexRef.current++;
     const spawnIndex = spawnIndexRef.current;
     const spawnEvery = difficulty.isMorningRush 
       ? GAME_CONFIG.HEAVY_RUSH_SPAWN_EVERY 
       : GAME_CONFIG.HEAVY_SPAWN_EVERY;
-    const isHeavy = spawnIndex % spawnEvery === 0;
+    const checkpointIndex = Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS);
+    const heavyDisabledInChapter = gameMode === 'CHAPTER' && checkpointIndex < GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT;
+    const isHeavy = !heavyDisabledInChapter && (spawnIndex % spawnEvery === 0);
     
     // Set enemy kind and apply multipliers
     enemy.kind = isHeavy ? 'HEAVY' : 'NORMAL';
@@ -484,7 +487,7 @@ export const CoffeeRushGame: React.FC = () => {
     enemy.state = 'WALKING';
     enemy.latchedTimer = 0;
     enemy.queuePosition = 0;
-  }, [enemyPool]);
+  }, [enemyPool, gameMode]);
   
   const fireProjectile = useCallback((targetEnemy: Enemy) => {
     const proj = projectilePool.acquire();
@@ -792,7 +795,11 @@ export const CoffeeRushGame: React.FC = () => {
       : (isWarmup ? GAME_CONFIG.EARLY_BASE_SPAWN_INTERVAL : GAME_CONFIG.BASE_SPAWN_INTERVAL);
     
     const spawnInterval = baseSpawnInterval / difficulty.spawnRateMultiplier;
-    const stressRushMultiplier = isStressTest ? 1.2 : GAME_CONFIG.RUSH_SPAWN_MULTIPLIER;
+    // Phase 2C: Chapter pre-boss uses softer rush spawn multiplier (2.5 vs 2.8)
+    const checkpointForSpawn = Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS);
+    const isChapterPreBossSpawn = gameMode === 'CHAPTER' && checkpointForSpawn < GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT;
+    const chapterRushMult = isChapterPreBossSpawn ? 2.5 : GAME_CONFIG.RUSH_SPAWN_MULTIPLIER;
+    const stressRushMultiplier = isStressTest ? 1.2 : chapterRushMult;
     const rushMultiplier = difficulty.isMorningRush ? stressRushMultiplier : 1;
     const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval / rushMultiplier);
     
@@ -871,8 +878,12 @@ export const CoffeeRushGame: React.FC = () => {
     const cartRightEdge = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
     
     // Calculate max latched slots (more during Rush)
+    // Phase 2C: Chapter mode pre-boss uses reduced latch bonus (+1 instead of +2)
+    const checkpointIndexForLatch = Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS);
+    const isChapterPreBoss = gameMode === 'CHAPTER' && checkpointIndexForLatch < GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT;
+    const rushLatchBonus = isChapterPreBoss ? 1 : GAME_CONFIG.RUSH_LATCHED_BONUS; // +1 for Chapter pre-boss, +2 for Endless/boss
     const maxLatched = difficulty.isMorningRush 
-      ? GAME_CONFIG.MAX_LATCHED_ENEMIES + GAME_CONFIG.RUSH_LATCHED_BONUS
+      ? GAME_CONFIG.MAX_LATCHED_ENEMIES + rushLatchBonus
       : GAME_CONFIG.MAX_LATCHED_ENEMIES;
     
     // Phase 2C: Track latched telemetry
@@ -939,23 +950,24 @@ export const CoffeeRushGame: React.FC = () => {
         enemy.latchedTimer -= deltaTime;
         
         if (enemy.latchedTimer <= 0 && activeBlocks.length > 0) {
-          // Deal tick damage to lowest block (Phase 2B-1/2: Heavy 2x, Boss 3x)
-          const lowestBlock = activeBlocks[0];
+          // Phase 2C: Deal tick damage to TOP block (last-added = buffer logic)
+          // This makes newly purchased blocks act as shields, TDS-style
+          const targetBlock = activeBlocks[activeBlocks.length - 1];
           let tickDamage = GAME_CONFIG.LATCHED_TICK_DAMAGE;
           if (enemy.kind === 'BOSS') {
             tickDamage *= GAME_CONFIG.BOSS_TICK_DAMAGE_MULT;
           } else if (enemy.kind === 'HEAVY') {
             tickDamage *= GAME_CONFIG.HEAVY_TICK_DAMAGE_MULT;
           }
-          lowestBlock.hp -= tickDamage;
+          targetBlock.hp -= tickDamage;
           enemy.latchedTimer = GAME_CONFIG.LATCHED_TICK_INTERVAL;
           
           // Small damage particles (more for boss)
-          spawnParticles(cartRightEdge, lowestBlock.y + GAME_CONFIG.BLOCK_HEIGHT / 2, 'steam', enemy.kind === 'BOSS' ? 5 : 2);
+          spawnParticles(cartRightEdge, targetBlock.y + GAME_CONFIG.BLOCK_HEIGHT / 2, 'steam', enemy.kind === 'BOSS' ? 5 : 2);
           
           // Check block destruction
-          if (lowestBlock.hp <= 0) {
-            lowestBlock.destroyed = true;
+          if (targetBlock.hp <= 0) {
+            targetBlock.destroyed = true;
             
             // Phase 2C: Track block loss telemetry
             telemetryRef.current.blocksLost++;
@@ -965,7 +977,7 @@ export const CoffeeRushGame: React.FC = () => {
             
             spawnParticles(
               GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH / 2,
-              lowestBlock.y,
+              targetBlock.y,
               'steam',
               15
             );
