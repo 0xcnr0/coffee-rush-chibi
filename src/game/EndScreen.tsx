@@ -38,7 +38,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
   // Chapter Clear Screen
   if (isChapterClear) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-gold/20 to-coffee-espresso/95 p-4 z-20">
+      <div className="absolute inset-0 flex flex-col items-center justify-start overflow-y-auto bg-gradient-to-b from-gold/20 to-coffee-espresso/95 p-4 pt-8 z-20">
         {/* Victory Title */}
         <div className="mb-6 animate-pop-in">
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -143,7 +143,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
   
   // Normal Game Over Screen (Endless or failed Chapter)
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-coffee-dark/95 to-coffee-espresso/95 p-4 z-20">
+    <div className="absolute inset-0 flex flex-col items-center justify-start overflow-y-auto bg-gradient-to-b from-coffee-dark/95 to-coffee-espresso/95 p-4 pt-8 z-20">
       {/* Game Over Title */}
       <div className="mb-6 animate-pop-in">
         {gameMode === 'CHAPTER' ? (
