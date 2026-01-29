@@ -24,7 +24,8 @@ import type {
   Particle, 
   GameStats,
   DifficultyState,
-  BossState
+  BossState,
+  RunTelemetry
 } from './types';
 
 const createEnemy = (id: number): Enemy => ({
@@ -181,11 +182,28 @@ export const CoffeeRushGame: React.FC = () => {
   const customersServedRef = useRef(0);
   const damageMultiplierRef = useRef(1);
   const energyRegenMultiplierRef = useRef(1);
+  const blockHpMultiplierRef = useRef(1); // Phase 2C: Track for telemetry
   const hudAccumulatorRef = useRef(0); // HUD throttle accumulator
   const fpsRef = useRef(60); // Smoothed FPS
   const effectiveBlockHpRef = useRef<number>(GAME_CONFIG.BLOCK_MAX_HP); // Store for debug
   // Phase 1.8: Combat debug tracking refs
   const currentTargetRef = useRef<{ id: number; x: number } | null>(null);
+  
+  // Phase 2C: Telemetry tracking refs
+  const telemetryRef = useRef({
+    maxLatchedPeak: 0,
+    timeAtMaxLatched: 0,
+    rushCount: 0,
+    totalRushDuration: 0,
+    blocksLost: 0,
+    timeToFirstBlockLost: -1,
+    tonicBombUses: 0,
+    enemiesSpawned: { normal: 0, heavy: 0, boss: 0 },
+    enemiesKilled: { normal: 0, heavy: 0, boss: 0 },
+    wasInRush: false, // Track rush state transitions
+    upgradeLevels: { blockCountLevel: 0, towerHpLevel: 0, espressoDamageLevel: 0, energyRegenLevel: 0 },
+  });
+  
   // Object pools
   const enemyPool = useObjectPool(createEnemy, GAME_CONFIG.MAX_ENEMIES);
   const projectilePool = useObjectPool(createProjectile, 50);
@@ -232,6 +250,15 @@ export const CoffeeRushGame: React.FC = () => {
     // Store multipliers for use in game loop
     damageMultiplierRef.current = damageMultiplier;
     energyRegenMultiplierRef.current = energyRegenMultiplier;
+    blockHpMultiplierRef.current = blockHpMultiplier; // Phase 2C: Store for telemetry
+    
+    // Phase 2C: Store upgrade levels for telemetry
+    telemetryRef.current.upgradeLevels = {
+      blockCountLevel: upgradeLevels.blockCountLevel ?? 0,
+      towerHpLevel: upgradeLevels.towerHpLevel,
+      espressoDamageLevel: upgradeLevels.espressoDamageLevel,
+      energyRegenLevel: upgradeLevels.energyRegenLevel,
+    };
     
     // Reset difficulty
     difficultyRef.current = {
@@ -266,6 +293,21 @@ export const CoffeeRushGame: React.FC = () => {
     fpsHistoryRef.current = [];
     maxActiveEnemiesSeenRef.current = 0;
     
+    // Phase 2C: Reset telemetry
+    telemetryRef.current = {
+      maxLatchedPeak: 0,
+      timeAtMaxLatched: 0,
+      rushCount: 0,
+      totalRushDuration: 0,
+      blocksLost: 0,
+      timeToFirstBlockLost: -1,
+      tonicBombUses: 0,
+      enemiesSpawned: { normal: 0, heavy: 0, boss: 0 },
+      enemiesKilled: { normal: 0, heavy: 0, boss: 0 },
+      wasInRush: false,
+      upgradeLevels: telemetryRef.current.upgradeLevels, // Keep upgrade levels
+    };
+    
     // Clear pools
     enemyPool.clear();
     projectilePool.clear();
@@ -296,6 +338,55 @@ export const CoffeeRushGame: React.FC = () => {
     setGameState('PLAY');
   }, [initGame]);
   
+  // Phase 2C: Build telemetry object for EndScreen
+  const buildTelemetry = useCallback((): RunTelemetry => {
+    const t = telemetryRef.current;
+    const hitRate = shotsFiredRef.current > 0 
+      ? Math.round((shotsHitRef.current / shotsFiredRef.current) * 100) 
+      : 0;
+    
+    // Determine boss outcome
+    let bossOutcome: RunTelemetry['bossOutcome'] = 'not_spawned';
+    let bossHpPercent = 0;
+    if (bossStateRef.current.isActive || bossEnemyRef.current) {
+      const boss = bossEnemyRef.current;
+      if (boss && boss.hp <= 0) {
+        bossOutcome = 'defeated';
+      } else if (boss) {
+        bossOutcome = 'died_during_boss';
+        bossHpPercent = Math.round((boss.hp / boss.maxHp) * 100);
+      } else {
+        bossOutcome = 'spawned';
+      }
+    }
+    
+    return {
+      gameMode,
+      checkpointsReached: Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS),
+      reachedBoss: bossStateRef.current.isActive || bossEnemyRef.current !== null || bossOutcome === 'defeated',
+      bossOutcome,
+      bossHpPercent,
+      upgradeLevels: t.upgradeLevels,
+      effectiveMultipliers: {
+        damage: damageMultiplierRef.current,
+        blockHp: blockHpMultiplierRef.current,
+        energy: energyRegenMultiplierRef.current,
+      },
+      shotsFired: shotsFiredRef.current,
+      shotsHit: shotsHitRef.current,
+      hitRate,
+      maxLatchedPeak: t.maxLatchedPeak,
+      timeAtMaxLatched: t.timeAtMaxLatched,
+      rushCount: t.rushCount,
+      totalRushDuration: t.totalRushDuration,
+      blocksLost: t.blocksLost,
+      timeToFirstBlockLost: t.timeToFirstBlockLost,
+      tonicBombUses: t.tonicBombUses,
+      enemiesSpawned: { ...t.enemiesSpawned },
+      enemiesKilled: { ...t.enemiesKilled },
+    };
+  }, [gameMode]);
+
   // Phase 2B-2: Chapter Clear handler
   const handleChapterClear = useCallback(() => {
     const { beansEarned } = updateChapterClear(
@@ -306,6 +397,11 @@ export const CoffeeRushGame: React.FC = () => {
     // Add chapter clear bonus
     const totalBeans = beansEarned + GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
     
+    // Build telemetry with boss defeated
+    const telemetry = buildTelemetry();
+    telemetry.bossOutcome = 'defeated';
+    telemetry.bossHpPercent = 0;
+    
     setStats({
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
@@ -314,9 +410,10 @@ export const CoffeeRushGame: React.FC = () => {
       isNewRecord: false,
       isChapterClear: true,
       checkpointsCleared: GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT,
+      telemetry,
     });
     setGameState('END');
-  }, []);
+  }, [buildTelemetry]);
   
   const handleGameOver = useCallback(() => {
     // Update records and earn beans
@@ -332,9 +429,10 @@ export const CoffeeRushGame: React.FC = () => {
       totalTips: tipsRef.current,
       beansEarned,
       isNewRecord: isNewTimeRecord,
+      telemetry: buildTelemetry(),
     });
     setGameState('END');
-  }, []);
+  }, [buildTelemetry]);
   
   const handleHome = useCallback(() => {
     setGameState('MENU');
@@ -362,6 +460,13 @@ export const CoffeeRushGame: React.FC = () => {
     
     // Set enemy kind and apply multipliers
     enemy.kind = isHeavy ? 'HEAVY' : 'NORMAL';
+    
+    // Phase 2C: Track spawns for telemetry
+    if (isHeavy) {
+      telemetryRef.current.enemiesSpawned.heavy++;
+    } else {
+      telemetryRef.current.enemiesSpawned.normal++;
+    }
     
     const hpMult = isHeavy ? GAME_CONFIG.HEAVY_HP_MULT : 1;
     const speedMult = isHeavy ? GAME_CONFIG.HEAVY_SPEED_MULT : 1;
@@ -436,6 +541,9 @@ export const CoffeeRushGame: React.FC = () => {
   
   const handleTonicBomb = useCallback(() => {
     if (energyRef.current < GAME_CONFIG.TONIC_BOMB_COST) return;
+    
+    // Phase 2C: Track bomb usage
+    telemetryRef.current.tonicBombUses++;
     
     energyRef.current -= GAME_CONFIG.TONIC_BOMB_COST;
     setEnergy(energyRef.current);
@@ -552,11 +660,18 @@ export const CoffeeRushGame: React.FC = () => {
       // Start morning rush
       difficulty.isMorningRush = true;
       difficulty.rushTimer = GAME_CONFIG.RUSH_DURATION;
+      
+      // Phase 2C: Track rush count
+      telemetryRef.current.rushCount++;
     }
     
     // Update morning rush timer (stress test uses 12s duration)
     if (difficulty.isMorningRush) {
       difficulty.rushTimer -= deltaTime;
+      
+      // Phase 2C: Track rush duration
+      telemetryRef.current.totalRushDuration += deltaTime;
+      
       if (difficulty.rushTimer <= 0) {
         difficulty.isMorningRush = false;
         // Start breather period - pause spawns after Rush
@@ -629,6 +744,9 @@ export const CoffeeRushGame: React.FC = () => {
             spawnedAt: currentTime,
             addSpawnTimer: GAME_CONFIG.BOSS_ADD_SPAWN_INTERVAL,
           };
+          
+          // Phase 2C: Track boss spawn for telemetry
+          telemetryRef.current.enemiesSpawned.boss++;
           
           // Trigger rush during boss fight
           difficulty.isMorningRush = true;
@@ -757,6 +875,14 @@ export const CoffeeRushGame: React.FC = () => {
       ? GAME_CONFIG.MAX_LATCHED_ENEMIES + GAME_CONFIG.RUSH_LATCHED_BONUS
       : GAME_CONFIG.MAX_LATCHED_ENEMIES;
     
+    // Phase 2C: Track latched telemetry
+    if (latchedCountRef.current > telemetryRef.current.maxLatchedPeak) {
+      telemetryRef.current.maxLatchedPeak = latchedCountRef.current;
+    }
+    if (latchedCountRef.current >= maxLatched) {
+      telemetryRef.current.timeAtMaxLatched += deltaTime;
+    }
+    
     // Count queued enemies for proper positioning
     let queuedCount = 0;
     
@@ -784,6 +910,15 @@ export const CoffeeRushGame: React.FC = () => {
         enemy.isServed = true;
         enemy.servedTimer = GAME_CONFIG.SERVED_EXIT_DURATION;
         customersServedRef.current++;
+        
+        // Phase 2C: Track kills for telemetry
+        if (enemy.kind === 'BOSS') {
+          telemetryRef.current.enemiesKilled.boss++;
+        } else if (enemy.kind === 'HEAVY') {
+          telemetryRef.current.enemiesKilled.heavy++;
+        } else {
+          telemetryRef.current.enemiesKilled.normal++;
+        }
         
         // Drop tip (boss drops bigger tip)
         const tipCount = enemy.kind === 'BOSS' ? 5 : 1;
@@ -821,6 +956,13 @@ export const CoffeeRushGame: React.FC = () => {
           // Check block destruction
           if (lowestBlock.hp <= 0) {
             lowestBlock.destroyed = true;
+            
+            // Phase 2C: Track block loss telemetry
+            telemetryRef.current.blocksLost++;
+            if (telemetryRef.current.timeToFirstBlockLost < 0) {
+              telemetryRef.current.timeToFirstBlockLost = timeRef.current;
+            }
+            
             spawnParticles(
               GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH / 2,
               lowestBlock.y,

@@ -3,6 +3,7 @@ import { Clock, Coffee, Users, Home, Trophy, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { loadProgression } from './persistence';
 import { GAME_CONFIG } from './config';
+import { RunSummary } from './RunSummary';
 import type { GameStats, GameMode } from './types';
 
 interface EndScreenProps {
@@ -122,6 +123,11 @@ export const EndScreen: React.FC<EndScreenProps> = ({
             Home (Upgrades)
           </Button>
         </div>
+        
+        {/* Run Summary Telemetry */}
+        {stats.telemetry && (
+          <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
+        )}
         
         {/* Share hint */}
         <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4">
@@ -243,6 +249,11 @@ export const EndScreen: React.FC<EndScreenProps> = ({
             💡 Tip: Buy your first <strong>Cargo Box</strong> to survive the first Rush!
           </p>
         </div>
+      )}
+      
+      {/* Run Summary Telemetry */}
+      {stats.telemetry && (
+        <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
       )}
       
       {/* Share hint */}
