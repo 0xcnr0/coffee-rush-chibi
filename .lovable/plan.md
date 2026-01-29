@@ -1,114 +1,89 @@
 
-# TDS-Style Progression System - Implementation Status
 
-## Overview
-Transform the game's progression system to feel more like TDS, implementing in three phases: Quick Wins (energy + caps), Garage UI, and Block Progression.
+# Phase 2C: Balance & Feel Polish - Upgrade Impact Tuning
 
----
+## Problem Summary
 
-## ✅ PHASE 1.6A - Quick Wins (COMPLETED)
+ChatGPT'nin video analizine gore: tum presetler (0-4) CP1 civarinda (20-40s) oluyor. Bu, L2-L3 upgrade'lerin dramatik sekilde daha guclu hissetmesi gerektigini gosteriyor.
 
-### Changes Made:
-1. **Energy starts at 0** - TDS pacing where auto-attack handles early enemies while energy fills
-2. **Upgrade caps reduced to 3** - Max level for core upgrades is now 3 (was 20)
-3. **Bonus values increased** - Tower HP +15%/level, Espresso +12%/level, Energy +10%/level
-4. **SAVE_VERSION bumped to 4** - Resets all saves for new system
+| Preset | Gerceklesen | Hedef |
+|--------|------------|-------|
+| 0 | ~24s (CP1) | Rush1'de ol |
+| 1 | ~28s (CP1) | Rush1 gecilebilir |
+| 2 | ~32s (CP1) | CP2'ye ulasmali |
+| 4 | ~38s (CP1) | Boss'a (60s) ulasmali |
 
----
+## Cozum: Upgrade Etkisini Artir
 
-## ✅ PHASE 1.6B - Garage UI (COMPLETED)
+### A) Upgrade Bonus Degerleri (config.ts satir 117-135)
 
-### Changes Made:
-1. **GarageScreen created** - Combines MenuScreen + UpgradesScreen into single view
-2. **MenuScreen deleted** - Replaced by GarageScreen
-3. **UpgradesScreen deleted** - Merged into GarageScreen
-4. **EndScreen updated** - Removed Upgrades button (Home now returns to GarageScreen)
-5. **Types updated** - Removed 'UPGRADES' from GameState
-6. **"Recommended" badge** - Soft guidance for next upgrade (★ icon)
+**Mevcut -> Yeni:**
 
----
+```text
+ESPRESSO_BONUS_PER_LEVEL: 0.20 -> 0.25  (L3: +60% -> +75%)
+TOWER_HP_BONUS_PER_LEVEL: 0.25 -> 0.30  (L3: +75% -> +90%)
+ENERGY_BONUS_PER_LEVEL: 0.15 -> 0.22    (L3: +45% -> +66%)
+```
 
-## ✅ PHASE 1.7 - Block Progression (COMPLETED)
+### B) Multiplier Cap'leri Guncelle
 
-### Changes Made:
-1. **blockCountLevel added to persistence** - 0=1block, 1=2blocks, 2=3blocks
-2. **Block count config** - BLOCK_COUNT_MAX_LEVEL: 2, BLOCK_COUNT_BASE_COST: 25
-3. **Dynamic block count** - Game initializes with 1 + blockCountLevel blocks
-4. **Chassis visual** - Block 0 renders as thin chassis bar (40% height, dark metallic)
-5. **Cargo boxes** - Blocks 1+ render as normal cargo boxes
-6. **GarageScreen updated** - Includes 4th upgrade card for "Add Cargo Box"
-7. **Barista positioning** - Updated to account for chassis vs cargo box heights
+Mevcut cap'ler cok dusuk, L3'un tam etkisini engelliyor:
 
----
+```text
+MAX_DAMAGE_MULTIPLIER: 1.65 -> 1.80     (L3 + base = 1.75 desteklensin)
+MAX_BLOCK_HP_MULTIPLIER: 1.8 -> 2.0     (L3 + base = 1.90 desteklensin)
+MAX_ENERGY_MULTIPLIER: 1.5 -> 1.70      (L3 + base = 1.66 desteklensin)
+```
 
-## Balance Considerations (Post-Implementation)
+### C) Rush Yumusatma (Opsiyonel)
 
-After Phase 1.7:
-- Starting with 1 block (chassis only): ~45-60s survival target
-- With 3 blocks (chassis + 2 cargo): ~90-120s survival target
-- Block HP upgrade (+45% at max) stacks with more blocks
-- Need to test if latched tick damage (4/0.5s) is still fair with 3 blocks
+Eger hala CP1'de boguluyor olunursa:
 
-May need to adjust:
-- `LATCHED_TICK_DAMAGE` (increase if 3 blocks makes game too easy)
-- `BLOCK_COUNT_BASE_COST` (tune based on bean economy)
-- Spawn rates post-rush (if 3 blocks trivializes early game)
+```text
+RUSH_SPAWN_MULTIPLIER: 2.8 -> 2.5
+```
 
----
+Bu degisikligi simdilik YAPMIYORUZ, once upgrade buff'i test edilecek.
 
-## Test Checklist
+## Degistirilecek Dosya
 
-### Phase 1.6A
-- [x] Energy starts at 0, not max
-- [x] First Tonic Bomb available after ~4 seconds (at 0.5/s regen)
-- [x] Upgrade max level shows 3 in UI
-- [x] Bonus percentages correct: +15%, +30%, +45% for Tower HP
-- [x] Old saves reset (version bump)
+Sadece `src/game/config.ts` - 6 satir degerini degistir.
 
-### Phase 1.6B
-- [x] GarageScreen shows on game start
-- [x] Upgrades purchasable directly on home screen
-- [x] "Recommended" badge appears for first unpurchased upgrade
-- [x] Play button starts game correctly
-- [x] EndScreen "Home" returns to GarageScreen
+## Beklenen Sonuc
 
-### Phase 1.7
-- [x] Block count increases with upgrade (1→2→3)
-- [x] Block 0 renders as thin chassis bar
-- [x] Blocks 1-2 render as cargo boxes
-- [x] Latched enemies still target lowest block correctly
-- [x] Survival time increases meaningfully with more blocks
+| Preset | Yeni Hedef |
+|--------|-----------|
+| L0 | Rush1'de ol veya zar zor gec |
+| L1 (Cargo +1) | Rush1 gecilebilir, CP2 oncesi ol |
+| L2 (Cargo max) | CP1 rahat, CP2'de zorlan |
+| L3 (Dengeli) | CP2'ye ulas (40s+), boss'a yaklas |
+| L4 (Full) | Boss'a kesin ulas (60s), clear sansi |
 
----
+## Test Proseduru
 
-## ✅ PHASE 1.8 - TDS Pacing Polish (COMPLETED)
+1. Debug HUD ac -> Dev Tools -> L0 sec -> Oyna
+2. Rush1'de ol veya zar zor gec
+3. L2 sec -> Oyunu yeniden baslat
+4. CP2'ye (40s) ulasabildigin dogrula
+5. L4 sec -> Oyunu yeniden baslat
+6. Boss spawn (60s) gorulecek mi kontrol et
 
-### Changes Made:
-1. **SAVE_VERSION bumped to 5** - Clean slate for all players
-2. **CART_X_OFFSET and ENEMY_SCALE constants** - Added to config.ts as placeholders for Phase 2
-3. **"☕ Nice!" popup** - Shows for 0.9s when breather starts (after Rush ends)
-4. **breatherTimer passed to GameHUD** - Enables breather feedback
+## Risk
 
-### Notes:
-- Energy already starts at 0 (from Phase 1.6A)
-- Checkpoint interval already 20s (from previous updates)
-- Cart position and enemy scale unchanged (Phase 2)
+Cok dusuk - sadece 6 sayi degisikligi, mekanik degisikligi yok.
 
----
+## Teknik Detaylar
 
-## Future Phases (Not Yet Implemented)
+### Degistirilecek Satirlar (config.ts)
 
-### Phase 2 - Layout & Pacing Tweaks
-- Cart position adjustment (CART_X_OFFSET)
-- Enemy size scaling (ENEMY_SCALE -10%)
-- Speed/spawn micro-rebalance
+**Satir 121:** `TOWER_HP_BONUS_PER_LEVEL: 0.25 -> 0.30`
+**Satir 123:** `MAX_BLOCK_HP_MULTIPLIER: 1.8 -> 2.0`
+**Satir 127:** `ESPRESSO_BONUS_PER_LEVEL: 0.20 -> 0.25`
+**Satir 129:** `MAX_DAMAGE_MULTIPLIER: 1.65 -> 1.80`
+**Satir 133:** `ENERGY_BONUS_PER_LEVEL: 0.15 -> 0.22`
+**Satir 135:** `MAX_ENERGY_MULTIPLIER: 1.5 -> 1.70`
 
-### Phase 2.5 - Weapons/Attachments
-- Saw blade or other attachments for cargo boxes
-- Heavy enemy / mini-boss variants
-- Chapter/Boss system (optional)
+### Yorum Guncellemeleri
 
-### Phase 3 - Polish
-- Tutorial hints (first run guidance)
-- More particle effects for upgrades
-- Sound effects integration
+Her degisiklikte yorum satirlarini da guncelle (ornegin "+30% per level (Lv3 = +90%)").
+
