@@ -117,22 +117,22 @@ export const GAME_CONFIG = {
   UPGRADE_MAX_LEVEL: 3,            // max level for each upgrade (TDS-style)
   
   // Tower Reinforcement - increases BLOCK_MAX_HP
-  // Meaningful: +25% per level (Lv3 = +75%)
-  TOWER_HP_BONUS_PER_LEVEL: 0.25,  // +25% per level
+  // Meaningful: +30% per level (Lv3 = +90%)
+  TOWER_HP_BONUS_PER_LEVEL: 0.30,  // +30% per level
   TOWER_HP_BASE_COST: 35,          // beans (L1: 35, L2: ~44, L3: ~55)
-  MAX_BLOCK_HP_MULTIPLIER: 1.8,    // cap for blockHpMultiplier
+  MAX_BLOCK_HP_MULTIPLIER: 2.0,    // cap for blockHpMultiplier
   
   // Espresso Mastery - increases PROJECTILE_DAMAGE
-  // Meaningful: +20% per level (Lv3 = +60%)
-  ESPRESSO_BONUS_PER_LEVEL: 0.20,  // +20% per level
+  // Meaningful: +25% per level (Lv3 = +75%)
+  ESPRESSO_BONUS_PER_LEVEL: 0.25,  // +25% per level
   ESPRESSO_BASE_COST: 35,          // beans (L1: 35, L2: ~44, L3: ~55)
-  MAX_DAMAGE_MULTIPLIER: 1.65,     // cap for damageMultiplier
+  MAX_DAMAGE_MULTIPLIER: 1.80,     // cap for damageMultiplier
   
   // Caffeine Flow - increases ENERGY_REGEN_RATE
-  // Small but noticeable: +15% per level (Lv3 = +45%)
-  ENERGY_BONUS_PER_LEVEL: 0.15,    // +15% per level
+  // Noticeable: +22% per level (Lv3 = +66%)
+  ENERGY_BONUS_PER_LEVEL: 0.22,    // +22% per level
   ENERGY_BASE_COST: 25,            // beans (L1: 25, L2: ~31, L3: ~39)
-  MAX_ENERGY_MULTIPLIER: 1.5,      // cap for energyRegenMultiplier
+  MAX_ENERGY_MULTIPLIER: 1.70,     // cap for energyRegenMultiplier
   
   // ─────────────────────────────────────────────────────────────
   // BLOCK PROGRESSION (Phase 1.7) - First recommended upgrade
