@@ -103,11 +103,6 @@ export const EndScreen: React.FC<EndScreenProps> = ({
           </div>
         </div>
         
-        {/* Run Summary Telemetry */}
-        {stats.telemetry && (
-          <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
-        )}
-
         {/* Buttons */}
         <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
           <Button
@@ -128,6 +123,13 @@ export const EndScreen: React.FC<EndScreenProps> = ({
             Home (Upgrades)
           </Button>
         </div>
+
+        {/* Run Summary Telemetry */}
+        {stats.telemetry && (
+          <div className="w-full max-w-xs mt-4">
+            <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
+          </div>
+        )}
         
         {/* Share hint */}
         <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4">
@@ -221,11 +223,6 @@ export const EndScreen: React.FC<EndScreenProps> = ({
         </div>
       </div>
       
-      {/* Run Summary Telemetry */}
-      {stats.telemetry && (
-        <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
-      )}
-
       {/* Buttons */}
       <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
         <Button
@@ -246,6 +243,13 @@ export const EndScreen: React.FC<EndScreenProps> = ({
           Home (Upgrades)
         </Button>
       </div>
+
+      {/* Run Summary Telemetry */}
+      {stats.telemetry && (
+        <div className="w-full max-w-xs mt-4">
+          <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
+        </div>
+      )}
 
       {/* Phase 1.8: Hint tooltip for first-time players */}
       {showCargoHint && (
