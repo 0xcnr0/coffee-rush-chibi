@@ -52,15 +52,15 @@ export const GAME_CONFIG = {
   PROJECTILE_RADIUS: 8,        // pixels - hitbox radius
   
   // ─────────────────────────────────────────────────────────────
-  // SKILL: Tonic Bomb
+  // SKILL: Tonic Bomb + Power System (TDS-style)
+  // Power meter fills over time; skills consume Power charges
   // ─────────────────────────────────────────────────────────────
-  TONIC_BOMB_COST: 2,          // energy cost
+  TONIC_BOMB_COST: 2,          // power cost per bomb
   TONIC_BOMB_RADIUS: 110,      // pixels - AoE radius (v3: +10%)
   TONIC_BOMB_DAMAGE: 28,       // damage to enemies in radius (v3: +10%)
-  MAX_ENERGY: 4,               // maximum energy capacity
-  ENERGY_REGEN_RATE: 0.5,      // energy/second
+  MAX_POWER: 4,                // maximum power capacity (was MAX_ENERGY)
+  POWER_REGEN_RATE: 0.5,       // power/second (was ENERGY_REGEN_RATE)
   MAX_BOMB_CHARGES: 3,         // cap bomb stacking to prevent spam (Phase 2D)
-  
   // ─────────────────────────────────────────────────────────────
   // DIFFICULTY RAMP (every 20 seconds, cumulative - v3 aggressive)
   // ─────────────────────────────────────────────────────────────
@@ -131,12 +131,11 @@ export const GAME_CONFIG = {
   ESPRESSO_BASE_COST: 35,          // beans (L1: 35, L2: ~44, L3: ~55)
   MAX_DAMAGE_MULTIPLIER: 1.80,     // cap for damageMultiplier
   
-  // Caffeine Flow - increases ENERGY_REGEN_RATE
+  // Caffeine Flow - increases POWER_REGEN_RATE
   // Noticeable: +22% per level (Lv3 = +66%)
-  ENERGY_BONUS_PER_LEVEL: 0.22,    // +22% per level
-  ENERGY_BASE_COST: 25,            // beans (L1: 25, L2: ~31, L3: ~39)
-  MAX_ENERGY_MULTIPLIER: 1.70,     // cap for energyRegenMultiplier
-  
+  POWER_BONUS_PER_LEVEL: 0.22,     // +22% per level (was ENERGY_BONUS_PER_LEVEL)
+  POWER_BASE_COST: 25,             // beans (L1: 25, L2: ~31, L3: ~39)
+  MAX_POWER_MULTIPLIER: 1.70,      // cap for powerRegenMultiplier
   // ─────────────────────────────────────────────────────────────
   // BLOCK PROGRESSION (Phase 1.7) - First recommended upgrade
   // ─────────────────────────────────────────────────────────────

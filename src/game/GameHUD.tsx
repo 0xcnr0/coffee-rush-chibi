@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Zap, Clock } from 'lucide-react';
+import { Zap, Clock, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { GAME_CONFIG } from './config';
 import type { GameMode, BossState } from './types';
 
 interface GameHUDProps {
   timeSurvived: number;
   tips: number;
-  energy: number;
-  maxEnergy: number;
+  power: number;
+  maxPower: number;
   isMorningRush: boolean;
   breatherTimer: number;
   onTonicBomb: () => void;
   canUseBomb: boolean;
+  onPause: () => void;
   // Phase 2B-3: Chapter mode UI
   gameMode: GameMode;
   bossState: BossState;
@@ -27,12 +27,13 @@ const TOTAL_CHECKPOINTS = 9;   // 3 minutes total display for endless
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived,
   tips,
-  energy,
-  maxEnergy,
+  power,
+  maxPower,
   isMorningRush,
   breatherTimer,
   onTonicBomb,
   canUseBomb,
+  onPause,
   gameMode,
   bossState,
   bossIncomingTimer,
@@ -211,49 +212,61 @@ export const GameHUD: React.FC<GameHUDProps> = ({
         </div>
       </div>
       
-      {/* Bottom Bar - Energy & Skill */}
+      {/* Bottom Bar - Power & Skill */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-        <div className="flex items-center gap-4">
-          {/* Energy Bar */}
+        <div className="flex items-center gap-3">
+          {/* Pause Button */}
+          <Button
+            onClick={onPause}
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-lg bg-coffee-dark/60 hover:bg-coffee-dark/80 text-coffee-cream"
+          >
+            <Pause className="w-5 h-5" />
+          </Button>
+          
+          {/* Power Bar (TDS-style) */}
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <Zap className="w-4 h-4 text-energy" />
-              <span className="text-sm text-coffee-cream">Energy</span>
+              <span className="text-sm text-coffee-cream font-medium">Power</span>
             </div>
-            <div className="h-4 bg-hp-bg rounded-full overflow-hidden">
+            <div className="h-3 bg-hp-bg rounded-full overflow-hidden">
               <div 
                 className="h-full bg-energy transition-all duration-200 rounded-full"
-                style={{ width: `${(energy / maxEnergy) * 100}%` }}
+                style={{ width: `${(power / maxPower) * 100}%` }}
               />
             </div>
-            {/* Energy pips */}
-            <div className="flex gap-1 mt-1">
-              {Array.from({ length: maxEnergy }).map((_, i) => (
+            {/* Power pips (showing charge thresholds) */}
+            <div className="flex gap-0.5 mt-1">
+              {Array.from({ length: maxPower }).map((_, i) => (
                 <div 
                   key={i}
-                  className={`h-1 flex-1 rounded-full ${i < energy ? 'bg-energy' : 'bg-hp-bg'}`}
+                  className={`h-1.5 flex-1 rounded-sm transition-colors ${
+                    i < Math.floor(power) ? 'bg-energy' : 'bg-hp-bg'
+                  }`}
                 />
               ))}
             </div>
           </div>
           
-          {/* Tonic Bomb Button - Phase 2D: Show capped bomb charges */}
+          {/* Tonic Bomb Button - TDS-style charge display */}
           {(() => {
-            const rawCharges = Math.floor(energy / GAME_CONFIG.TONIC_BOMB_COST);
+            const rawCharges = Math.floor(power / GAME_CONFIG.TONIC_BOMB_COST);
             const bombCharges = Math.min(rawCharges, GAME_CONFIG.MAX_BOMB_CHARGES);
             return (
               <Button
                 onClick={onTonicBomb}
                 disabled={bombCharges === 0}
-                className={`h-16 w-24 rounded-xl text-lg font-bold shadow-lg transition-all ${
+                className={`h-16 w-20 rounded-xl text-lg font-bold shadow-lg transition-all ${
                   bombCharges > 0
                     ? 'bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam' 
                     : 'bg-muted text-muted-foreground'
                 }`}
               >
                 <div className="flex flex-col items-center">
-                  <span className="text-2xl">⚡</span>
-                  <span className="text-xs font-bold">×{bombCharges}</span>
+                  <span className="text-xl">⚡</span>
+                  <span className="text-sm font-bold">×{bombCharges}</span>
                 </div>
               </Button>
             );
