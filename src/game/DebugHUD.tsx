@@ -150,8 +150,14 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
             <div className={latchedCount >= maxLatched ? 'text-red-400 font-bold' : 'text-orange-300'}>
               Latched: {latchedCount}/{maxLatched}
             </div>
-            <div className={isMorningRush ? 'text-warm-orange font-bold' : 'text-gray-400'}>
-              Rush: {isMorningRush ? '☕ ON' : 'OFF'}
+            {/* Phase 2D: Explicit Rush/Boss flags side by side */}
+            <div className="flex gap-2">
+              <span className={isMorningRush ? 'text-warm-orange font-bold' : 'text-gray-500'}>
+                R:{isMorningRush ? '✓' : '✗'}
+              </span>
+              <span className={bossState.isActive ? 'text-red-400 font-bold animate-pulse' : 'text-gray-500'}>
+                B:{bossState.isActive ? '✓' : '✗'}
+              </span>
             </div>
             
             {/* Shots */}
