@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { GAME_CONFIG, COLORS } from './config';
-import { drawGame } from './renderer';
+import { drawGame, drawMenuScene } from './renderer';
 import { useGameLoop } from './useGameLoop';
 import { useObjectPool } from './useObjectPool';
-import { GarageScreen } from './GarageScreen';
+import { GarageOverlay } from './GarageOverlay';
 import { EndScreen } from './EndScreen';
 import { GameHUD } from './GameHUD';
 import { DebugHUD } from './DebugHUD';
@@ -1173,20 +1173,11 @@ export const CoffeeRushGame: React.FC = () => {
     canvas.width = GAME_CONFIG.CANVAS_WIDTH;
     canvas.height = GAME_CONFIG.CANVAS_HEIGHT;
     
-    // Initial draw for menu
+    // Draw scene for menu (same cart as in game - "same scene" feel)
     if (gameState === 'MENU') {
-      drawGame(
-        ctx,
-        [],
-        [],
-        [],
-        [],
-        [],
-        difficultyRef.current,
-        { x: 0, y: 0 },
-        undefined,
-        0
-      );
+      const progression = loadProgression();
+      const blockCount = 1 + (progression.upgradeLevels.blockCountLevel ?? 0);
+      drawMenuScene(ctx, blockCount);
     }
   }, [gameState]);
   
@@ -1211,9 +1202,9 @@ export const CoffeeRushGame: React.FC = () => {
           style={{ imageRendering: 'pixelated' }}
         />
         
-        {/* Garage Screen (Menu + Upgrades combined) */}
+        {/* Garage Overlay (Menu + Upgrades - transparent overlay on canvas) */}
         {gameState === 'MENU' && (
-          <GarageScreen onPlay={handlePlay} />
+          <GarageOverlay onPlay={handlePlay} blockCount={1 + (loadProgression().upgradeLevels.blockCountLevel ?? 0)} />
         )}
         
         {/* Game HUD */}

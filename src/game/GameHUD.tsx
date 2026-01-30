@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Zap, Clock, Pause } from 'lucide-react';
+import { Clock, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GAME_CONFIG } from './config';
 import type { GameMode, BossState } from './types';
@@ -14,15 +14,14 @@ interface GameHUDProps {
   onTonicBomb: () => void;
   canUseBomb: boolean;
   onPause: () => void;
-  // Phase 2B-3: Chapter mode UI
   gameMode: GameMode;
   bossState: BossState;
   bossIncomingTimer: number;
   checkpointIndex: number;
 }
 
-const CHECKPOINT_INTERVAL = 20; // seconds per checkpoint (v3.3: more frequent milestones)
-const TOTAL_CHECKPOINTS = 9;   // 3 minutes total display for endless
+const CHECKPOINT_INTERVAL = 20;
+const TOTAL_CHECKPOINTS = 9;
 
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived,
@@ -39,12 +38,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   bossIncomingTimer,
   checkpointIndex,
 }) => {
-  // Phase 1.8: "Nice!" popup shows when breather starts (rush just ended)
   const [showNice, setShowNice] = useState(false);
   const [lastBreatherTimer, setLastBreatherTimer] = useState(0);
   
   useEffect(() => {
-    // Detect when breather just started (timer went from 0 to > 0)
     if (breatherTimer > 0 && lastBreatherTimer === 0) {
       setShowNice(true);
       const timeout = setTimeout(() => setShowNice(false), 900);
@@ -62,9 +59,13 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   const currentCheckpoint = Math.floor(timeSurvived / CHECKPOINT_INTERVAL);
   const checkpointProgress = (timeSurvived % CHECKPOINT_INTERVAL) / CHECKPOINT_INTERVAL;
 
-  // Chapter mode specific UI
   const isChapter = gameMode === 'CHAPTER';
   const bossCheckpoint = GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT;
+
+  // Calculate power as numeric + bar percentage
+  const powerPercent = (power / maxPower) * 100;
+  const skillCost = GAME_CONFIG.TONIC_BOMB_COST;
+  const canUseSkill = power >= skillCost;
   
   return (
     <>
@@ -101,12 +102,10 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       
       {/* Top Bar */}
       <div className={`absolute top-0 left-0 right-0 flex flex-col gap-2 p-3 z-10 ${isMorningRush && !bossState.isActive ? 'morning-rush-pulse bg-warm-orange/20' : ''} ${bossState.isActive ? 'bg-red-900/20' : ''}`}>
-        {/* Chapter Mode: CP1/CP2/CP3/BOSS segment bar */}
+        {/* Chapter/Endless Progress Bar */}
         {isChapter ? (
           <div className="flex flex-col gap-1 px-1">
-            {/* Chapter Progress Segments */}
             <div className="flex gap-1">
-              {/* CP1, CP2, CP3 segments */}
               {[1, 2, 3].map((cp) => {
                 const cpProgress = checkpointIndex >= cp ? 100 : 
                                    checkpointIndex === cp - 1 ? 
@@ -125,7 +124,6 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                   </div>
                 );
               })}
-              {/* BOSS segment */}
               <div className="flex-1 flex flex-col items-center">
                 <div className={`w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60 ${bossIncomingTimer > 0 || bossState.isActive ? 'ring-1 ring-red-500 animate-pulse' : ''}`}>
                   <div 
@@ -140,7 +138,6 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
         ) : (
-          /* Endless Mode: Original checkpoint bar */
           <div className="flex gap-1 px-1">
             {Array.from({ length: TOTAL_CHECKPOINTS }).map((_, i) => (
               <div 
@@ -170,7 +167,6 @@ export const GameHUD: React.FC<GameHUDProps> = ({
         
         {/* Time and Tips Row */}
         <div className="flex justify-between items-center">
-          {/* Time Survived */}
           <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
             <Clock className="w-5 h-5 text-coffee-cream" />
             <span className="text-lg font-bold text-coffee-cream font-mono">
@@ -178,23 +174,20 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </span>
           </div>
           
-          {/* Mode indicator + Rush/Boss Phase */}
+          {/* Rush/Boss indicator */}
           <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-            {/* BOSS PHASE indicator (replaces Rush during boss) */}
             {bossState.isActive && (
               <div className="bg-red-600 text-coffee-foam px-4 py-1.5 rounded-full text-sm font-bold animate-pulse shadow-lg border border-red-400">
                 👑 BOSS PHASE
               </div>
             )}
             
-            {/* Morning Rush Indicator (not during boss) */}
             {isMorningRush && !bossState.isActive && (
               <div className="bg-warm-orange text-coffee-foam px-3 py-1 rounded-full text-sm font-bold animate-pulse">
                 ☕ RUSH!
               </div>
             )}
             
-            {/* "Nice!" popup during breather */}
             {showNice && !bossState.isActive && (
               <div className="bg-energy/90 text-coffee-foam px-4 py-2 rounded-full text-sm font-bold animate-fade-in shadow-lg">
                 ☕ Nice!
@@ -202,7 +195,6 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             )}
           </div>
           
-          {/* Tips Counter */}
           <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
             <span className="text-lg">💰</span>
             <span className="text-lg font-bold text-gold">
@@ -212,65 +204,56 @@ export const GameHUD: React.FC<GameHUDProps> = ({
         </div>
       </div>
       
-      {/* Bottom Bar - Power & Skill */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+      {/* ═══════════════════════════════════════════════════════════════════════
+          BOTTOM BAR - TDS-style Power Bar + Skill Button
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-10 bg-gradient-to-t from-coffee-espresso/80 to-transparent">
         <div className="flex items-center gap-3">
           {/* Pause Button */}
           <Button
             onClick={onPause}
             variant="ghost"
             size="icon"
-            className="h-10 w-10 rounded-lg bg-coffee-dark/60 hover:bg-coffee-dark/80 text-coffee-cream"
+            className="h-12 w-12 rounded-xl bg-coffee-dark/70 hover:bg-coffee-dark/90 text-coffee-cream border border-coffee-medium/30"
           >
-            <Pause className="w-5 h-5" />
+            <Pause className="w-6 h-6" />
           </Button>
           
-          {/* Power Bar (TDS-style) */}
-          <div className="flex-1">
+          {/* Power Bar (TDS-style: single bar with numeric) */}
+          <div className="flex-1 bg-coffee-dark/80 rounded-xl p-2 border border-coffee-medium/30">
             <div className="flex items-center gap-2 mb-1">
-              <Zap className="w-4 h-4 text-energy" />
-              <span className="text-sm text-coffee-cream font-medium">Power</span>
+              <span className="text-lg">⚡</span>
+              <span className="text-sm text-coffee-cream font-semibold">Power</span>
+              <span className="text-sm text-energy font-bold ml-auto">{power.toFixed(1)}</span>
             </div>
             <div className="h-3 bg-hp-bg rounded-full overflow-hidden">
               <div 
                 className="h-full bg-energy transition-all duration-200 rounded-full"
-                style={{ width: `${(power / maxPower) * 100}%` }}
+                style={{ width: `${powerPercent}%` }}
               />
-            </div>
-            {/* Power pips (showing charge thresholds) */}
-            <div className="flex gap-0.5 mt-1">
-              {Array.from({ length: maxPower }).map((_, i) => (
-                <div 
-                  key={i}
-                  className={`h-1.5 flex-1 rounded-sm transition-colors ${
-                    i < Math.floor(power) ? 'bg-energy' : 'bg-hp-bg'
-                  }`}
-                />
-              ))}
             </div>
           </div>
           
-          {/* Tonic Bomb Button - TDS-style charge display */}
-          {(() => {
-            const rawCharges = Math.floor(power / GAME_CONFIG.TONIC_BOMB_COST);
-            const bombCharges = Math.min(rawCharges, GAME_CONFIG.MAX_BOMB_CHARGES);
-            return (
-              <Button
-                onClick={onTonicBomb}
-                disabled={bombCharges === 0}
-                className={`h-16 w-20 rounded-xl text-lg font-bold shadow-lg transition-all ${
-                  bombCharges > 0
-                    ? 'bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam' 
-                    : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                <div className="flex flex-col items-center">
-                  <span className="text-xl">⚡</span>
-                  <span className="text-sm font-bold">×{bombCharges}</span>
-                </div>
-              </Button>
-            );
-          })()}
+          {/* Skill Button (Tonic Bomb) - TDS-style with cost badge */}
+          <Button
+            onClick={onTonicBomb}
+            disabled={!canUseSkill}
+            className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
+              canUseSkill
+                ? 'bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam border-warm-orange/50 hover:scale-105 active:scale-95' 
+                : 'bg-coffee-dark/60 text-coffee-cream/40 border-coffee-dark/30'
+            }`}
+          >
+            {/* Skill icon (grenade/bomb) */}
+            <span className="text-2xl">💣</span>
+            
+            {/* Cost badge */}
+            <div className={`absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              canUseSkill ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'
+            }`}>
+              {skillCost}⚡
+            </div>
+          </Button>
         </div>
       </div>
     </>
