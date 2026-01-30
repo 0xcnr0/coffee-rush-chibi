@@ -255,13 +255,13 @@ Config flag: `TICKET_ENFORCEMENT_ENABLED: false`
 
 ## Kabul Kriterleri
 
-- [ ] Chapter 1 run: Heavy spawn yok (zaten var)
-- [ ] B2 upgrade ile top box ilk kırılıyor (zaten var)
-- [ ] Boss fight sırasında sıfır add spawn (zaten var)
-- [ ] Power 0'dan basliyor, charge sayaci doluyorken artiyor
-- [ ] Play tiklaninca fade-out + ayni ekran hissi
-- [ ] Pause calisiyor, Leave garage'a donduruyor ve tips veriyor
-- [ ] Garage: Compact tiles, footer tabs (locked), chapter modal
+- [x] Chapter 1 run: Heavy spawn yok (zaten var)
+- [x] B2 upgrade ile top box ilk kırılıyor (zaten var)
+- [x] Boss fight sırasında sıfır add spawn (zaten var)
+- [x] Power 0'dan basliyor, charge sayaci doluyorken artiyor
+- [x] Play tiklaninca fade-out + ayni ekran hissi
+- [x] Pause calisiyor, Leave garage'a donduruyor ve tips veriyor
+- [x] Garage: Compact tiles, footer tabs (locked), chapter modal
 
 ---
 

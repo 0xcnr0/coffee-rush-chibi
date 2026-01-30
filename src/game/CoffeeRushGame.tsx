@@ -7,6 +7,7 @@ import { GarageScreen } from './GarageScreen';
 import { EndScreen } from './EndScreen';
 import { GameHUD } from './GameHUD';
 import { DebugHUD } from './DebugHUD';
+import { PauseMenu } from './PauseMenu';
 import { 
   loadProgression, 
   updateBestRecords,
@@ -87,6 +88,7 @@ export const CoffeeRushGame: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [gameState, setGameState] = useState<GameState>('MENU');
   const [gameMode, setGameMode] = useState<GameMode>('CHAPTER');
+  const [isPaused, setIsPaused] = useState(false);
   const [stats, setStats] = useState<GameStats>({ timeSurvived: 0, customersServed: 0, totalTips: 0, beansEarned: 0, isNewRecord: false });
   const [energy, setEnergy] = useState<number>(0); // Phase 1.6A: Start at 0 (TDS pacing)
   const [tips, setTips] = useState(0);
@@ -227,8 +229,8 @@ export const CoffeeRushGame: React.FC = () => {
       GAME_CONFIG.MAX_DAMAGE_MULTIPLIER
     );
     const energyRegenMultiplier = Math.min(
-      getUpgradeMultiplier(upgradeLevels.energyRegenLevel, GAME_CONFIG.ENERGY_BONUS_PER_LEVEL),
-      GAME_CONFIG.MAX_ENERGY_MULTIPLIER
+      getUpgradeMultiplier(upgradeLevels.energyRegenLevel, GAME_CONFIG.POWER_BONUS_PER_LEVEL),
+      GAME_CONFIG.MAX_POWER_MULTIPLIER
     );
     
     // Apply multipliers to effective values (stored in refs)
@@ -339,8 +341,36 @@ export const CoffeeRushGame: React.FC = () => {
   const handlePlay = useCallback((mode: GameMode) => {
     setGameMode(mode);
     initGame();
+    setIsPaused(false);
     setGameState('PLAY');
   }, [initGame]);
+  
+  // Phase 2C.6: Pause handlers
+  const handlePause = useCallback(() => {
+    setIsPaused(true);
+  }, []);
+  
+  const handleContinue = useCallback(() => {
+    setIsPaused(false);
+  }, []);
+  
+  // Phase 2C.6: Leave game - award tips but no bonuses/records
+  const handleLeave = useCallback(() => {
+    const beansEarned = tipsRef.current;
+    
+    // Award earned tips only (no chapter bonus, no record updates)
+    if (beansEarned > 0) {
+      const { loadProgression, saveProgression } = require('./persistence');
+      const current = loadProgression();
+      saveProgression({
+        ...current,
+        totalBeans: current.totalBeans + beansEarned,
+      });
+    }
+    
+    setIsPaused(false);
+    setGameState('MENU');
+  }, []);
   
   // Phase 2C: Build telemetry object for EndScreen
   const buildTelemetry = useCallback((): RunTelemetry => {
@@ -707,11 +737,11 @@ export const CoffeeRushGame: React.FC = () => {
       difficulty.rushTimer = 12; // 12s rush in stress test
     }
     
-    // Energy regeneration (with upgrade multiplier)
-    if (energyRef.current < GAME_CONFIG.MAX_ENERGY) {
-      const effectiveRegenRate = GAME_CONFIG.ENERGY_REGEN_RATE * energyRegenMultiplierRef.current;
+    // Power regeneration (with upgrade multiplier) - TDS-style
+    if (energyRef.current < GAME_CONFIG.MAX_POWER) {
+      const effectiveRegenRate = GAME_CONFIG.POWER_REGEN_RATE * energyRegenMultiplierRef.current;
       energyRef.current = Math.min(
-        GAME_CONFIG.MAX_ENERGY,
+        GAME_CONFIG.MAX_POWER,
         energyRef.current + effectiveRegenRate * deltaTime
       );
       if (shouldUpdateHUD) {
@@ -1129,7 +1159,7 @@ export const CoffeeRushGame: React.FC = () => {
     gameMode
   ]);
   
-  useGameLoop(gameLoop, gameState === 'PLAY');
+  useGameLoop(gameLoop, gameState === 'PLAY' && !isPaused);
   
   // Canvas setup
   useEffect(() => {
@@ -1187,16 +1217,17 @@ export const CoffeeRushGame: React.FC = () => {
         )}
         
         {/* Game HUD */}
-        {gameState === 'PLAY' && (
+        {gameState === 'PLAY' && !isPaused && (
           <GameHUD
             timeSurvived={timeSurvived}
             tips={tips}
-            energy={energy}
-            maxEnergy={GAME_CONFIG.MAX_ENERGY}
+            power={energy}
+            maxPower={GAME_CONFIG.MAX_POWER}
             isMorningRush={difficultyRef.current.isMorningRush}
             breatherTimer={difficultyRef.current.breatherTimer}
             onTonicBomb={handleTonicBomb}
             canUseBomb={canUseBomb}
+            onPause={handlePause}
             gameMode={gameMode}
             bossState={bossState}
             bossIncomingTimer={bossIncomingRef.current}
@@ -1204,8 +1235,17 @@ export const CoffeeRushGame: React.FC = () => {
           />
         )}
         
+        {/* Pause Menu */}
+        {gameState === 'PLAY' && isPaused && (
+          <PauseMenu
+            tipsSoFar={tipsRef.current}
+            onContinue={handleContinue}
+            onLeave={handleLeave}
+          />
+        )}
+        
         {/* Debug HUD (optional) */}
-        {gameState === 'PLAY' && (
+        {gameState === 'PLAY' && !isPaused && (
           <DebugHUD
             fps={debugInfo.fps}
             minFps={debugInfo.minFps}
