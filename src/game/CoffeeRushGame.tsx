@@ -675,7 +675,8 @@ export const CoffeeRushGame: React.FC = () => {
     }
     
     // Update morning rush timer (stress test uses 12s duration)
-    if (difficulty.isMorningRush) {
+    // Phase 2D: Pause rush timer during boss fight - boss is its own pressure source
+    if (difficulty.isMorningRush && !bossStateRef.current.isActive) {
       difficulty.rushTimer -= deltaTime;
       
       // Phase 2C: Track rush duration
@@ -686,6 +687,13 @@ export const CoffeeRushGame: React.FC = () => {
         // Start post-rush recovery period - gradual spawn ramp-up
         difficulty.breatherTimer = GAME_CONFIG.POST_RUSH_RECOVERY_DURATION;
       }
+    }
+    
+    // Phase 2D: Force rush off when boss becomes active
+    if (bossStateRef.current.isActive && difficulty.isMorningRush) {
+      difficulty.isMorningRush = false;
+      difficulty.rushTimer = 0;
+      // Don't start recovery during boss - boss fight has its own pacing
     }
     
     // Update recovery timer (gradual ramp-up) and track total recovery time
