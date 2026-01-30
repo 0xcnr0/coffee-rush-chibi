@@ -1,6 +1,9 @@
 import { GAME_CONFIG, COLORS } from './config';
 import type { CartBlock, Enemy, EnemyKind, Projectile, TipDrop, Particle, DifficultyState, BossState } from './types';
 
+/**
+ * Draw the full game scene with all entities
+ */
 export function drawGame(
   ctx: CanvasRenderingContext2D,
   blocks: CartBlock[],
@@ -60,6 +63,40 @@ export function drawGame(
   }
   
   ctx.restore();
+}
+
+/**
+ * Draw the menu/garage scene with the cart at gameplay position
+ * This creates the "same scene" feel - cart is identical in menu and game
+ */
+export function drawMenuScene(
+  ctx: CanvasRenderingContext2D,
+  blockCount: number
+) {
+  const { CANVAS_HEIGHT, BLOCK_HEIGHT, BLOCK_MAX_HP } = GAME_CONFIG;
+  
+  // Draw background
+  drawBackground(ctx);
+  
+  // Draw ground
+  drawGround(ctx);
+  
+  // Create temporary blocks for display
+  const groundY = CANVAS_HEIGHT - 80;
+  const blocks: CartBlock[] = Array.from({ length: blockCount }, (_, i) => ({
+    id: i,
+    hp: BLOCK_MAX_HP,
+    maxHp: BLOCK_MAX_HP,
+    y: groundY - 30 - (i + 1) * BLOCK_HEIGHT,
+    height: BLOCK_HEIGHT,
+    destroyed: false,
+  }));
+  
+  // Draw cart
+  drawCart(ctx, blocks);
+  
+  // Draw barista
+  drawBarista(ctx, blocks);
 }
 
 function drawBackground(ctx: CanvasRenderingContext2D) {
