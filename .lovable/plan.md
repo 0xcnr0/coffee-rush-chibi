@@ -1,83 +1,220 @@
 
-# Phase 2C.7: TDS-like UI Layout + True Same-Scene Garage→Game
+# Phase 2C.7: Fix Leave + Viewport Fit (Scale-to-Fit)
 
-Bu phase, Coffee Rush'ı Tower Defense Simulator (TDS) hissiyatına yaklaştıran büyük bir UI overhaul içeriyor.
+## Tespit Edilen Sorunlar
 
----
+### 1. KRITIK BUG: handleLeave calismama
+**Konum:** `src/game/CoffeeRushGame.tsx` satir 362-368
 
-## Tamamlanan Değişiklikler
+**Problem:** 
+- `require('./persistence')` dinamik import kullanilmis - ESM/Vite'da calismaz
+- Dahasi, `saveProgression` hic import edilmemis! Satir 11-16'da sadece `loadProgression`, `updateBestRecords`, `updateChapterClear`, `getUpgradeMultiplier` var
 
-### 1. True Same-Scene Garage → Game ✅
-- Canvas artık MENU ve PLAY state'lerinde aynı cart'ı çiziyor
-- `drawMenuScene()` fonksiyonu eklendi (renderer.ts)
-- `GarageOverlay` component canvas üzerine transparent overlay olarak çalışıyor
-- Play basıldığında sadece UI overlay fade-out yapıyor, cart yerinde kalıyor
+**Cozum:** `saveProgression`'i import listesine ekle ve `require()` satirini kaldir
 
-### 2. TDS-Style Top Info Bar ✅
-- **Sol**: Profile/Level placeholder (Lv.1 badge)
-- **Orta**: Chapter ismi (tıklanabilir - modal açıyor)
-  - "☕ Dawn Rush" (Chapter 1)
-  - "∞ Endless" (Endless mode)
-- **Sağ**: 
-  - 🔋 Energy (10/10) - günlük stamina (Power ile karıştırılmıyor!)
-  - 🪙 Coins 
-  - 🏆 Quests button (placeholder modal)
+### 2. Viewport Bosluk Problemi
+**Konum:** 
+- `src/pages/Index.tsx` satir 5: `flex items-center justify-center`
+- `src/index.css` satir 117: `.game-container` icinde ayni ortalama
 
-### 3. Contextual Upgrade Tiles ✅
-- 2x2 grid kaldırıldı
-- TDS tarzı contextual tile'lar:
-  - **📦 +1 Cargo**: Sağ üstte, her zaman görünür
-  - **🛡️ Cart HP**: Sol tarafta (sadece cargo varsa)
-  - **☕ Damage + ⚡ Power**: Alt kısımda compact row
+**Problem:** Dikey ortalama ust/alt bosluk yaratiyor
 
-### 4. In-Game Bottom HUD ✅
-- **Power Bar**: Tek bar + numeric değer (örn: "⚡ Power 3.2")
-- **Skill Button**: 💣 ikonu + "2⚡" cost badge
-- Power tüketim sistemi korundu (TONIC_BOMB_COST = 2)
+### 3. Container Boyutlandirma
+**Konum:** `src/game/CoffeeRushGame.tsx` satir 1191-1197
 
-### 5. Footer Tabs ✅
-- Battle (aktif)
-- Shop, Hero, Weapons, Tower (locked - "Coming Soon" toast)
+**Problem:** `min(100vh, 640px)` kisitlama bazi ekranlarda bosluk birakiyor
 
 ---
 
-## Dosya Değişiklikleri
+## Uygulama Plani
 
-| Dosya | Durum | Açıklama |
-|-------|-------|----------|
-| `src/game/GarageOverlay.tsx` | **YENİ** | TDS-style overlay component |
-| `src/game/GarageScreen.tsx` | **SİLİNDİ** | Eski garage component |
-| `src/game/GameHUD.tsx` | Güncellendi | Yeni power bar + skill button UI |
-| `src/game/renderer.ts` | Güncellendi | `drawMenuScene()` fonksiyonu eklendi |
-| `src/game/CoffeeRushGame.tsx` | Güncellendi | GarageOverlay import, menu scene draw |
+### Adim 1: saveProgression import fix
+**Dosya:** `src/game/CoffeeRushGame.tsx`
+
+```tsx
+// Satir 11-16'yi guncelle:
+import { 
+  loadProgression, 
+  saveProgression,  // <-- EKLE
+  updateBestRecords,
+  updateChapterClear,
+  getUpgradeMultiplier 
+} from './persistence';
+```
+
+### Adim 2: handleLeave require() kaldir
+**Dosya:** `src/game/CoffeeRushGame.tsx`
+
+```tsx
+// Satir 357-373 - require satirini kaldir:
+const handleLeave = useCallback(() => {
+  const beansEarned = tipsRef.current;
+  if (beansEarned > 0) {
+    // require satiri KALDIRILDI - artik ust-level import kullaniliyor
+    const current = loadProgression();
+    saveProgression({
+      ...current,
+      totalBeans: current.totalBeans + beansEarned,
+    });
+  }
+  setIsPaused(false);
+  setGameState('MENU');
+}, []);
+```
+
+### Adim 3: Index.tsx viewport fix
+**Dosya:** `src/pages/Index.tsx`
+
+```tsx
+import { CoffeeRushGame } from '@/game/CoffeeRushGame';
+
+const Index = () => {
+  return (
+    <div className="w-screen h-[100dvh] overflow-hidden bg-coffee-espresso">
+      <CoffeeRushGame />
+    </div>
+  );
+};
+
+export default Index;
+```
+
+### Adim 4: game-container ortalama kaldir
+**Dosya:** `src/index.css`
+
+```css
+.game-container {
+  @apply w-full h-full overflow-hidden;
+  /* flex items-center justify-center KALDIRILDI */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+```
+
+### Adim 5: CSS base styles + safe-area
+**Dosya:** `src/index.css`
+
+```css
+/* @layer base icine ekle */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+@supports (height: 100dvh) {
+  #root {
+    height: 100dvh;
+  }
+}
+```
+
+### Adim 6: Scale-to-fit wrapper
+**Dosya:** `src/game/CoffeeRushGame.tsx`
+
+Component icine scale state ve effect ekle:
+
+```tsx
+// Component basinda (useState'lerden sonra):
+const [scale, setScale] = useState(1);
+
+useEffect(() => {
+  const computeScale = () => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const s = Math.min(
+      vw / GAME_CONFIG.CANVAS_WIDTH,
+      vh / GAME_CONFIG.CANVAS_HEIGHT
+    );
+    setScale(Math.max(0.5, Math.min(s, 2)));
+  };
+  
+  computeScale();
+  window.addEventListener('resize', computeScale);
+  window.addEventListener('orientationchange', computeScale);
+  return () => {
+    window.removeEventListener('resize', computeScale);
+    window.removeEventListener('orientationchange', computeScale);
+  };
+}, []);
+```
+
+Return blogu:
+
+```tsx
+return (
+  <div className="cr-viewport">
+    <div 
+      className="cr-stage"
+      style={{
+        width: GAME_CONFIG.CANVAS_WIDTH,
+        height: GAME_CONFIG.CANVAS_HEIGHT,
+        transform: `translate(-50%, -50%) scale(${scale})`,
+      }}
+    >
+      <canvas ... />
+      {/* GarageOverlay, GameHUD, PauseMenu, EndScreen hepsi burda */}
+    </div>
+  </div>
+);
+```
+
+### Adim 7: cr-viewport ve cr-stage CSS
+**Dosya:** `src/index.css`
+
+```css
+.cr-viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  background: hsl(var(--coffee-espresso));
+}
+
+.cr-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: center center;
+}
+```
 
 ---
 
-## Terminoloji (Önemli!)
+## Dosya Degisiklikleri Ozeti
 
-| Kavram | İkon | Kullanım |
-|--------|------|----------|
-| **POWER** | ⚡ | Run içi kaynak, skill kullanımı |
-| **ENERGY** | 🔋 | Günlük stamina (10/10 regen) |
-
-Bu iki kavram farklı ikonlarla gösterilmeli - TDS'de ikisi de lightning kullanıyor ama biz ayırıyoruz.
+| Dosya | Degisiklik |
+|-------|------------|
+| `src/game/CoffeeRushGame.tsx` | saveProgression import, handleLeave fix, scale wrapper |
+| `src/pages/Index.tsx` | Ortalama class'lari kaldir, h-[100dvh] |
+| `src/index.css` | game-container fix, cr-viewport/cr-stage, base styles |
 
 ---
 
 ## Kabul Kriterleri
 
-- [x] Garage'daki cart, oyundaki cart ile AYNI (aynı sprite, aynı pozisyon)
-- [x] Play basıldığında "UI kayboldu, oyun başladı" hissi
-- [x] Top info bar: Profile | Chapter name | Energy + Coins
-- [x] Contextual upgrade tiles: +1 Cargo (sağ üst), HP (sol), Damage/Power (alt)
-- [x] Bottom HUD: Power bar numeric + skill button with cost badge
-- [x] Footer tabs: Battle aktif, diğerleri locked
+- [ ] Leave tiklaninca Garage'a donuyor
+- [ ] Leave tiklaninca tips/beans kaydediliyor
+- [ ] Oyun alani viewport'u dolduruyor (ust/alt bosluk yok)
+- [ ] Oyun aspect ratio bozmadan ekrana sigiyor
+- [ ] Canvas + HUD + PauseMenu + EndScreen ayni stage'de ölçekleniyor
 
 ---
 
-## İleride Yapılacak (Phase 2C.8+)
+## Risk Degerlendirmesi
 
-- [ ] Energy enforcement (gerçek günlük limit)
-- [ ] Profile/Level gerçek verilerle
-- [ ] Quests/Daily sistemi
-- [ ] Shop/Hero/Weapons/Tower tab içerikleri
+| Fix | Risk | Aciklama |
+|-----|------|----------|
+| saveProgression import | Dusuk | Eksik import ekleniyor |
+| handleLeave require() | Dusuk | Hatali satir kaldiriliyor |
+| Viewport dvh | Dusuk | Modern tarayici destegi iyi |
+| Scale wrapper | Orta | Layout degisikligi, UI koordinatlari etkilenmez (pointer-events stage icinde) |
+
+---
+
+## Onemli Not: Touch Events
+
+Scale transform kullandigimizda CSS pointer-events otomatik olarak dogru koordinatlari hesaplar. Canvas uzerinde ozel touch handling varsa `scale` degiskeni ile koordinat donusumu gerekebilir, ama mevcut kodda canvas tiklamalari kullanilmiyor (butona tiklamalar HUD'da) bu yuzden sorun olmamali.
