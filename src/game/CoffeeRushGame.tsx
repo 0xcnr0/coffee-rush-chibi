@@ -9,7 +9,8 @@ import { GameHUD } from './GameHUD';
 import { DebugHUD } from './DebugHUD';
 import { PauseMenu } from './PauseMenu';
 import { 
-  loadProgression, 
+  loadProgression,
+  saveProgression,
   updateBestRecords,
   updateChapterClear,
   getUpgradeMultiplier 
@@ -95,6 +96,30 @@ export const CoffeeRushGame: React.FC = () => {
   const [timeSurvived, setTimeSurvived] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
   const [isStressTest, setIsStressTest] = useState(false);
+  
+  // Phase 2C.7: Scale-to-fit state
+  const [scale, setScale] = useState(1);
+  
+  // Phase 2C.7: Compute scale on resize
+  useEffect(() => {
+    const computeScale = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const s = Math.min(
+        vw / GAME_CONFIG.CANVAS_WIDTH,
+        vh / GAME_CONFIG.CANVAS_HEIGHT
+      );
+      setScale(Math.max(0.5, Math.min(s, 2)));
+    };
+    
+    computeScale();
+    window.addEventListener('resize', computeScale);
+    window.addEventListener('orientationchange', computeScale);
+    return () => {
+      window.removeEventListener('resize', computeScale);
+      window.removeEventListener('orientationchange', computeScale);
+    };
+  }, []);
   
   // Phase 2B-2: Boss state
   const [bossState, setBossState] = useState<BossState>({
@@ -360,7 +385,6 @@ export const CoffeeRushGame: React.FC = () => {
     
     // Award earned tips only (no chapter bonus, no record updates)
     if (beansEarned > 0) {
-      const { loadProgression, saveProgression } = require('./persistence');
       const current = loadProgression();
       saveProgression({
         ...current,
@@ -1184,16 +1208,14 @@ export const CoffeeRushGame: React.FC = () => {
   const canUseBomb = energyRef.current >= GAME_CONFIG.TONIC_BOMB_COST;
 
   return (
-    <div className="game-container relative w-full h-full bg-coffee-espresso">
-      {/* Canvas Container - maintains 9:16 aspect ratio */}
+    <div className="cr-viewport">
+      {/* Stage Container - scale-to-fit with fixed dimensions */}
       <div 
-        className="relative"
+        className="cr-stage"
         style={{
-          width: `min(100vw, ${GAME_CONFIG.CANVAS_WIDTH}px)`,
-          height: `min(100vh, ${GAME_CONFIG.CANVAS_HEIGHT}px)`,
-          maxWidth: '100vw',
-          maxHeight: '100vh',
-          aspectRatio: '9/16',
+          width: GAME_CONFIG.CANVAS_WIDTH,
+          height: GAME_CONFIG.CANVAS_HEIGHT,
+          transform: `translate(-50%, -50%) scale(${scale})`,
         }}
       >
         <canvas
