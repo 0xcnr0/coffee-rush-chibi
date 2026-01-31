@@ -106,15 +106,44 @@
     @apply border-border;
   }
 
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  @supports (height: 100dvh) {
+    #root {
+      height: 100dvh;
+    }
+  }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
+/* Phase 2C.7: Scale-to-fit viewport classes */
+.cr-viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  background: hsl(var(--coffee-espresso));
+}
+
+.cr-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: center center;
+}
+
 /* Game-specific utilities */
 @layer utilities {
   .game-container {
-    @apply w-full h-full flex items-center justify-center overflow-hidden;
+    @apply w-full h-full overflow-hidden;
     touch-action: none;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
