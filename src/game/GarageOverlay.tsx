@@ -440,22 +440,20 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         })}
 
         {/* +1 Cargo Tile - Top right of cart (barista level) */}
-        {!cargoMaxed && (
-          <div 
-            className="absolute pointer-events-auto"
-            style={{ 
-              top: baristaY - 10,
-              left: cartRightEdge + 15,
-            }}
-          >
-            <CargoTile
-              currentLevel={cargoLevel}
-              beans={progression.totalBeans}
-              onPurchase={() => handlePurchase(CARGO_UPGRADE)}
-              baseCost={CARGO_UPGRADE.baseCost}
-            />
-          </div>
-        )}
+        <div 
+          className="absolute pointer-events-auto"
+          style={{ 
+            top: baristaY - 10,
+            left: cartRightEdge + 15,
+          }}
+        >
+          <CargoTile
+            currentLevel={cargoLevel}
+            beans={progression.totalBeans}
+            onPurchase={() => handlePurchase(CARGO_UPGRADE)}
+            baseCost={CARGO_UPGRADE.baseCost}
+          />
+        </div>
       </div>
 
       {/* Spacer */}
