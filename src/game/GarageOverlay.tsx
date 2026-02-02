@@ -409,12 +409,14 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           UPGRADE TILES - Absolute positioned relative to cart
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* HP Upgrade Tiles - Left side of each block */}
-        {Array.from({ length: blockCount }, (_, i) => {
-          const blockY = getBlockY(i);
+        {/* HP Upgrade Tiles - Only for cargo boxes (not chassis) */}
+        {/* Chassis (index 0) has fixed HP, only cargo boxes (index 1+) get HP upgrades */}
+        {blockCount > 1 && Array.from({ length: blockCount - 1 }, (_, i) => {
+          const blockIndex = i + 1; // Start from box 1, skip chassis
+          const blockY = getBlockY(blockIndex);
           return (
             <div 
-              key={i}
+              key={blockIndex}
               className="absolute pointer-events-auto"
               style={{ 
                 top: blockY + 5,
@@ -458,7 +460,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           Row 3: Power + Damage (horizontal)
           Row 2: PLAY (wide) + Reset (narrow)
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="pb-14 px-4 flex flex-col gap-2">
+      <div className="pb-16 px-4 flex flex-col gap-2">
         {/* Row 3: Power + Damage (horizontal tiles) */}
         <div className="flex gap-2">
           <HorizontalUpgradeTile
