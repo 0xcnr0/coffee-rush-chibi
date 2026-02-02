@@ -241,7 +241,7 @@ const SmallHPTile: React.FC<SmallHPTileProps> = ({
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CARGO UPGRADE TILE (+1 Cargo - top right of cart)
+// CARGO UPGRADE TILE (+1 Cargo - compact, same size as HP tile)
 // ═══════════════════════════════════════════════════════════════════════════════
 interface CargoTileProps {
   currentLevel: number;
@@ -266,7 +266,7 @@ const CargoTile: React.FC<CargoTileProps> = ({
       onClick={onPurchase}
       disabled={isMaxed || !canAfford}
       className={`
-        flex flex-col items-center p-2 rounded-xl border-2 min-w-[56px]
+        flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px]
         transition-all duration-200
         ${isMaxed 
           ? 'bg-coffee-dark/60 border-coffee-medium/30 opacity-60' 
@@ -276,22 +276,21 @@ const CargoTile: React.FC<CargoTileProps> = ({
         }
       `}
     >
-      <Package className={`w-5 h-5 ${isMaxed ? 'text-coffee-cream/50' : 'text-warm-orange'}`} />
-      <span className="text-[10px] text-coffee-cream/80 mt-0.5">+1 Cargo</span>
-      <div className="flex gap-0.5 my-0.5">
+      <Package className={`w-3.5 h-3.5 ${isMaxed ? 'text-coffee-cream/50' : 'text-warm-orange'}`} />
+      <div className="flex gap-px mt-0.5">
         {Array.from({ length: maxLevel }, (_, i) => (
           <div 
             key={i}
-            className={`w-1.5 h-1.5 rounded-full ${
+            className={`w-1 h-1 rounded-full ${
               i < currentLevel ? 'bg-warm-orange' : 'bg-coffee-medium/40'
             }`}
           />
         ))}
       </div>
       {isMaxed ? (
-        <span className="text-[9px] text-green-400">MAX</span>
+        <span className="text-[6px] text-green-400 mt-0.5">MAX</span>
       ) : (
-        <span className={`text-[9px] ${canAfford ? 'text-gold' : 'text-coffee-cream/50'}`}>
+        <span className={`text-[7px] mt-0.5 ${canAfford ? 'text-gold' : 'text-coffee-cream/50'}`}>
           🪙{cost}
         </span>
       )}
@@ -300,7 +299,7 @@ const CargoTile: React.FC<CargoTileProps> = ({
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WEAPON SELECTION TILE (3 options - shown when no weapon selected)
+// WEAPON SELECTION TILE (3 options - compact, same size as HP tile)
 // ═══════════════════════════════════════════════════════════════════════════════
 interface WeaponSelectionTileProps {
   weapon: WeaponInfo;
@@ -322,7 +321,7 @@ const WeaponSelectionTile: React.FC<WeaponSelectionTileProps> = ({
       onClick={onSelect}
       disabled={locked || !canAfford}
       className={`
-        flex flex-col items-center p-1.5 rounded-lg border min-w-[44px] h-[52px]
+        flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px]
         transition-all duration-200 relative
         ${locked 
           ? 'bg-coffee-dark/40 border-coffee-medium/20 opacity-50' 
@@ -333,13 +332,12 @@ const WeaponSelectionTile: React.FC<WeaponSelectionTileProps> = ({
       `}
     >
       {locked && (
-        <div className="absolute top-0.5 right-0.5">
+        <div className="absolute top-0 right-0">
           <Lock className="w-2 h-2 text-coffee-cream/40" />
         </div>
       )}
-      <span className="text-lg">{weapon.icon}</span>
-      <span className="text-[7px] text-coffee-cream/60 mt-0.5 truncate max-w-full">{weapon.name}</span>
-      <span className={`text-[7px] mt-0.5 ${locked ? 'text-coffee-cream/30' : canAfford ? 'text-gold' : 'text-coffee-cream/40'}`}>
+      <span className="text-sm">{weapon.icon}</span>
+      <span className={`text-[6px] mt-0.5 ${locked ? 'text-coffee-cream/30' : canAfford ? 'text-gold' : 'text-coffee-cream/40'}`}>
         🪙{weapon.baseCost}
       </span>
     </button>
@@ -347,7 +345,7 @@ const WeaponSelectionTile: React.FC<WeaponSelectionTileProps> = ({
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// WEAPON UPGRADE TILE (shown when weapon is selected)
+// WEAPON UPGRADE TILE (compact, same size as HP tile)
 // ═══════════════════════════════════════════════════════════════════════════════
 interface WeaponUpgradeTileProps {
   weapon: WeaponInfo;
@@ -373,7 +371,7 @@ const WeaponUpgradeTile: React.FC<WeaponUpgradeTileProps> = ({
       onClick={onUpgrade}
       disabled={locked || isMaxed || !canAfford}
       className={`
-        flex flex-col items-center p-1.5 rounded-lg border min-w-[52px] h-[58px]
+        flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px]
         transition-all duration-200 relative
         ${locked 
           ? 'bg-coffee-dark/40 border-coffee-medium/20 opacity-50' 
@@ -386,15 +384,11 @@ const WeaponUpgradeTile: React.FC<WeaponUpgradeTileProps> = ({
       `}
     >
       {locked && (
-        <div className="absolute top-0.5 right-0.5">
+        <div className="absolute top-0 right-0">
           <Lock className="w-2 h-2 text-coffee-cream/40" />
         </div>
       )}
-      <span className="text-base">{weapon.icon}</span>
-      <div className="flex items-center gap-0.5 mt-0.5">
-        <span className="text-[8px] text-coffee-cream/70">Lv</span>
-        <span className="text-[9px] text-warm-orange font-bold">{currentLevel}</span>
-      </div>
+      <span className="text-sm">{weapon.icon}</span>
       <div className="flex gap-px mt-0.5">
         {Array.from({ length: weapon.maxLevel }, (_, i) => (
           <div 
@@ -408,7 +402,7 @@ const WeaponUpgradeTile: React.FC<WeaponUpgradeTileProps> = ({
       {isMaxed ? (
         <span className="text-[6px] text-green-400 mt-0.5">MAX</span>
       ) : (
-        <span className={`text-[7px] mt-0.5 ${locked ? 'text-coffee-cream/30' : canAfford ? 'text-gold' : 'text-coffee-cream/40'}`}>
+        <span className={`text-[6px] mt-0.5 ${locked ? 'text-coffee-cream/30' : canAfford ? 'text-gold' : 'text-coffee-cream/40'}`}>
           🪙{cost}
         </span>
       )}
@@ -605,12 +599,12 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           );
         })}
 
-        {/* +1 Cargo Tile - Top right of cart (barista level) */}
+        {/* +1 Cargo Tile - Top right of cart, bottom aligned with barista head bottom */}
         <div 
           className="absolute pointer-events-auto"
           style={{ 
-            top: baristaY - 10,
-            left: cartRightEdge + 15,
+            top: baristaY + 25 - 38, // Align bottom of tile (38px) with barista head bottom (~25px below baristaY)
+            left: cartRightEdge + 6,
           }}
         >
           <CargoTile
@@ -629,9 +623,9 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           const weaponSlot = progression.weaponSlots?.[slotIndex] ?? { weaponType: null, level: 0 };
           const selectedWeapon = weaponSlot.weaponType ? WEAPONS.find(w => w.type === weaponSlot.weaponType) : null;
           
-          // Position weapon tiles to the right of the cargo box
-          const weaponTileTop = boxY + Math.round(boxHeight / 2) - 29; // center on box
-          const weaponTileLeft = cartRightEdge + 8;
+          // Position weapon tiles to the right of the cargo box - centered on box (tile is 38px tall)
+          const weaponTileTop = boxY + Math.round(boxHeight / 2) - 19;
+          const weaponTileLeft = cartRightEdge + 6;
           
           return (
             <div 
