@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, Battery, RotateCcw, Play } from 'lucide-react';
+import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { loadProgression, purchaseUpgrade, getUpgradeCost, setLastGameMode, resetProgression } from './persistence';
 import { GAME_CONFIG } from './config';
@@ -378,7 +378,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           {/* Right: Energy + Coins + Quests */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
-              <Battery className="w-3.5 h-3.5 text-energy" />
+              <BatteryFull className="w-3.5 h-3.5 text-energy" />
               <span className="text-energy text-xs font-bold">10</span>
               <span className="text-coffee-cream/40 text-xs">/10</span>
             </div>
@@ -487,10 +487,15 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         <div className="flex gap-2">
           <Button
             onClick={handlePlay}
-            className="flex-1 py-5 text-lg font-bold bg-warm-orange hover:bg-warm-orange/90 text-white rounded-xl shadow-lg"
+            className="relative flex-1 py-5 text-lg font-bold bg-warm-orange hover:bg-warm-orange/90 text-white rounded-xl shadow-lg"
           >
             <Play className="w-5 h-5 mr-2" fill="currentColor" />
             PLAY
+            {/* Energy cost badge */}
+            <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-coffee-dark/60 rounded-md px-1.5 py-0.5">
+              <BatteryFull className="w-3 h-3 text-yellow-400" />
+              <span className="text-[10px] font-bold text-white">x1</span>
+            </div>
           </Button>
           <Button
             onClick={handleReset}
