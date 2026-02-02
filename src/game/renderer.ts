@@ -136,7 +136,10 @@ function drawGround(ctx: CanvasRenderingContext2D) {
 }
 
 function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
-  const activeBlocks = blocks.filter(b => !b.destroyed);
+  const activeBlocks = blocks
+    .filter(b => !b.destroyed)
+    .slice()
+    .sort((a, b) => a.id - b.id);
   const { CART_X, CART_WIDTH, BLOCK_HEIGHT } = GAME_CONFIG;
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   
@@ -159,7 +162,8 @@ function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   // Chassis is 40% height, cargo boxes stack directly on top
   const chassisHeight = Math.floor(BLOCK_HEIGHT * 0.4);
   const chassisY = groundY - 30 - chassisHeight;
-  
+  const boxHeight = BLOCK_HEIGHT - 4; // visual height used by cargo boxes
+
   activeBlocks.forEach((block) => {
     // Phase 1.7: Block 0 is the chassis (thin bar), others are cargo boxes
     if (block.id === 0) {
@@ -194,14 +198,15 @@ function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
       // Box 1 (id=1): sits on chassis top
       // Box 2 (id=2): sits on box 1, etc.
       const boxIndex = block.id - 1; // 0 for first cargo box, 1 for second, etc.
-      const blockY = chassisY - (boxIndex + 1) * BLOCK_HEIGHT + (BLOCK_HEIGHT - 4); // -4 for visual gap
+      // Bottom of box should sit on chassisY; use boxHeight for stacking
+      const blockY = chassisY - (boxIndex + 1) * boxHeight;
       
       const colors = [COLORS.darkRoast, COLORS.mediumRoast, COLORS.lightRoast];
       
       // Block body
       ctx.fillStyle = colors[block.id] || COLORS.mediumRoast;
       ctx.beginPath();
-      roundRect(ctx, CART_X, blockY, CART_WIDTH, BLOCK_HEIGHT - 4, 8);
+      roundRect(ctx, CART_X, blockY, CART_WIDTH, boxHeight, 8);
       ctx.fill();
       
       // Block highlight
@@ -212,7 +217,7 @@ function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
       const hpBarWidth = CART_WIDTH - 20;
       const hpBarHeight = 6;
       const hpBarX = CART_X + 10;
-      const hpBarY = blockY + BLOCK_HEIGHT - 15;
+      const hpBarY = blockY + boxHeight - 11; // matches previous (BLOCK_HEIGHT-15) when boxHeight=BLOCK_HEIGHT-4
       
       ctx.fillStyle = COLORS.hpBarBg;
       roundRect(ctx, hpBarX, hpBarY, hpBarWidth, hpBarHeight, 3);
@@ -237,8 +242,10 @@ function drawBarista(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   // Phase 1.7: Calculate barista position based on block structure
   // Block 0 is chassis (40% height), blocks 1+ are cargo boxes
   const chassisHeight = Math.floor(BLOCK_HEIGHT * 0.4);
+  const chassisY = groundY - 30 - chassisHeight;
+  const boxHeight = BLOCK_HEIGHT - 4;
   const cargoBlockCount = activeBlocks.filter(b => b.id > 0).length;
-  const topY = groundY - 30 - chassisHeight - (cargoBlockCount * BLOCK_HEIGHT);
+  const topY = chassisY - (cargoBlockCount * boxHeight);
   
   const baristaX = CART_X + CART_WIDTH / 2;
   const baristaY = topY - 25;

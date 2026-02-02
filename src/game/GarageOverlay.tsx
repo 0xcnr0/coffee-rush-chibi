@@ -333,18 +333,20 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   // Chassis positioning (matches renderer.ts)
   const chassisHeight = Math.floor(GAME_CONFIG.BLOCK_HEIGHT * 0.4);
   const chassisY = groundY - 30 - chassisHeight;
+  const boxHeight = GAME_CONFIG.BLOCK_HEIGHT - 4;
   
   // Get Y position for cargo box (matching renderer exactly)
   // Box stacks directly on chassis, then on each other
   const getCargoBoxY = (boxId: number) => {
     // boxId: 1 = first cargo box, 2 = second cargo box, etc.
     const boxIndex = boxId - 1; // 0 for first cargo box, 1 for second
-    return chassisY - (boxIndex + 1) * GAME_CONFIG.BLOCK_HEIGHT + (GAME_CONFIG.BLOCK_HEIGHT - 4);
+    // Must match renderer: blockY = chassisY - (boxIndex + 1) * boxHeight
+    return chassisY - (boxIndex + 1) * boxHeight;
   };
 
   // Barista position (matches renderer.ts)
   const cargoBlockCount = blockCount - 1; // Exclude chassis
-  const topY = chassisY - (cargoBlockCount * GAME_CONFIG.BLOCK_HEIGHT);
+  const topY = chassisY - (cargoBlockCount * boxHeight);
   const baristaY = topY - 25;
   
   // Cart right edge for cargo button
@@ -417,13 +419,14 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         {blockCount > 1 && Array.from({ length: blockCount - 1 }, (_, i) => {
           const boxNumber = i + 1; // 1 = first cargo box, 2 = second, etc.
           const boxY = getCargoBoxY(boxNumber);
+          const hpTileTop = boxY + Math.round(boxHeight / 2) - 19; // center on box (tile is ~38px tall)
           return (
             <div 
               key={boxNumber}
               className="absolute pointer-events-auto"
               style={{ 
-                top: boxY + 3,
-                left: GAME_CONFIG.CART_X - 40, // Left of cart
+                top: hpTileTop,
+                left: GAME_CONFIG.CART_X - 36, // Tight to box left edge
               }}
             >
               <SmallHPTile
