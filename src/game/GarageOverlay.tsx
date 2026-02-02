@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, Battery, RotateCcw } from 'lucide-react';
+import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, Battery, RotateCcw, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { loadProgression, purchaseUpgrade, getUpgradeCost, setLastGameMode, resetProgression } from './persistence';
 import { GAME_CONFIG } from './config';
@@ -16,7 +16,7 @@ interface GarageOverlayProps {
 const UPGRADES: UpgradeInfo[] = [
   {
     key: 'towerHpLevel',
-    name: 'Cart HP',
+    name: 'HP',
     description: 'Increases cart durability',
     icon: 'shield',
     bonusPerLevel: GAME_CONFIG.TOWER_HP_BONUS_PER_LEVEL,
@@ -24,7 +24,7 @@ const UPGRADES: UpgradeInfo[] = [
   },
   {
     key: 'espressoDamageLevel',
-    name: 'Damage',
+    name: 'Espresso',
     description: 'Shot damage',
     icon: 'coffee',
     bonusPerLevel: GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL,
@@ -72,10 +72,205 @@ const getIcon = (iconName: string) => {
 
 // Chapter names for more TDS-like feel
 const CHAPTER_NAMES: Record<string, string> = {
-  'CHAPTER': '☕ Dawn Rush',
-  'ENDLESS': '∞ Endless',
+  'CHAPTER': 'Dawn Rush',
+  'ENDLESS': 'Endless',
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// HORIZONTAL UPGRADE TILE (Power, Damage - bottom row)
+// ═══════════════════════════════════════════════════════════════════════════════
+interface HorizontalUpgradeTileProps {
+  upgrade: UpgradeInfo;
+  currentLevel: number;
+  beans: number;
+  onPurchase: () => void;
+}
+
+const HorizontalUpgradeTile: React.FC<HorizontalUpgradeTileProps> = ({
+  upgrade,
+  currentLevel,
+  beans,
+  onPurchase,
+}) => {
+  const maxLevel = upgrade.maxLevel ?? GAME_CONFIG.UPGRADE_MAX_LEVEL;
+  const isMaxed = currentLevel >= maxLevel;
+  const cost = getUpgradeCost(currentLevel, upgrade.baseCost);
+  const canAfford = beans >= cost;
+  const Icon = getIcon(upgrade.icon);
+
+  return (
+    <button
+      onClick={onPurchase}
+      disabled={isMaxed || !canAfford}
+      className={`
+        flex-1 flex items-center gap-2 p-2 rounded-xl border-2 
+        transition-all duration-200
+        ${isMaxed 
+          ? 'bg-coffee-dark/60 border-coffee-medium/30 opacity-60' 
+          : canAfford
+            ? 'bg-coffee-dark/80 border-warm-orange/50 hover:border-warm-orange active:scale-95'
+            : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'
+        }
+      `}
+    >
+      {/* Icon */}
+      <div className={`p-1.5 rounded-lg ${isMaxed ? 'bg-coffee-medium/20' : 'bg-warm-orange/20'}`}>
+        <Icon className={`w-5 h-5 ${isMaxed ? 'text-coffee-cream/50' : 'text-warm-orange'}`} />
+      </div>
+      
+      {/* Name + Level pips */}
+      <div className="flex-1 text-left">
+        <span className="text-xs text-coffee-cream/80">{upgrade.name}</span>
+        <div className="flex gap-0.5 mt-0.5">
+          {Array.from({ length: maxLevel }, (_, i) => (
+            <div 
+              key={i}
+              className={`w-2 h-2 rounded-full ${
+                i < currentLevel ? 'bg-warm-orange' : 'bg-coffee-medium/40'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+      
+      {/* Cost */}
+      {isMaxed ? (
+        <div className="flex items-center gap-0.5">
+          <Check className="w-4 h-4 text-green-400" />
+          <span className="text-xs text-green-400">MAX</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-0.5">
+          <span className="text-sm">🪙</span>
+          <span className={`text-sm font-bold ${canAfford ? 'text-gold' : 'text-coffee-cream/50'}`}>
+            {cost}
+          </span>
+        </div>
+      )}
+    </button>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SMALL HP TILE (next to cargo boxes - left side)
+// ═══════════════════════════════════════════════════════════════════════════════
+interface SmallHPTileProps {
+  currentLevel: number;
+  beans: number;
+  onPurchase: () => void;
+  baseCost: number;
+}
+
+const SmallHPTile: React.FC<SmallHPTileProps> = ({
+  currentLevel,
+  beans,
+  onPurchase,
+  baseCost,
+}) => {
+  const maxLevel = GAME_CONFIG.UPGRADE_MAX_LEVEL;
+  const isMaxed = currentLevel >= maxLevel;
+  const cost = getUpgradeCost(currentLevel, baseCost);
+  const canAfford = beans >= cost;
+
+  return (
+    <button
+      onClick={onPurchase}
+      disabled={isMaxed || !canAfford}
+      className={`
+        flex flex-col items-center p-1.5 rounded-lg border-2 min-w-[42px]
+        transition-all duration-200
+        ${isMaxed 
+          ? 'bg-coffee-dark/60 border-coffee-medium/30 opacity-60' 
+          : canAfford
+            ? 'bg-coffee-dark/80 border-warm-orange/50 hover:border-warm-orange active:scale-95'
+            : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'
+        }
+      `}
+    >
+      <Shield className={`w-4 h-4 ${isMaxed ? 'text-coffee-cream/50' : 'text-warm-orange'}`} />
+      <div className="flex gap-0.5 my-0.5">
+        {Array.from({ length: maxLevel }, (_, i) => (
+          <div 
+            key={i}
+            className={`w-1.5 h-1.5 rounded-full ${
+              i < currentLevel ? 'bg-warm-orange' : 'bg-coffee-medium/40'
+            }`}
+          />
+        ))}
+      </div>
+      {isMaxed ? (
+        <span className="text-[8px] text-green-400">MAX</span>
+      ) : (
+        <span className={`text-[8px] ${canAfford ? 'text-gold' : 'text-coffee-cream/50'}`}>
+          🪙{cost}
+        </span>
+      )}
+    </button>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CARGO UPGRADE TILE (+1 Cargo - top right of cart)
+// ═══════════════════════════════════════════════════════════════════════════════
+interface CargoTileProps {
+  currentLevel: number;
+  beans: number;
+  onPurchase: () => void;
+  baseCost: number;
+}
+
+const CargoTile: React.FC<CargoTileProps> = ({
+  currentLevel,
+  beans,
+  onPurchase,
+  baseCost,
+}) => {
+  const maxLevel = GAME_CONFIG.BLOCK_COUNT_MAX_LEVEL;
+  const isMaxed = currentLevel >= maxLevel;
+  const cost = getUpgradeCost(currentLevel, baseCost);
+  const canAfford = beans >= cost;
+
+  return (
+    <button
+      onClick={onPurchase}
+      disabled={isMaxed || !canAfford}
+      className={`
+        flex flex-col items-center p-2 rounded-xl border-2 min-w-[56px]
+        transition-all duration-200
+        ${isMaxed 
+          ? 'bg-coffee-dark/60 border-coffee-medium/30 opacity-60' 
+          : canAfford
+            ? 'bg-coffee-dark/80 border-warm-orange/50 hover:border-warm-orange active:scale-95'
+            : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'
+        }
+      `}
+    >
+      <Package className={`w-5 h-5 ${isMaxed ? 'text-coffee-cream/50' : 'text-warm-orange'}`} />
+      <span className="text-[10px] text-coffee-cream/80 mt-0.5">+1 Cargo</span>
+      <div className="flex gap-0.5 my-0.5">
+        {Array.from({ length: maxLevel }, (_, i) => (
+          <div 
+            key={i}
+            className={`w-1.5 h-1.5 rounded-full ${
+              i < currentLevel ? 'bg-warm-orange' : 'bg-coffee-medium/40'
+            }`}
+          />
+        ))}
+      </div>
+      {isMaxed ? (
+        <span className="text-[9px] text-green-400">MAX</span>
+      ) : (
+        <span className={`text-[9px] ${canAfford ? 'text-gold' : 'text-coffee-cream/50'}`}>
+          🪙{cost}
+        </span>
+      )}
+    </button>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN GARAGE OVERLAY COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount, onProgressionChange }) => {
   const [progression, setProgression] = useState(loadProgression());
   const [selectedMode, setSelectedMode] = useState<GameMode>(progression.lastGameMode || 'CHAPTER');
@@ -91,7 +286,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
     const cost = getUpgradeCost(currentLevel, upgrade.baseCost);
     if (purchaseUpgrade(upgrade.key, cost)) {
       setProgression(loadProgression());
-      onProgressionChange?.(); // Trigger canvas redraw in parent
+      onProgressionChange?.();
     }
   };
 
@@ -122,21 +317,50 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
     setShowModeModal(false);
   };
 
-  // Calculate upgrade states
+  const handleReset = () => {
+    if (confirm('Reset all progress? This cannot be undone!')) {
+      resetProgression();
+      setProgression(loadProgression());
+      onProgressionChange?.();
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // CANVAS POSITION CALCULATIONS
+  // ═══════════════════════════════════════════════════════════════════════════════
+  const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+  const wheelRadius = 12;
+  const chassisHeight = GAME_CONFIG.BLOCK_HEIGHT * 0.4;
+  const chassisBottom = groundY - wheelRadius * 1.5;
+
+  // Calculate block positions (from bottom to top)
+  const getBlockY = (blockIndex: number) => {
+    if (blockIndex === 0) {
+      return chassisBottom - chassisHeight;
+    }
+    return chassisBottom - chassisHeight - blockIndex * GAME_CONFIG.BLOCK_HEIGHT;
+  };
+
+  // Barista position (on top of highest block)
+  const baristaY = getBlockY(blockCount) - 20;
+  
+  // Cart right edge for cargo button
+  const cartRightEdge = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
+
+  // Upgrade states
+  const hpLevel = progression.upgradeLevels.towerHpLevel ?? 0;
   const cargoLevel = progression.upgradeLevels.blockCountLevel ?? 0;
   const cargoMaxed = cargoLevel >= GAME_CONFIG.BLOCK_COUNT_MAX_LEVEL;
-  const cargoCost = getUpgradeCost(cargoLevel, CARGO_UPGRADE.baseCost);
-  const canAffordCargo = progression.totalBeans >= cargoCost;
 
   return (
     <div className={`absolute inset-0 flex flex-col z-20 transition-all duration-300 ${isTransitioning ? 'animate-fade-out' : ''}`}>
       {/* ═══════════════════════════════════════════════════════════════════════
-          TOP INFO BAR (TDS-style)
-          Left: Profile/Level | Center: Chapter Name | Right: Energy + Coins
+          TOP BAR
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="px-3 py-2">
+        {/* Row 1: Level, Energy, Coins, Quest */}
         <div className="flex items-center justify-between">
-          {/* Left: Profile placeholder */}
+          {/* Left: Profile */}
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-coffee-dark/60 flex items-center justify-center border border-coffee-medium/30">
               <User className="w-5 h-5 text-coffee-cream/70" />
@@ -146,33 +370,19 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
             </div>
           </div>
 
-          {/* Center: Chapter name (clickable) */}
-          <button
-            onClick={() => setShowModeModal(true)}
-            className="flex items-center gap-1 bg-coffee-dark/40 hover:bg-coffee-dark/60 rounded-full py-1.5 px-3 transition-colors"
-          >
-            <span className="text-coffee-cream font-semibold text-sm">
-              {CHAPTER_NAMES[selectedMode] || '☕ Dawn Rush'}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-coffee-cream/70" />
-          </button>
-
           {/* Right: Energy + Coins + Quests */}
           <div className="flex items-center gap-2">
-            {/* Energy (daily stamina) - NOT power */}
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
               <Battery className="w-3.5 h-3.5 text-energy" />
               <span className="text-energy text-xs font-bold">10</span>
               <span className="text-coffee-cream/40 text-xs">/10</span>
             </div>
             
-            {/* Coins */}
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
               <span className="text-sm">🪙</span>
               <span className="text-gold font-bold text-xs">{progression.totalBeans}</span>
             </div>
 
-            {/* Quests/Daily button */}
             <button
               onClick={() => setShowQuestsModal(true)}
               className="w-8 h-8 rounded-lg bg-coffee-dark/40 hover:bg-coffee-dark/60 flex items-center justify-center transition-colors"
@@ -182,122 +392,112 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           </div>
         </div>
 
+        {/* Row 2: Chapter Dropdown - below top bar, right aligned */}
+        <button
+          onClick={() => setShowModeModal(true)}
+          className="mt-2 flex items-center gap-1 bg-coffee-dark/40 hover:bg-coffee-dark/60 rounded-full py-1 px-3 ml-auto transition-colors"
+        >
+          <span className="text-sm">☕</span>
+          <span className="text-xs text-coffee-cream">
+            {CHAPTER_NAMES[selectedMode] || 'Dawn Rush'}
+          </span>
+          <ChevronDown className="w-3 h-3 text-coffee-cream/60" />
+        </button>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          GAME AREA (transparent - canvas shows through)
-          Contextual upgrade tiles positioned around the cart
-          ═══════════════════════════════════════════════════════════════════════ */}
-      {/* ═══════════════════════════════════════════════════════════════════════
-          UPGRADE TILES - Absolute positioned to canvas coordinates
-          These use inline styles with px values to align with cart position
+          UPGRADE TILES - Absolute positioned relative to cart
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* +1 Cargo tile: Cart sağ üst köşesi (barista hizası) */}
-        <div 
-          className="absolute pointer-events-auto"
-          style={{ top: 290, right: 20 }}
-        >
-          <button
-            onClick={() => handlePurchase(CARGO_UPGRADE)}
-            disabled={cargoMaxed || !canAffordCargo}
-            className={`flex flex-col items-center p-2 rounded-xl border-2 shadow-lg transition-all ${
-              cargoMaxed 
-                ? 'bg-coffee-dark/60 border-coffee-dark/30 opacity-60' 
-                : canAffordCargo
-                  ? 'bg-warm-orange/90 border-warm-orange hover:scale-105 active:scale-95'
-                  : 'bg-coffee-dark/60 border-coffee-dark/30 opacity-70'
-            }`}
-          >
-            <div className="text-2xl mb-0.5">📦</div>
-            <div className="text-[10px] font-bold text-coffee-foam">+1</div>
-            {!cargoMaxed && (
-              <div className="flex items-center gap-0.5 mt-0.5">
-                <span className="text-sm">🪙</span>
-                <span className="text-[10px] font-bold text-coffee-foam">{cargoCost}</span>
-              </div>
-            )}
-            {cargoMaxed && (
-              <span className="text-[10px] text-coffee-cream/50 font-bold">MAX</span>
-            )}
-          </button>
-        </div>
+        {/* HP Upgrade Tiles - Left side of each block */}
+        {Array.from({ length: blockCount }, (_, i) => {
+          const blockY = getBlockY(i);
+          return (
+            <div 
+              key={i}
+              className="absolute pointer-events-auto"
+              style={{ 
+                top: blockY + 5,
+                left: 8,
+              }}
+            >
+              <SmallHPTile
+                currentLevel={hpLevel}
+                beans={progression.totalBeans}
+                onPurchase={() => handlePurchase(UPGRADES[0])}
+                baseCost={UPGRADES[0].baseCost}
+              />
+            </div>
+          );
+        })}
 
-        {/* HP Upgrade tile: Cart sağ tarafı, 1. cargo box hizası (blockCount > 1 ise) */}
-        {blockCount > 1 && (
+        {/* +1 Cargo Tile - Top right of cart (barista level) */}
+        {!cargoMaxed && (
           <div 
             className="absolute pointer-events-auto"
-            style={{ top: 350, left: 110 }}
+            style={{ 
+              top: baristaY - 10,
+              left: cartRightEdge + 15,
+            }}
           >
-            <ContextualUpgradeTile
-              upgrade={UPGRADES[0]}
-              currentLevel={progression.upgradeLevels.towerHpLevel}
+            <CargoTile
+              currentLevel={cargoLevel}
               beans={progression.totalBeans}
-              onPurchase={() => handlePurchase(UPGRADES[0])}
+              onPurchase={() => handlePurchase(CARGO_UPGRADE)}
+              baseCost={CARGO_UPGRADE.baseCost}
             />
           </div>
         )}
-
-        {/* Damage + Power tiles: Lane'in üstünde, ortada */}
-        <div 
-          className="absolute pointer-events-auto flex gap-3"
-          style={{ top: 400, left: '50%', transform: 'translateX(-50%)' }}
-        >
-          {UPGRADES.slice(1).map((upgrade) => {
-            const currentLevel = progression.upgradeLevels[upgrade.key];
-            return (
-              <ContextualUpgradeTile
-                key={upgrade.key}
-                upgrade={upgrade}
-                currentLevel={currentLevel}
-                beans={progression.totalBeans}
-                onPurchase={() => handlePurchase(upgrade)}
-                compact
-              />
-            );
-          })}
-        </div>
       </div>
 
-      {/* Spacer for flex layout - keeps bottom panel in place */}
+      {/* Spacer */}
       <div className="flex-1" />
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          BOTTOM INFO (Play button area)
+          BOTTOM PANEL - 3 Rows above footer
+          Row 3: Power + Damage (horizontal)
+          Row 2: PLAY (wide) + Reset (narrow)
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="pb-16 pt-4 px-4">
-        {/* Play Button */}
-        <Button
-          onClick={handlePlay}
-          size="lg"
-          className="w-full bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam text-xl font-bold py-6 rounded-2xl shadow-lg transform hover:scale-[1.02] active:scale-[0.98] transition-transform"
-        >
-          ▶ PLAY
-        </Button>
-
-        {/* Reset button (small) */}
-        <div className="flex justify-center mt-2">
+      <div className="pb-14 px-4 flex flex-col gap-2">
+        {/* Row 3: Power + Damage (horizontal tiles) */}
+        <div className="flex gap-2">
+          <HorizontalUpgradeTile
+            upgrade={UPGRADES[2]} // Power
+            currentLevel={progression.upgradeLevels.energyRegenLevel ?? 0}
+            beans={progression.totalBeans}
+            onPurchase={() => handlePurchase(UPGRADES[2])}
+          />
+          <HorizontalUpgradeTile
+            upgrade={UPGRADES[1]} // Espresso/Damage
+            currentLevel={progression.upgradeLevels.espressoDamageLevel ?? 0}
+            beans={progression.totalBeans}
+            onPurchase={() => handlePurchase(UPGRADES[1])}
+          />
+        </div>
+        
+        {/* Row 2: PLAY (wide) + Reset (narrow) */}
+        <div className="flex gap-2">
           <Button
-            onClick={() => {
-              if (confirm('Reset all progress? This cannot be undone!')) {
-                resetProgression();
-                setProgression(loadProgression());
-              }
-            }}
-            variant="ghost"
-            size="sm"
-            className="text-coffee-cream/30 hover:text-red-400 hover:bg-red-400/10 text-[10px]"
+            onClick={handlePlay}
+            className="flex-1 py-5 text-lg font-bold bg-warm-orange hover:bg-warm-orange/90 text-white rounded-xl shadow-lg"
           >
-            <RotateCcw className="w-3 h-3 mr-1" />
-            Reset
+            <Play className="w-5 h-5 mr-2" fill="currentColor" />
+            PLAY
+          </Button>
+          <Button
+            onClick={handleReset}
+            variant="outline"
+            className="w-12 py-5 border-2 border-coffee-medium/50 bg-coffee-dark/60 hover:bg-coffee-dark/80 rounded-xl"
+          >
+            <RotateCcw className="w-4 h-4 text-coffee-cream/70" />
           </Button>
         </div>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-          FOOTER TABS (TDS-style navigation)
+          FOOTER TABS (Row 1 - absolute bottom)
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="absolute bottom-0 left-0 right-0">
+      <div className="absolute bottom-0 left-0 right-0 bg-coffee-dark/90 border-t border-coffee-medium/30">
         <div className="flex justify-around py-2 px-1">
           {FOOTER_TABS.map((tab) => {
             const TabIcon = tab.icon;
@@ -415,14 +615,12 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
               📋 Quests
             </h2>
             
-            {/* Tabs placeholder */}
             <div className="flex gap-1 mb-4">
               <button className="flex-1 bg-warm-orange/20 text-warm-orange text-xs font-bold py-2 rounded-lg">Daily</button>
               <button className="flex-1 bg-coffee-dark/30 text-coffee-cream/50 text-xs font-bold py-2 rounded-lg">Weekly</button>
               <button className="flex-1 bg-coffee-dark/30 text-coffee-cream/50 text-xs font-bold py-2 rounded-lg">Achievements</button>
             </div>
             
-            {/* Placeholder content */}
             <div className="bg-coffee-espresso/50 rounded-xl p-6 text-center">
               <div className="text-4xl mb-2">🎯</div>
               <p className="text-coffee-cream/60 text-sm">Coming Soon!</p>
@@ -439,73 +637,5 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         </div>
       )}
     </div>
-  );
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONTEXTUAL UPGRADE TILE (TDS-style small floating upgrade button)
-// ═══════════════════════════════════════════════════════════════════════════════
-interface ContextualUpgradeTileProps {
-  upgrade: UpgradeInfo;
-  currentLevel: number;
-  beans: number;
-  onPurchase: () => void;
-  compact?: boolean;
-}
-
-const ContextualUpgradeTile: React.FC<ContextualUpgradeTileProps> = ({
-  upgrade,
-  currentLevel,
-  beans,
-  onPurchase,
-  compact = false,
-}) => {
-  const maxLevel = upgrade.maxLevel ?? GAME_CONFIG.UPGRADE_MAX_LEVEL;
-  const isMaxed = currentLevel >= maxLevel;
-  const cost = getUpgradeCost(currentLevel, upgrade.baseCost);
-  const canAfford = beans >= cost;
-  const Icon = getIcon(upgrade.icon);
-
-  return (
-    <button
-      onClick={onPurchase}
-      disabled={isMaxed || !canAfford}
-      className={`flex flex-col items-center rounded-xl border-2 shadow-lg transition-all ${
-        compact ? 'p-1.5 min-w-[52px]' : 'p-2 min-w-[60px]'
-      } ${
-        isMaxed 
-          ? 'bg-coffee-dark/70 border-coffee-dark/40 opacity-60' 
-          : canAfford
-            ? 'bg-coffee-dark/80 border-coffee-medium/50 hover:scale-105 hover:border-warm-orange/50 active:scale-95'
-            : 'bg-coffee-dark/70 border-coffee-dark/40 opacity-70'
-      }`}
-    >
-      {/* Icon */}
-      <div className={`rounded-lg ${compact ? 'p-1' : 'p-1.5'} ${canAfford && !isMaxed ? 'bg-warm-orange/20' : 'bg-coffee-dark/50'}`}>
-        <Icon className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} ${canAfford && !isMaxed ? 'text-warm-orange' : 'text-coffee-cream/60'}`} />
-      </div>
-      
-      {/* Level pips */}
-      <div className="flex gap-0.5 my-1">
-        {Array.from({ length: maxLevel }, (_, i) => (
-          <div 
-            key={i}
-            className={`w-1.5 h-1 rounded-full ${i < currentLevel ? 'bg-gold' : 'bg-coffee-dark/60'}`}
-          />
-        ))}
-      </div>
-      
-      {/* Cost or MAX */}
-      <div className={`flex items-center gap-0.5 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
-        {isMaxed ? (
-          <span className="text-coffee-cream/50 font-bold">MAX</span>
-        ) : (
-          <>
-            <span className="text-xs">🪙</span>
-            <span className="text-gold font-bold">{cost}</span>
-          </>
-        )}
-      </div>
-    </button>
   );
 };

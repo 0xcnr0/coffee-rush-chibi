@@ -19,7 +19,7 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   // CART (player tower)
   // ─────────────────────────────────────────────────────────────
-  CART_X: 30,                  // pixels from left edge (v3.3: moved left for longer approach)
+  CART_X: 70,                  // pixels from left edge (Phase 2C.8.2: moved right for HP tiles)
   CART_WIDTH: 75,              // pixels (v3.3: slightly smaller)
   BLOCK_HEIGHT: 45,            // pixels per block (v3.3: proportional)
   BLOCK_MAX_HP: 330,           // HP per block (v3.2: +10% for single block survivability)
