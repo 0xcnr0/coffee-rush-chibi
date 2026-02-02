@@ -330,26 +330,22 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   // ═══════════════════════════════════════════════════════════════════════════════
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   
-  // Block positions - exactly as in renderer.ts:
-  // Chassis: chassisY = groundY - 30 - chassisHeight (where chassisHeight = BLOCK_HEIGHT * 0.4)
-  // Cargo boxes: blockY = groundY - 30 - (index + 1) * BLOCK_HEIGHT
+  // Chassis positioning (matches renderer.ts)
   const chassisHeight = Math.floor(GAME_CONFIG.BLOCK_HEIGHT * 0.4);
+  const chassisY = groundY - 30 - chassisHeight;
   
   // Get Y position for cargo box (matching renderer exactly)
-  const getCargoBoxY = (boxIndex: number) => {
-    // boxIndex: 1 = first cargo box, 2 = second cargo box, etc.
-    // Renderer formula: groundY - 30 - (index + 1) * BLOCK_HEIGHT
-    // For cargo box 1 (index 1 in blocks array): groundY - 30 - 2 * BLOCK_HEIGHT
-    return groundY - 30 - (boxIndex + 1) * GAME_CONFIG.BLOCK_HEIGHT;
+  // Box stacks directly on chassis, then on each other
+  const getCargoBoxY = (boxId: number) => {
+    // boxId: 1 = first cargo box, 2 = second cargo box, etc.
+    const boxIndex = boxId - 1; // 0 for first cargo box, 1 for second
+    return chassisY - (boxIndex + 1) * GAME_CONFIG.BLOCK_HEIGHT + (GAME_CONFIG.BLOCK_HEIGHT - 4);
   };
 
-  // Barista is on top of the highest block
-  // If only chassis (blockCount=1), barista sits on chassis
-  // If cargo boxes exist, barista sits on top box
-  const topBlockY = blockCount === 1 
-    ? groundY - 30 - chassisHeight  // On chassis
-    : getCargoBoxY(blockCount - 1); // On top cargo box
-  const baristaY = topBlockY - 35;
+  // Barista position (matches renderer.ts)
+  const cargoBlockCount = blockCount - 1; // Exclude chassis
+  const topY = chassisY - (cargoBlockCount * GAME_CONFIG.BLOCK_HEIGHT);
+  const baristaY = topY - 25;
   
   // Cart right edge for cargo button
   const cartRightEdge = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;

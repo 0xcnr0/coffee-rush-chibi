@@ -156,14 +156,14 @@ function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   ctx.fill();
   
   // Draw each active block
-  activeBlocks.forEach((block, index) => {
-    const blockY = groundY - 30 - (index + 1) * BLOCK_HEIGHT;
-    
+  // Chassis is 40% height, cargo boxes stack directly on top
+  const chassisHeight = Math.floor(BLOCK_HEIGHT * 0.4);
+  const chassisY = groundY - 30 - chassisHeight;
+  
+  activeBlocks.forEach((block) => {
     // Phase 1.7: Block 0 is the chassis (thin bar), others are cargo boxes
     if (block.id === 0) {
       // CHASSIS - thin metallic bar
-      const chassisHeight = Math.floor(BLOCK_HEIGHT * 0.4); // 40% of normal height
-      const chassisY = groundY - 30 - chassisHeight; // Positioned at base
       
       // Chassis body (dark metallic)
       ctx.fillStyle = 'hsl(25, 30%, 18%)'; // Dark brown-gray
@@ -190,7 +190,12 @@ function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
       roundRect(ctx, hpBarX, hpBarY, hpBarWidth * hpPercent, hpBarHeight, 2);
       ctx.fill();
     } else {
-      // CARGO BOX - normal box visual (stacks above chassis)
+      // CARGO BOX - stacks directly on chassis, then on each other
+      // Box 1 (id=1): sits on chassis top
+      // Box 2 (id=2): sits on box 1, etc.
+      const boxIndex = block.id - 1; // 0 for first cargo box, 1 for second, etc.
+      const blockY = chassisY - (boxIndex + 1) * BLOCK_HEIGHT + (BLOCK_HEIGHT - 4); // -4 for visual gap
+      
       const colors = [COLORS.darkRoast, COLORS.mediumRoast, COLORS.lightRoast];
       
       // Block body
