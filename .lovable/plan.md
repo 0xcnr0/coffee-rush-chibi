@@ -1,220 +1,271 @@
 
-# Phase 2C.7: Fix Leave + Viewport Fit (Scale-to-Fit)
 
-## Tespit Edilen Sorunlar
+# Phase 2C.8: True Same-Scene + TDS Layout Parity (Only Remaining Issues)
 
-### 1. KRITIK BUG: handleLeave calismama
-**Konum:** `src/game/CoffeeRushGame.tsx` satir 362-368
-
-**Problem:** 
-- `require('./persistence')` dinamik import kullanilmis - ESM/Vite'da calismaz
-- Dahasi, `saveProgression` hic import edilmemis! Satir 11-16'da sadece `loadProgression`, `updateBestRecords`, `updateChapterClear`, `getUpgradeMultiplier` var
-
-**Cozum:** `saveProgression`'i import listesine ekle ve `require()` satirini kaldir
-
-### 2. Viewport Bosluk Problemi
-**Konum:** 
-- `src/pages/Index.tsx` satir 5: `flex items-center justify-center`
-- `src/index.css` satir 117: `.game-container` icinde ayni ortalama
-
-**Problem:** Dikey ortalama ust/alt bosluk yaratiyor
-
-### 3. Container Boyutlandirma
-**Konum:** `src/game/CoffeeRushGame.tsx` satir 1191-1197
-
-**Problem:** `min(100vh, 640px)` kisitlama bazi ekranlarda bosluk birakiyor
+Bu plan zaten yapilmis isi tekrarlamamak icin sadece kalan sorunlara odaklaniyor.
 
 ---
 
-## Uygulama Plani
+## Mevcut Durum Analizi
 
-### Adim 1: saveProgression import fix
-**Dosya:** `src/game/CoffeeRushGame.tsx`
+### Zaten Calisiyor (degistirilmeyecek):
+- Top Info Bar (profile, chapter selector, energy/coins) 
+- Footer tabs (Battle aktif, digerler locked)
+- Energy vs Power ayirimi (Battery vs Lightning)
+- Canvas scale-to-fit wrapper (cr-viewport/cr-stage)
+- Same-scene cart rendering (drawMenuScene ve drawGame ayni fonksiyonlari kullaniyor)
+- GarageOverlay fade-out animasyonu
 
-```tsx
-// Satir 11-16'yi guncelle:
-import { 
-  loadProgression, 
-  saveProgression,  // <-- EKLE
-  updateBestRecords,
-  updateChapterClear,
-  getUpgradeMultiplier 
-} from './persistence';
-```
+### Kalan Sorunlar:
 
-### Adim 2: handleLeave require() kaldir
-**Dosya:** `src/game/CoffeeRushGame.tsx`
+| Sorun | Konum | Aciklama |
+|-------|-------|----------|
+| 1. Garage'da Power HUD gorunuyor | GameHUD her zaman render | GameHUD sadece PLAY'de olmali |
+| 2. PLAY butonu lane'e biniyor | GarageOverlay layout | Bottom panel lane sinirini gecmemeli |
+| 3. Same-scene'de kucuk kayma | Scale hesaplama | Max 1.0 clamp eksik, upscaling yapiyor |
+| 4. Upgrade preview guncellenmesi | GarageOverlay state | Alis sonrasi aninda reflesh olmali |
 
-```tsx
-// Satir 357-373 - require satirini kaldir:
-const handleLeave = useCallback(() => {
-  const beansEarned = tipsRef.current;
-  if (beansEarned > 0) {
-    // require satiri KALDIRILDI - artik ust-level import kullaniliyor
-    const current = loadProgression();
-    saveProgression({
-      ...current,
-      totalBeans: current.totalBeans + beansEarned,
-    });
-  }
-  setIsPaused(false);
-  setGameState('MENU');
-}, []);
-```
+---
 
-### Adim 3: Index.tsx viewport fix
-**Dosya:** `src/pages/Index.tsx`
+## Detayli Inceleme
+
+### Sorun 1: Garage'da Power Bar + Bomb Butonu Gorunuyor
+
+**Konum**: `src/game/CoffeeRushGame.tsx` satir 1232-1249
 
 ```tsx
-import { CoffeeRushGame } from '@/game/CoffeeRushGame';
-
-const Index = () => {
-  return (
-    <div className="w-screen h-[100dvh] overflow-hidden bg-coffee-espresso">
-      <CoffeeRushGame />
-    </div>
-  );
-};
-
-export default Index;
+{/* Game HUD */}
+{gameState === 'PLAY' && !isPaused && (
+  <GameHUD ... />
+)}
 ```
 
-### Adim 4: game-container ortalama kaldir
-**Dosya:** `src/index.css`
+**Durum**: GameHUD zaten `gameState === 'PLAY'` kontrolu var. Eger Garage'da gorunuyorsa farkli bir kaynak olmali.
 
-```css
-.game-container {
-  @apply w-full h-full overflow-hidden;
-  /* flex items-center justify-center KALDIRILDI */
-  touch-action: none;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
+**Kontrol**: GarageOverlay icindeki "Damage + Power tiles" (satir 240-255) karisiklik yaratmis olabilir. Bunlar upgrade tile'lari, Power BAR degil.
+
+**Sonuc**: Bu sorun MEVCUT DEGIL gibi gorunuyor. GameHUD sadece PLAY'de render ediliyor.
+
+---
+
+### Sorun 2: PLAY Butonu Lane'e Biniyor
+
+**Konum**: 
+- `renderer.ts` satir 127: `groundY = CANVAS_HEIGHT - 80` (yani 640 - 80 = 560)
+- `GarageOverlay.tsx` satir 261: Bottom info panel (`pb-16 pt-4` + footer)
+
+**Problem**:
+- Lane/ground y = 560 (canvas koordinatlari)
+- Bottom panel Tailwind: `pb-16` = 64px padding-bottom (footer icin)
+- Footer: `py-2 px-1` = 8px + 8px = ~16px yukseklik
+- Play button: `py-6` = 24px + 24px = ~48px yukseklik
+- Toplam bottom alan: ~128-160px
+
+**Canvas koordinatlarinda**: 
+- Ground y = 560 (canvas'in 640px yuksekliginin 80px yukarisinda)
+- Cart tekerlekleri: groundY - 15 = 545
+- Canvas'in alt 160px'i UI tarafindan kapli olmali
+
+**Cozum**: 
+Ground pozisyonunu yukari cekerek UI ile cakismayi onlemek:
+- Yeni: `groundY = CANVAS_HEIGHT - 180` (lane 80px yerine 180px yukarida)
+- Boylece lane y = 460, UI alani 460-640 arasi bos kalir
+
+---
+
+### Sorun 3: Scale Hesaplamasi Max 1.0 Olmali
+
+**Konum**: `CoffeeRushGame.tsx` satir 112
+
+```tsx
+setScale(Math.max(0.5, Math.min(s, 2)));  // Max 2x yapabilir!
+```
+
+**Problem**: Buyuk ekranlarda 360x640 canvas 2x'e kadar scale ediliyor, bu:
+- Piksel blur yaratir
+- Stage viewport'u dolduramaz (ortalanir, cevresinde bosluk kalir)
+
+**Cozum**:
+```tsx
+setScale(Math.min(s, 1));  // Asla upscale yapma, sadece shrink
+```
+
+Veya daha iyi: Eger viewport canvas'tan buyukse, canvas viewport'u dolduracak sekilde scale edebilir ama max 1.5 ile sinirla:
+```tsx
+setScale(Math.max(0.5, Math.min(s, 1.2)));  // Hafif upscale OK
+```
+
+---
+
+### Sorun 4: Upgrade Sonrasi Garage Preview Guncellenmesi
+
+**Konum**: `GarageOverlay.tsx` satir 91-93
+
+```tsx
+if (purchaseUpgrade(upgrade.key, cost)) {
+  setProgression(loadProgression());  // State guncelleniyor
 }
 ```
 
-### Adim 5: CSS base styles + safe-area
-**Dosya:** `src/index.css`
+**Problem**: State guncelleniyor ama canvas redraw tetiklenmiyormu?
 
-```css
-/* @layer base icine ekle */
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-@supports (height: 100dvh) {
-  #root {
-    height: 100dvh;
-  }
+**Inceleme**: `CoffeeRushGame.tsx` satir 1201-1206:
+```tsx
+if (gameState === 'MENU') {
+  const progression = loadProgression();
+  const blockCount = 1 + (progression.upgradeLevels.blockCountLevel ?? 0);
+  drawMenuScene(ctx, blockCount);
 }
 ```
 
-### Adim 6: Scale-to-fit wrapper
-**Dosya:** `src/game/CoffeeRushGame.tsx`
+Bu kod `menuRenderEffect` useEffect icinde ve dependency olarak `[gameState]` var. Yani sadece gameState degisince calisir, progression degisince degil!
 
-Component icine scale state ve effect ekle:
+**Cozum**: 
+1. GarageOverlay'dan parent'a progression degistigini bildirmek icin callback ekle
+2. Veya CoffeeRushGame'de progression state tutup dependency olarak ekle
+3. En basit: `blockCount` prop'u GarageOverlay'dan gelsin, degisince parent re-render olsun
 
+---
+
+## Dosya Degisiklikleri
+
+### 1. `src/game/config.ts` - UI Safe Area Sabiti
+
+```typescript
+// Yeni sabit ekle (satir ~20 civari)
+UI_SAFE_BOTTOM_PX: 160,  // Bottom panel + footer icin ayrilan alan
+GROUND_Y_OFFSET: 180,    // Canvas altindan ground/lane mesafesi
+```
+
+### 2. `src/game/renderer.ts` - Lane Pozisyonunu Yukari Cek
+
+```typescript
+// Satir 85 ve 127'yi guncelle:
+const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+// Eski: CANVAS_HEIGHT - 80 = 560
+// Yeni: CANVAS_HEIGHT - 180 = 460
+```
+
+Bu degisiklik:
+- `drawMenuScene`: satir 85
+- `drawGround`: satir 127
+- `drawCart`: groundY reference kullaniyor
+- Diger fonksiyonlar da groundY'yi fonksiyon icinde hesapliyor
+
+**Dikkat**: Tum groundY hesaplamalarini merkezi sabite cevirmek gerekiyor.
+
+### 3. `src/game/CoffeeRushGame.tsx` - Scale Clamp + Progression Refresh
+
+**Scale clamp** (satir 112):
 ```tsx
-// Component basinda (useState'lerden sonra):
-const [scale, setScale] = useState(1);
+// ONCE:
+setScale(Math.max(0.5, Math.min(s, 2)));
 
+// SONRA:
+setScale(Math.max(0.5, Math.min(s, 1)));  // Upscale yok
+```
+
+**Progression trigger** icin yeni state:
+```tsx
+// Component basinda:
+const [progressionVersion, setProgressionVersion] = useState(0);
+
+// GarageOverlay'a onProgressionChange callback ver:
+<GarageOverlay 
+  onPlay={handlePlay} 
+  blockCount={...}
+  onProgressionChange={() => setProgressionVersion(v => v + 1)}
+/>
+
+// menuRenderEffect'e dependency ekle:
 useEffect(() => {
-  const computeScale = () => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const s = Math.min(
-      vw / GAME_CONFIG.CANVAS_WIDTH,
-      vh / GAME_CONFIG.CANVAS_HEIGHT
-    );
-    setScale(Math.max(0.5, Math.min(s, 2)));
-  };
-  
-  computeScale();
-  window.addEventListener('resize', computeScale);
-  window.addEventListener('orientationchange', computeScale);
-  return () => {
-    window.removeEventListener('resize', computeScale);
-    window.removeEventListener('orientationchange', computeScale);
-  };
-}, []);
+  // ... draw logic
+}, [gameState, progressionVersion]);  // progressionVersion eklendi
 ```
 
-Return blogu:
+### 4. `src/game/GarageOverlay.tsx` - Callback Ekle
 
 ```tsx
-return (
-  <div className="cr-viewport">
-    <div 
-      className="cr-stage"
-      style={{
-        width: GAME_CONFIG.CANVAS_WIDTH,
-        height: GAME_CONFIG.CANVAS_HEIGHT,
-        transform: `translate(-50%, -50%) scale(${scale})`,
-      }}
-    >
-      <canvas ... />
-      {/* GarageOverlay, GameHUD, PauseMenu, EndScreen hepsi burda */}
-    </div>
-  </div>
-);
+interface GarageOverlayProps {
+  onPlay: (mode: GameMode) => void;
+  blockCount: number;
+  onProgressionChange?: () => void;  // Yeni
+}
+
+// handlePurchase icinde:
+if (purchaseUpgrade(upgrade.key, cost)) {
+  setProgression(loadProgression());
+  onProgressionChange?.();  // Parent'i bilgilendir
+}
 ```
 
-### Adim 7: cr-viewport ve cr-stage CSS
-**Dosya:** `src/index.css`
+### 5. `src/game/GarageOverlay.tsx` - Bottom Panel Lane Cakismasini Onle
 
-```css
-.cr-viewport {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-  background: hsl(var(--coffee-espresso));
-}
+Upgrade tile'larinin pozisyonlarini ayarla (satir 241):
+```tsx
+// ONCE:
+<div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2">
 
-.cr-stage {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform-origin: center center;
-}
+// SONRA: Daha yukarida, lane'in uzerinde
+<div className="absolute bottom-44 left-1/2 -translate-x-1/2 flex gap-2">
 ```
 
 ---
 
-## Dosya Degisiklikleri Ozeti
+## Uygulama Sirasi
 
-| Dosya | Degisiklik |
-|-------|------------|
-| `src/game/CoffeeRushGame.tsx` | saveProgression import, handleLeave fix, scale wrapper |
-| `src/pages/Index.tsx` | Ortalama class'lari kaldir, h-[100dvh] |
-| `src/index.css` | game-container fix, cr-viewport/cr-stage, base styles |
+1. **config.ts**: UI_SAFE_BOTTOM_PX ve GROUND_Y_OFFSET sabitleri ekle
+2. **renderer.ts**: Tum groundY hesaplamalarini merkezi sabite cevir
+3. **CoffeeRushGame.tsx**: Scale clamp + progressionVersion state
+4. **GarageOverlay.tsx**: onProgressionChange callback + bottom pozisyon ayari
 
 ---
 
 ## Kabul Kriterleri
 
-- [ ] Leave tiklaninca Garage'a donuyor
-- [ ] Leave tiklaninca tips/beans kaydediliyor
-- [ ] Oyun alani viewport'u dolduruyor (ust/alt bosluk yok)
-- [ ] Oyun aspect ratio bozmadan ekrana sigiyor
-- [ ] Canvas + HUD + PauseMenu + EndScreen ayni stage'de ölçekleniyor
+- [ ] Garage'da Power bar ve Bomb butonu GORUNMUYOR (zaten oyle olmali)
+- [ ] PLAY butonu ve footer, lane/road cizgisinin ALTINDA
+- [ ] Cart/enemies lane'in uzerinde, UI tarafindan kapatilmiyor
+- [ ] Press PLAY: cart pozisyon/scale degismiyor (true same-scene)
+- [ ] Cargo upgrade sonrasi Garage'da aninda box artisi gorunuyor
+- [ ] Buyuk ekranlarda gereksiz bosluk yok (scale max 1.0)
 
 ---
 
 ## Risk Degerlendirmesi
 
-| Fix | Risk | Aciklama |
-|-----|------|----------|
-| saveProgression import | Dusuk | Eksik import ekleniyor |
-| handleLeave require() | Dusuk | Hatali satir kaldiriliyor |
-| Viewport dvh | Dusuk | Modern tarayici destegi iyi |
-| Scale wrapper | Orta | Layout degisikligi, UI koordinatlari etkilenmez (pointer-events stage icinde) |
+| Alan | Risk | Aciklama |
+|------|------|----------|
+| Ground Y degisikligi | Orta | Tum enemy spawn, projectile, cart pozisyonlarini etkiler |
+| Scale clamp | Dusuk | Sadece max degeri azaltiliyor |
+| Progression callback | Dusuk | Basit state tetikleyici |
+| Bottom pozisyon | Dusuk | Tailwind class degisikligi |
 
 ---
 
-## Onemli Not: Touch Events
+## Onemli Uyari: Ground Y Degisikligi
 
-Scale transform kullandigimizda CSS pointer-events otomatik olarak dogru koordinatlari hesaplar. Canvas uzerinde ozel touch handling varsa `scale` degiskeni ile koordinat donusumu gerekebilir, ama mevcut kodda canvas tiklamalari kullanilmiyor (butona tiklamalar HUD'da) bu yuzden sorun olmamali.
+Ground/lane pozisyonunu degistirmek TUM oyun mekaniklerini etkiler:
+- Enemy spawn y pozisyonu
+- Projectile hedefleme
+- Collision detection
+- Cart ve barista cizimi
+
+Bu degisikligi yaparken:
+1. Tum dosyalarda `CANVAS_HEIGHT - 80` aramasi yap
+2. Hepsini `GAME_CONFIG.GROUND_Y_OFFSET` kullanimina cevir
+3. Test: Oyun basladiginda cart, enemies, projectiles hepsi dogru pozisyonda olmali
+
+---
+
+## Alternatif Yaklasim (Daha Guvenli)
+
+Ground pozisyonunu degistirmek yerine, UI panelini daha transparan/minimal yapabiliriz:
+- Bottom gradient'i azalt
+- Footer'i daha compact yap
+- PLAY butonunu kucult
+
+Bu yaklasim gameplay'i bozmaz ama TDS layout parity'den odun verir.
+
+**Oneri**: Eger ground Y degisikligi cok riskli bulunursa, once sadece scale clamp ve progression refresh yapilsin, layout ayari sonraki faza birakilsin.
+
