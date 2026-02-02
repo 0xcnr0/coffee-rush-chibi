@@ -177,7 +177,7 @@ const SmallHPTile: React.FC<SmallHPTileProps> = ({
       onClick={onPurchase}
       disabled={isMaxed || !canAfford}
       className={`
-        flex flex-col items-center p-1.5 rounded-lg border-2 min-w-[42px]
+        flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px]
         transition-all duration-200
         ${isMaxed 
           ? 'bg-coffee-dark/60 border-coffee-medium/30 opacity-60' 
@@ -187,21 +187,21 @@ const SmallHPTile: React.FC<SmallHPTileProps> = ({
         }
       `}
     >
-      <Shield className={`w-4 h-4 ${isMaxed ? 'text-coffee-cream/50' : 'text-warm-orange'}`} />
-      <div className="flex gap-0.5 my-0.5">
+      <Shield className={`w-3.5 h-3.5 ${isMaxed ? 'text-coffee-cream/50' : 'text-warm-orange'}`} />
+      <div className="flex gap-px mt-0.5">
         {Array.from({ length: maxLevel }, (_, i) => (
           <div 
             key={i}
-            className={`w-1.5 h-1.5 rounded-full ${
+            className={`w-1 h-1 rounded-full ${
               i < currentLevel ? 'bg-warm-orange' : 'bg-coffee-medium/40'
             }`}
           />
         ))}
       </div>
       {isMaxed ? (
-        <span className="text-[8px] text-green-400">MAX</span>
+        <span className="text-[6px] text-green-400 mt-0.5">MAX</span>
       ) : (
-        <span className={`text-[8px] ${canAfford ? 'text-gold' : 'text-coffee-cream/50'}`}>
+        <span className={`text-[7px] mt-0.5 ${canAfford ? 'text-gold' : 'text-coffee-cream/50'}`}>
           🪙{cost}
         </span>
       )}
@@ -326,23 +326,30 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   };
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // CANVAS POSITION CALCULATIONS
+  // CANVAS POSITION CALCULATIONS (must match renderer.ts exactly!)
   // ═══════════════════════════════════════════════════════════════════════════════
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
-  const wheelRadius = 12;
-  const chassisHeight = GAME_CONFIG.BLOCK_HEIGHT * 0.4;
-  const chassisBottom = groundY - wheelRadius * 1.5;
-
-  // Calculate block positions (from bottom to top)
-  const getBlockY = (blockIndex: number) => {
-    if (blockIndex === 0) {
-      return chassisBottom - chassisHeight;
-    }
-    return chassisBottom - chassisHeight - blockIndex * GAME_CONFIG.BLOCK_HEIGHT;
+  
+  // Block positions - exactly as in renderer.ts:
+  // Chassis: chassisY = groundY - 30 - chassisHeight (where chassisHeight = BLOCK_HEIGHT * 0.4)
+  // Cargo boxes: blockY = groundY - 30 - (index + 1) * BLOCK_HEIGHT
+  const chassisHeight = Math.floor(GAME_CONFIG.BLOCK_HEIGHT * 0.4);
+  
+  // Get Y position for cargo box (matching renderer exactly)
+  const getCargoBoxY = (boxIndex: number) => {
+    // boxIndex: 1 = first cargo box, 2 = second cargo box, etc.
+    // Renderer formula: groundY - 30 - (index + 1) * BLOCK_HEIGHT
+    // For cargo box 1 (index 1 in blocks array): groundY - 30 - 2 * BLOCK_HEIGHT
+    return groundY - 30 - (boxIndex + 1) * GAME_CONFIG.BLOCK_HEIGHT;
   };
 
-  // Barista position (on top of highest block)
-  const baristaY = getBlockY(blockCount) - 20;
+  // Barista is on top of the highest block
+  // If only chassis (blockCount=1), barista sits on chassis
+  // If cargo boxes exist, barista sits on top box
+  const topBlockY = blockCount === 1 
+    ? groundY - 30 - chassisHeight  // On chassis
+    : getCargoBoxY(blockCount - 1); // On top cargo box
+  const baristaY = topBlockY - 35;
   
   // Cart right edge for cargo button
   const cartRightEdge = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
@@ -412,15 +419,15 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         {/* HP Upgrade Tiles - Only for cargo boxes (not chassis) */}
         {/* Chassis (index 0) has fixed HP, only cargo boxes (index 1+) get HP upgrades */}
         {blockCount > 1 && Array.from({ length: blockCount - 1 }, (_, i) => {
-          const blockIndex = i + 1; // Start from box 1, skip chassis
-          const blockY = getBlockY(blockIndex);
+          const boxNumber = i + 1; // 1 = first cargo box, 2 = second, etc.
+          const boxY = getCargoBoxY(boxNumber);
           return (
             <div 
-              key={blockIndex}
+              key={boxNumber}
               className="absolute pointer-events-auto"
               style={{ 
-                top: blockY + 5,
-                left: 8,
+                top: boxY + 3,
+                left: GAME_CONFIG.CART_X - 40, // Left of cart
               }}
             >
               <SmallHPTile
