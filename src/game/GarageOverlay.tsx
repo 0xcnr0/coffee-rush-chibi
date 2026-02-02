@@ -134,7 +134,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           TOP INFO BAR (TDS-style)
           Left: Profile/Level | Center: Chapter Name | Right: Energy + Coins
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-coffee-espresso/95 backdrop-blur-sm border-b border-coffee-dark/50 px-3 py-2">
+      <div className="px-3 py-2">
         <div className="flex items-center justify-between">
           {/* Left: Profile placeholder */}
           <div className="flex items-center gap-2">
@@ -182,17 +182,6 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           </div>
         </div>
 
-        {/* Best time badge (if exists) */}
-        {progression.bestTimeSurvivedSeconds > 0 && (
-          <div className="flex justify-center mt-1">
-            <div className="flex items-center gap-1 bg-gold/10 px-2 py-0.5 rounded-full">
-              <Trophy className="w-3 h-3 text-gold" />
-              <span className="text-gold text-[10px] font-medium">
-                Best: {Math.floor(progression.bestTimeSurvivedSeconds / 60)}:{String(Math.floor(progression.bestTimeSurvivedSeconds % 60)).padStart(2, '0')}
-              </span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -200,8 +189,8 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           Contextual upgrade tiles positioned around the cart
           ═══════════════════════════════════════════════════════════════════════ */}
       <div className="flex-1 relative">
-        {/* +1 Cargo tile (top-right of cart area) */}
-        <div className="absolute top-4 right-4">
+        {/* +1 Cargo tile (right side, near cart) */}
+        <div className="absolute top-20 right-8">
           <button
             onClick={() => handlePurchase(CARGO_UPGRADE)}
             disabled={cargoMaxed || !canAffordCargo}
@@ -229,7 +218,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
 
         {/* HP Upgrade tile (left side, only if cargo exists) */}
         {blockCount > 1 && (
-          <div className="absolute left-3 top-1/3">
+          <div className="absolute left-4 top-1/3">
             <ContextualUpgradeTile
               upgrade={UPGRADES[0]}
               currentLevel={progression.upgradeLevels.towerHpLevel}
@@ -239,8 +228,8 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           </div>
         )}
 
-        {/* Damage + Power tiles (bottom area, compact row) */}
-        <div className="absolute bottom-48 left-1/2 -translate-x-1/2 flex gap-2">
+        {/* Damage + Power tiles (bottom area, above lane) */}
+        <div className="absolute bottom-56 left-1/2 -translate-x-1/2 flex gap-3">
           {UPGRADES.slice(1).map((upgrade) => {
             const currentLevel = progression.upgradeLevels[upgrade.key];
             return (
@@ -260,7 +249,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
       {/* ═══════════════════════════════════════════════════════════════════════
           BOTTOM INFO (Play button area)
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="bg-gradient-to-t from-coffee-espresso/95 via-coffee-espresso/80 to-transparent pb-16 pt-4 px-4">
+      <div className="pb-16 pt-4 px-4">
         {/* Play Button */}
         <Button
           onClick={handlePlay}
@@ -292,7 +281,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
       {/* ═══════════════════════════════════════════════════════════════════════
           FOOTER TABS (TDS-style navigation)
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="absolute bottom-0 left-0 right-0 bg-coffee-espresso/95 border-t border-coffee-dark/50 backdrop-blur-sm">
+      <div className="absolute bottom-0 left-0 right-0">
         <div className="flex justify-around py-2 px-1">
           {FOOTER_TABS.map((tab) => {
             const TabIcon = tab.icon;
