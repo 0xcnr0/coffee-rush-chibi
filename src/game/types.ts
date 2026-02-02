@@ -164,3 +164,21 @@ export interface UpgradeInfo {
   maxLevel?: number; // Optional override (defaults to UPGRADE_MAX_LEVEL)
   isCount?: boolean; // For block count - shows "+1" instead of percentage
 }
+
+// Phase 3: Weapon system types
+export type WeaponType = 'steam_blaster' | 'coffee_grinder' | 'syrup_cannon' | null;
+
+export interface WeaponSlot {
+  weaponType: WeaponType;
+  level: number; // 0-5
+}
+
+export interface WeaponInfo {
+  type: WeaponType;
+  name: string;
+  icon: string; // emoji
+  description: string;
+  baseCost: number;
+  upgradeCost: number;
+  maxLevel: number;
+}

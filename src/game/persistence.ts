@@ -1,10 +1,10 @@
 // Persistence helper for Coffee Rush progression data
 // Safely handles localStorage read/write with defaults
 
-import type { GameMode } from './types';
+import type { GameMode, WeaponType, WeaponSlot } from './types';
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 6; // Bump: Phase 2B-2 Chapter Mode
+const SAVE_VERSION = 7; // Bump: Phase 3 Weapon System
 
 export interface ProgressionData {
   version: number;
@@ -21,6 +21,8 @@ export interface ProgressionData {
   chapter1Cleared: boolean;
   bestChapter1Time: number;
   lastGameMode: GameMode;
+  // Phase 3: Weapon slots for each cargo box (max 2 weapons)
+  weaponSlots: WeaponSlot[];
 }
 
 const DEFAULT_PROGRESSION: ProgressionData = {
@@ -37,6 +39,10 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   chapter1Cleared: false,
   bestChapter1Time: 0,
   lastGameMode: 'CHAPTER',
+  weaponSlots: [
+    { weaponType: null, level: 0 },
+    { weaponType: null, level: 0 },
+  ],
 };
 
 export const loadProgression = (): ProgressionData => {
@@ -61,6 +67,7 @@ export const loadProgression = (): ProgressionData => {
         ...DEFAULT_PROGRESSION.upgradeLevels,
         ...parsed.upgradeLevels,
       },
+      weaponSlots: parsed.weaponSlots ?? DEFAULT_PROGRESSION.weaponSlots,
     };
   } catch {
     console.warn('Failed to load progression, using defaults');
@@ -158,4 +165,35 @@ export const setLastGameMode = (mode: GameMode): void => {
 // Reset all progression to defaults (DEV tool)
 export const resetProgression = (): void => {
   saveProgression({ ...DEFAULT_PROGRESSION });
+};
+
+// Phase 3: Select weapon for a cargo box slot
+export const selectWeapon = (slotIndex: number, weaponType: WeaponType, cost: number): boolean => {
+  const current = loadProgression();
+  
+  if (current.totalBeans < cost) return false;
+  if (slotIndex < 0 || slotIndex >= current.weaponSlots.length) return false;
+  if (current.weaponSlots[slotIndex].weaponType !== null) return false; // Already has weapon
+  
+  current.totalBeans -= cost;
+  current.weaponSlots[slotIndex] = { weaponType, level: 1 };
+  
+  saveProgression(current);
+  return true;
+};
+
+// Phase 3: Upgrade weapon in a slot
+export const upgradeWeapon = (slotIndex: number, cost: number): boolean => {
+  const current = loadProgression();
+  
+  if (current.totalBeans < cost) return false;
+  if (slotIndex < 0 || slotIndex >= current.weaponSlots.length) return false;
+  if (current.weaponSlots[slotIndex].weaponType === null) return false; // No weapon
+  if (current.weaponSlots[slotIndex].level >= 5) return false; // Max level
+  
+  current.totalBeans -= cost;
+  current.weaponSlots[slotIndex].level += 1;
+  
+  saveProgression(current);
+  return true;
 };
