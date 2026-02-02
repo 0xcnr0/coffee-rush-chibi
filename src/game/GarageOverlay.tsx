@@ -188,9 +188,16 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           GAME AREA (transparent - canvas shows through)
           Contextual upgrade tiles positioned around the cart
           ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="flex-1 relative">
-        {/* +1 Cargo tile (right side, near cart) */}
-        <div className="absolute top-20 right-8">
+      {/* ═══════════════════════════════════════════════════════════════════════
+          UPGRADE TILES - Absolute positioned to canvas coordinates
+          These use inline styles with px values to align with cart position
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* +1 Cargo tile: Cart sağ üst köşesi (barista hizası) */}
+        <div 
+          className="absolute pointer-events-auto"
+          style={{ top: 290, right: 20 }}
+        >
           <button
             onClick={() => handlePurchase(CARGO_UPGRADE)}
             disabled={cargoMaxed || !canAffordCargo}
@@ -216,9 +223,12 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           </button>
         </div>
 
-        {/* HP Upgrade tile (left side, only if cargo exists) */}
+        {/* HP Upgrade tile: Cart sağ tarafı, 1. cargo box hizası (blockCount > 1 ise) */}
         {blockCount > 1 && (
-          <div className="absolute left-4 top-1/3">
+          <div 
+            className="absolute pointer-events-auto"
+            style={{ top: 350, left: 110 }}
+          >
             <ContextualUpgradeTile
               upgrade={UPGRADES[0]}
               currentLevel={progression.upgradeLevels.towerHpLevel}
@@ -228,8 +238,11 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           </div>
         )}
 
-        {/* Damage + Power tiles (bottom area, above lane) */}
-        <div className="absolute bottom-56 left-1/2 -translate-x-1/2 flex gap-3">
+        {/* Damage + Power tiles: Lane'in üstünde, ortada */}
+        <div 
+          className="absolute pointer-events-auto flex gap-3"
+          style={{ top: 400, left: '50%', transform: 'translateX(-50%)' }}
+        >
           {UPGRADES.slice(1).map((upgrade) => {
             const currentLevel = progression.upgradeLevels[upgrade.key];
             return (
@@ -245,6 +258,9 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           })}
         </div>
       </div>
+
+      {/* Spacer for flex layout - keeps bottom panel in place */}
+      <div className="flex-1" />
 
       {/* ═══════════════════════════════════════════════════════════════════════
           BOTTOM INFO (Play button area)

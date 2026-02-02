@@ -110,7 +110,7 @@ export const CoffeeRushGame: React.FC = () => {
         vw / GAME_CONFIG.CANVAS_WIDTH,
         vh / GAME_CONFIG.CANVAS_HEIGHT
       );
-      setScale(Math.max(0.5, Math.min(s, 1))); // Max 1.0 - no upscaling
+      setScale(Math.max(0.5, Math.min(s, 1.2))); // Max 1.2 - slight upscale OK
     };
     
     computeScale();
