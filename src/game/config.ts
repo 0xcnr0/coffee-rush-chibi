@@ -9,10 +9,12 @@ export const GAME_CONFIG = {
   CANVAS_HEIGHT: 640,          // pixels
   
   // ─────────────────────────────────────────────────────────────
-  // LAYOUT TUNING (Phase 1.8: placeholders for Phase 2 tweaks)
+  // LAYOUT TUNING (Phase 2C.8: ground/lane positioning)
   // ─────────────────────────────────────────────────────────────
   CART_X_OFFSET: 0,            // pixels - adjust cart position (Phase 2)
   ENEMY_SCALE: 1,              // multiplier - enemy size scaling (Phase 2)
+  GROUND_Y_OFFSET: 180,        // pixels from canvas bottom to ground line (lane)
+  UI_SAFE_BOTTOM_PX: 160,      // pixels reserved for bottom UI (PLAY button, footer)
   
   // ─────────────────────────────────────────────────────────────
   // CART (player tower)

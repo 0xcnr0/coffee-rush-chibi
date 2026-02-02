@@ -82,7 +82,7 @@ export function drawMenuScene(
   drawGround(ctx);
   
   // Create temporary blocks for display
-  const groundY = CANVAS_HEIGHT - 80;
+  const groundY = CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   const blocks: CartBlock[] = Array.from({ length: blockCount }, (_, i) => ({
     id: i,
     hp: BLOCK_MAX_HP,
@@ -124,13 +124,13 @@ function drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, size: nu
 }
 
 function drawGround(ctx: CanvasRenderingContext2D) {
-  const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
+  const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   
-  // Street/sidewalk
+  // Street/sidewalk - fills from groundY to bottom of canvas
   ctx.fillStyle = COLORS.darkRoast;
-  ctx.fillRect(0, groundY, GAME_CONFIG.CANVAS_WIDTH, 80);
+  ctx.fillRect(0, groundY, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.GROUND_Y_OFFSET);
   
-  // Sidewalk line
+  // Sidewalk line (top edge of ground)
   ctx.fillStyle = COLORS.cream;
   ctx.fillRect(0, groundY, GAME_CONFIG.CANVAS_WIDTH, 4);
 }
@@ -138,7 +138,7 @@ function drawGround(ctx: CanvasRenderingContext2D) {
 function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   const activeBlocks = blocks.filter(b => !b.destroyed);
   const { CART_X, CART_WIDTH, BLOCK_HEIGHT } = GAME_CONFIG;
-  const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
+  const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   
   // Draw wheels
   const wheelY = groundY - 15;
@@ -227,7 +227,7 @@ function drawBarista(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   if (activeBlocks.length === 0) return;
   
   const { CART_X, CART_WIDTH, BLOCK_HEIGHT } = GAME_CONFIG;
-  const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
+  const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   
   // Phase 1.7: Calculate barista position based on block structure
   // Block 0 is chassis (40% height), blocks 1+ are cargo boxes
