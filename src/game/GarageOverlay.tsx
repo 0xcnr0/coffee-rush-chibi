@@ -9,6 +9,7 @@ import type { UpgradeInfo, GameMode } from './types';
 interface GarageOverlayProps {
   onPlay: (mode: GameMode) => void;
   blockCount: number;
+  onProgressionChange?: () => void;
 }
 
 // Upgrade definitions
@@ -75,7 +76,7 @@ const CHAPTER_NAMES: Record<string, string> = {
   'ENDLESS': '∞ Endless',
 };
 
-export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount }) => {
+export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount, onProgressionChange }) => {
   const [progression, setProgression] = useState(loadProgression());
   const [selectedMode, setSelectedMode] = useState<GameMode>(progression.lastGameMode || 'CHAPTER');
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -90,6 +91,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
     const cost = getUpgradeCost(currentLevel, upgrade.baseCost);
     if (purchaseUpgrade(upgrade.key, cost)) {
       setProgression(loadProgression());
+      onProgressionChange?.(); // Trigger canvas redraw in parent
     }
   };
 
@@ -238,7 +240,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         )}
 
         {/* Damage + Power tiles (bottom area, compact row) */}
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2">
+        <div className="absolute bottom-48 left-1/2 -translate-x-1/2 flex gap-2">
           {UPGRADES.slice(1).map((upgrade) => {
             const currentLevel = progression.upgradeLevels[upgrade.key];
             return (

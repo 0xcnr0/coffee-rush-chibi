@@ -96,6 +96,7 @@ export const CoffeeRushGame: React.FC = () => {
   const [timeSurvived, setTimeSurvived] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
   const [isStressTest, setIsStressTest] = useState(false);
+  const [progressionVersion, setProgressionVersion] = useState(0); // Phase 2C.8: Trigger canvas redraw on upgrade
   
   // Phase 2C.7: Scale-to-fit state
   const [scale, setScale] = useState(1);
@@ -109,7 +110,7 @@ export const CoffeeRushGame: React.FC = () => {
         vw / GAME_CONFIG.CANVAS_WIDTH,
         vh / GAME_CONFIG.CANVAS_HEIGHT
       );
-      setScale(Math.max(0.5, Math.min(s, 2)));
+      setScale(Math.max(0.5, Math.min(s, 1))); // Max 1.0 - no upscaling
     };
     
     computeScale();
@@ -266,7 +267,7 @@ export const CoffeeRushGame: React.FC = () => {
     const blockCount = 1 + (upgradeLevels.blockCountLevel ?? 0); // 1, 2, or 3
     
     // Reset blocks with upgraded HP
-    const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
+    const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
     blocksRef.current = Array.from({ length: blockCount }, (_, i) => ({
       id: i,
       hp: effectiveBlockHp,
@@ -508,7 +509,7 @@ export const CoffeeRushGame: React.FC = () => {
     if (!enemy) return;
     
     const difficulty = difficultyRef.current;
-    const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
+    const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
     
     // Phase 2C: Determine if this spawn is a Heavy enemy
     // Disable HEAVY in Chapter 1 before boss (only Endless or after boss checkpoint)
@@ -616,7 +617,7 @@ export const CoffeeRushGame: React.FC = () => {
     
     // Damage enemies in radius
     const bombX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + 50;
-    const bombY = GAME_CONFIG.CANVAS_HEIGHT - 150;
+    const bombY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET - 30; // Above the lane
     
     // Spawn VFX
     spawnParticles(bombX, bombY, 'confetti', 20);
@@ -793,7 +794,7 @@ export const CoffeeRushGame: React.FC = () => {
         // Spawn the boss
         const bossEnemy = enemyPool.acquire();
         if (bossEnemy) {
-          const groundY = GAME_CONFIG.CANVAS_HEIGHT - 80;
+          const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
           bossEnemy.kind = 'BOSS';
           bossEnemy.x = GAME_CONFIG.CANVAS_WIDTH + 50;
           bossEnemy.y = groundY;
@@ -1203,7 +1204,7 @@ export const CoffeeRushGame: React.FC = () => {
       const blockCount = 1 + (progression.upgradeLevels.blockCountLevel ?? 0);
       drawMenuScene(ctx, blockCount);
     }
-  }, [gameState]);
+  }, [gameState, progressionVersion]); // Phase 2C.8: Re-render on upgrade purchase
   
   const canUseBomb = energyRef.current >= GAME_CONFIG.TONIC_BOMB_COST;
 
@@ -1226,7 +1227,11 @@ export const CoffeeRushGame: React.FC = () => {
         
         {/* Garage Overlay (Menu + Upgrades - transparent overlay on canvas) */}
         {gameState === 'MENU' && (
-          <GarageOverlay onPlay={handlePlay} blockCount={1 + (loadProgression().upgradeLevels.blockCountLevel ?? 0)} />
+          <GarageOverlay 
+            onPlay={handlePlay} 
+            blockCount={1 + (loadProgression().upgradeLevels.blockCountLevel ?? 0)} 
+            onProgressionChange={() => setProgressionVersion(v => v + 1)}
+          />
         )}
         
         {/* Game HUD */}
