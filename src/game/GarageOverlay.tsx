@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchaseUpgrade, getUpgradeCost, setLastGameMode, resetProgression, selectWeapon, upgradeWeapon } from './persistence';
+import { loadProgression, purchaseUpgrade, getUpgradeCost, setLastGameMode, resetProgression, selectWeapon, upgradeWeapon, getEnergyState, consumeEnergy, formatTimeRemaining } from './persistence';
 import { GAME_CONFIG } from './config';
 import { toast } from 'sonner';
 import type { UpgradeInfo, GameMode, WeaponType, WeaponInfo } from './types';
+import { ShopScreen } from './ShopScreen';
 
 interface GarageOverlayProps {
   onPlay: (mode: GameMode) => void;
@@ -82,13 +83,15 @@ const WEAPONS: WeaponInfo[] = [
   },
 ];
 
-// Footer tabs
-const FOOTER_TABS = [
-  { id: 'battle', label: 'Battle', icon: Swords, active: true },
-  { id: 'shop', label: 'Shop', icon: ShoppingBag, active: false },
-  { id: 'hero', label: 'Hero', icon: User, active: false },
-  { id: 'weapons', label: 'Weapons', icon: Wrench, active: false },
-  { id: 'tower', label: 'Tower', icon: Castle, active: false },
+// Footer tabs - now with dynamic active state
+type FooterTabId = 'battle' | 'shop' | 'hero' | 'weapons' | 'tower';
+
+const FOOTER_TABS: { id: FooterTabId; label: string; icon: typeof Swords; unlocked: boolean }[] = [
+  { id: 'battle', label: 'Battle', icon: Swords, unlocked: true },
+  { id: 'shop', label: 'Shop', icon: ShoppingBag, unlocked: true },
+  { id: 'hero', label: 'Hero', icon: User, unlocked: false },
+  { id: 'weapons', label: 'Weapons', icon: Wrench, unlocked: false },
+  { id: 'tower', label: 'Tower', icon: Castle, unlocked: false },
 ];
 
 const getIcon = (iconName: string) => {
@@ -419,6 +422,23 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showModeModal, setShowModeModal] = useState(false);
   const [showQuestsModal, setShowQuestsModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<FooterTabId>('battle');
+  
+  // Energy state with countdown
+  const [energyState, setEnergyState] = useState(getEnergyState());
+  
+  // Update energy countdown every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setEnergyState(getEnergyState());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Refresh energy state when returning from a run or on progression change
+  useEffect(() => {
+    setEnergyState(getEnergyState());
+  }, [progression]);
 
   const handlePurchase = (upgrade: UpgradeInfo) => {
     const currentLevel = progression.upgradeLevels[upgrade.key];
@@ -433,18 +453,37 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   };
 
   const handlePlay = () => {
+    // Try to consume energy
+    const result = consumeEnergy();
+    
+    if (!result.success) {
+      // No energy - show toast with countdown
+      const remaining = formatTimeRemaining(energyState.remainingMs);
+      toast.error('Out of Energy!', {
+        description: `Next energy in ${remaining}. Keep waiting or come back later.`,
+        icon: '⚡',
+      });
+      return;
+    }
+    
+    // Update energy state immediately
+    setEnergyState(getEnergyState());
+    
     setIsTransitioning(true);
     setLastGameMode(selectedMode);
     setTimeout(() => onPlay(selectedMode), 300);
   };
 
-  const handleTabClick = (tabId: string, isActive: boolean) => {
-    if (!isActive) {
+  const handleTabClick = (tabId: FooterTabId) => {
+    const tab = FOOTER_TABS.find(t => t.id === tabId);
+    if (!tab?.unlocked) {
       toast('Coming Soon!', {
         description: 'This feature will be available in a future update.',
         icon: '🔒',
       });
+      return;
     }
+    setActiveTab(tabId);
   };
 
   const handleSelectMode = (mode: GameMode | 'CHAPTER2') => {
@@ -517,6 +556,49 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   const cargoLevel = progression.upgradeLevels.blockCountLevel ?? 0;
   const cargoMaxed = cargoLevel >= GAME_CONFIG.BLOCK_COUNT_MAX_LEVEL;
 
+  // If Shop tab is active, render Shop screen instead
+  if (activeTab === 'shop') {
+    return (
+      <>
+        <ShopScreen 
+          onBack={() => setActiveTab('battle')} 
+          totalBeans={progression.totalBeans} 
+        />
+        {/* Footer tabs remain visible */}
+        <div className="absolute bottom-0 left-0 right-0 bg-coffee-dark/90 border-t border-coffee-medium/30 z-30">
+          <div className="flex justify-around py-2 px-1">
+            {FOOTER_TABS.map((tab) => {
+              const TabIcon = tab.icon;
+              const isActive = activeTab === tab.id;
+              const isLocked = !tab.unlocked;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab.id)}
+                  className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
+                    isActive 
+                      ? 'text-warm-orange' 
+                      : isLocked 
+                        ? 'text-coffee-cream/30'
+                        : 'text-coffee-cream/60 hover:text-coffee-cream/80'
+                  }`}
+                >
+                  <div className="relative">
+                    <TabIcon className="w-5 h-5" />
+                    {isLocked && (
+                      <Lock className="w-2.5 h-2.5 absolute -top-1 -right-1 text-coffee-cream/50" />
+                    )}
+                  </div>
+                  <span className="text-[10px] font-medium">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className={`absolute inset-0 flex flex-col z-20 transition-all duration-300 ${isTransitioning ? 'animate-fade-out' : ''}`}>
       {/* ═══════════════════════════════════════════════════════════════════════
@@ -539,8 +621,13 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
               <BatteryFull className="w-3.5 h-3.5 text-energy" />
-              <span className="text-energy text-xs font-bold">10</span>
-              <span className="text-coffee-cream/40 text-xs">/10</span>
+              <span className="text-energy text-xs font-bold">{energyState.energy}</span>
+              <span className="text-coffee-cream/40 text-xs">/{energyState.maxEnergy}</span>
+              {energyState.isRegenerating && (
+                <span className="text-[9px] text-coffee-cream/50 ml-0.5">
+                  +1 in {formatTimeRemaining(energyState.remainingMs)}
+                </span>
+              )}
             </div>
             
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
@@ -718,19 +805,23 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         <div className="flex justify-around py-2 px-1">
           {FOOTER_TABS.map((tab) => {
             const TabIcon = tab.icon;
+            const isActive = activeTab === tab.id;
+            const isLocked = !tab.unlocked;
             return (
               <button
                 key={tab.id}
-                onClick={() => handleTabClick(tab.id, tab.active)}
+                onClick={() => handleTabClick(tab.id)}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
-                  tab.active 
+                  isActive 
                     ? 'text-warm-orange' 
-                    : 'text-coffee-cream/40 hover:text-coffee-cream/60'
+                    : isLocked 
+                      ? 'text-coffee-cream/30'
+                      : 'text-coffee-cream/60 hover:text-coffee-cream/80'
                 }`}
               >
                 <div className="relative">
                   <TabIcon className="w-5 h-5" />
-                  {!tab.active && (
+                  {isLocked && (
                     <Lock className="w-2.5 h-2.5 absolute -top-1 -right-1 text-coffee-cream/50" />
                   )}
                 </div>
