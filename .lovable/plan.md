@@ -1,269 +1,147 @@
-# ✅ COMPLETED: Phase 2C.8.2 - Garage Layout (My Design Layout)
 
-## Hedef Layout (Aşağıdan Yukarıya)
+
+# Energy Sistemi ve Shop Tab Implementasyonu
+
+## Genel Bakis
+
+ChatGPT ile yaptığın konuşmayı inceledim. İki ana özellik implement edilecek:
+1. **Timestamp-based Energy Sistemi** - 10 energy, 30dk regen, akıllı geri sayım
+2. **Shop Tab** - Footer'da gerçek bir ekran olarak açılacak
+
+---
+
+## 1. Energy Sistemi (Timestamp-Based Regen)
+
+### Kurallar (ChatGPT ile belirlediğin gibi)
+- Kullanıcı 10 Energy ile başlar (max 10)
+- Her PLAY, 1 Energy harcar
+- İlk harcamada tek bir 30dk regen timer başlar
+- Timer resetlenmez, kullanıcı oynamaya devam edebilir
+- 30dk sonunda +1 Energy eklenir (max 10)
+- Energy 10'a ulaşınca timer kapanır
+- Energy 0 ise oyun başlatılamaz
+
+### Persistence Değişiklikleri (`persistence.ts`)
+```text
+SAVE_VERSION -> 8 (bump)
+
+EnergyData interface:
+- energy: number (0-10)
+- regenAnchorTs: number | null (ms timestamp)
+
+Yeni fonksiyonlar:
+- applyRegenNow(): Her 30dk için +1 energy ekler, anchor'ı ilerletir
+- consumeEnergy(): PLAY'de energy harcar, anchor başlatır
+- getEnergyState(): Güncel energy + kalan süre döner
+```
+
+### UI Değişiklikleri (`GarageOverlay.tsx`)
+- Top bar'da energy gösterimi: `10/10` veya `5/10 (+1 in 12:34)`
+- Countdown için 1 saniyelik interval (sadece UI, gerçek regen applyRegenNow'dan)
+- PLAY butonu:
+  - Energy > 0: Oyunu başlat
+  - Energy = 0: "Out of Energy - next in mm:ss" toast/modal göster
+
+### Config Değişiklikleri (`config.ts`)
+```text
+ENERGY_MAX: 10
+ENERGY_REGEN_MS: 1800000 (30 dakika)
+```
+
+---
+
+## 2. Shop Tab (Placeholder Ekran)
+
+### Yeni Bileşen: `ShopScreen.tsx`
+TDS tarzı basit bir ekran:
+- 3-6 placeholder kart:
+  - "Energy Refill (Coming Soon)" 
+  - "Bean Pack (Coming Soon)"
+  - "Cosmetics (Coming Soon)"
+- Geri dönüş butonu veya footer'dan Battle tab'ına tıklayarak
+
+### GarageOverlay Değişiklikleri
+- Yeni state: `activeTab: 'battle' | 'shop'`
+- `activeTab === 'shop'` ise ShopScreen render edilir
+- Garage state korunur (unmount yok)
+- Footer tabs artık tıklanabilir (Battle ve Shop için)
+
+---
+
+## 3. Dokunulmayacak Alanlar
+
+ChatGPT ve senin belirlediğin gibi:
+- Weapon sistemi (kilitli kalacak)
+- Garage preview / same-scene logic
+- Mevcut layout/styling (minimal değişiklikler hariç)
+
+---
+
+## Teknik Detaylar
+
+### Dosya Değişiklikleri
+
+| Dosya | Değişiklik |
+|-------|-----------|
+| `src/game/config.ts` | `ENERGY_MAX`, `ENERGY_REGEN_MS` sabitleri |
+| `src/game/persistence.ts` | Version bump, energy state, regen fonksiyonları |
+| `src/game/GarageOverlay.tsx` | Energy countdown UI, tab navigation, PLAY blocking |
+| `src/game/ShopScreen.tsx` | **YENİ** - Placeholder shop ekranı |
+
+### Energy State Akışı
 
 ```text
-┌─────────────────────────────────────────┐
-│  TOP BAR: Lv.1 | [Dawn Rush ▼] | ⚡10/10 🪙XX 🎯 │
-│  ─────────────────────────────────────  │
-│  [☕ Dawn Rush ▼] ← Chapter dropdown burada │
-├─────────────────────────────────────────┤
-│                                         │
-│       📦+1 Cargo                        │
-│          ↗                              │
-│      ┌──────┐   (sağ üst köşe)         │
-│      │BARISTA│                          │
-│      ├──────┤                           │
-│  🛡️→ │ BOX 2 │ ← her box'a HP upgrade   │
-│  🛡️→ │ BOX 1 │                          │
-│  🛡️→ │CHASSIS│                          │
-│      └──🛞──┘                           │
-│                                         │
-│  ═══════════ LANE/ROAD ════════════════ │
-│                                         │
-├─────────────────────────────────────────┤
-│  ROW 3: [⚡ Power]  [☕ Damage]  (yatay) │
-├─────────────────────────────────────────┤
-│  ROW 2: [▶ PLAY (geniş)]  [🔄 Reset]    │
-├─────────────────────────────────────────┤
-│  ROW 1: [Battle] [Shop] [Hero] [Weapons] [Tower] │
-└─────────────────────────────────────────┘
+App açılış:
+  loadProgression() -> applyRegenNow() -> UI güncelle
+
+PLAY'e basınca:
+  applyRegenNow()
+  if (energy <= 0) -> block + toast
+  else -> consumeEnergy() -> oyunu başlat
+
+Her saniye (UI timer):
+  remaining = 30dk - ((now - anchor) % 30dk)
+  display "+1 in MM:SS"
 ```
 
----
+### applyRegenNow() Mantığı
 
-## Değişiklik Özeti
-
-### 1. Cart'ı Sağa Kaydır
-**Dosya:** `src/game/config.ts`
-
-```typescript
-CART_X: 30 → 70  // 40px sağa kaydır, HP upgrade butonlarına yer aç
-```
-
-### 2. Bottom Layout (3 Satır - Flexbox)
-**Dosya:** `src/game/GarageOverlay.tsx`
-
-Bottom panel'i 3 satırlı flexbox yapısına dönüştür:
-
-**Row 1 (en alt):** Footer tabs - mevcut haliyle kalır
-**Row 2:** PLAY (flex-1/geniş) + Reset (küçük/dar) - yan yana
-**Row 3:** Power upgrade + Damage upgrade - yatay, eşit boyutlu
-
-```tsx
-{/* BOTTOM PANEL - 3 Rows */}
-<div className="pb-14 px-4 flex flex-col gap-2">
-  {/* Row 3: Power + Damage (yatay tile'lar) */}
-  <div className="flex gap-2">
-    <HorizontalUpgradeTile upgrade={UPGRADES.power} ... />
-    <HorizontalUpgradeTile upgrade={UPGRADES.damage} ... />
-  </div>
+```text
+function applyRegenNow():
+  if energy >= 10:
+    energy = 10, anchor = null, return
   
-  {/* Row 2: PLAY + Reset */}
-  <div className="flex gap-2">
-    <Button className="flex-1 py-5">▶ PLAY</Button>
-    <Button className="w-12 py-5">🔄</Button>
-  </div>
-</div>
-
-{/* Row 1: Footer tabs (absolute bottom) */}
-<div className="absolute bottom-0 ...">...</div>
-```
-
-### 3. HP Upgrade Butonları - Box'ların Solunda
-**Dosya:** `src/game/GarageOverlay.tsx`
-
-Her block için bir HP upgrade tile'ı, box'un soluna hizalı:
-
-```tsx
-{/* HP Upgrades - Canvas koordinatlarında, box'ların solunda */}
-<div className="absolute inset-0 pointer-events-none">
-  {/* Her block için HP tile */}
-  {Array.from({ length: blockCount }, (_, i) => {
-    const blockY = groundY - 30 - (i + 1) * BLOCK_HEIGHT;
-    return (
-      <div 
-        key={i}
-        className="absolute pointer-events-auto"
-        style={{ 
-          top: blockY + 5,  // Box'un ortasına hizalı
-          left: 8           // Solda, cart'ın solunda
-        }}
-      >
-        <SmallHPTile level={hpLevel} maxLevel={3} cost={hpCost} />
-      </div>
-    );
-  })}
-</div>
-```
-
-### 4. +1 Cargo Butonu - Sağ Üst Köşe (Barista Hizası)
-**Dosya:** `src/game/GarageOverlay.tsx`
-
-```tsx
-{/* +1 Cargo - Cart'ın sağ üst köşesi */}
-<div 
-  className="absolute pointer-events-auto"
-  style={{ 
-    top: baristaY - 20,           // Barista'nın hizasında
-    left: CART_X + CART_WIDTH + 15 // Cart'ın sağ kenarından 15px gap
-  }}
->
-  <CargoUpgradeTile ... />
-</div>
-```
-
-### 5. Chapter Dropdown - Top Bar Altına
-**Dosya:** `src/game/GarageOverlay.tsx`
-
-Top bar'ın altına, 10/10 ve coin'in hemen altında:
-
-```tsx
-{/* TOP BAR */}
-<div className="px-3 py-2">
-  <div className="flex items-center justify-between">
-    {/* Lv.1 | Chapter | Energy + Coins + Quest */}
-    ...
-  </div>
+  if anchor == null:
+    anchor = now (safety)
   
-  {/* Chapter dropdown - tek satırda, sağ tarafa yaslanmış */}
-  <button 
-    onClick={() => setShowModeModal(true)}
-    className="mt-2 flex items-center gap-1 bg-coffee-dark/40 rounded-full py-1 px-3 ml-auto"
-  >
-    <span className="text-sm">☕ Dawn Rush</span>
-    <ChevronDown className="w-3 h-3" />
-  </button>
-</div>
-```
-
-### 6. Yatay Upgrade Tile Component
-**Dosya:** `src/game/GarageOverlay.tsx`
-
-Power ve Damage için yatay format:
-
-```tsx
-const HorizontalUpgradeTile: React.FC<Props> = ({ upgrade, ... }) => {
-  return (
-    <button className="flex-1 flex items-center gap-2 p-2 rounded-xl border-2 bg-coffee-dark/80">
-      {/* Sol: İkon */}
-      <div className="p-1.5 rounded-lg bg-warm-orange/20">
-        <Icon className="w-5 h-5" />
-      </div>
-      
-      {/* Orta: Level pips + isim */}
-      <div className="flex-1">
-        <span className="text-xs text-coffee-cream">{upgrade.name}</span>
-        <div className="flex gap-0.5">
-          {/* Level dots */}
-        </div>
-      </div>
-      
-      {/* Sağ: Cost */}
-      <div className="flex items-center gap-0.5">
-        <span>🪙</span>
-        <span className="text-gold font-bold">{cost}</span>
-      </div>
-    </button>
-  );
-};
-```
-
-### 7. Küçük HP Tile Component (Box Yanı)
-**Dosya:** `src/game/GarageOverlay.tsx`
-
-Box'ların soluna yerleşen kompakt HP upgrade:
-
-```tsx
-const SmallHPTile: React.FC<Props> = ({ level, maxLevel, cost, onPurchase }) => {
-  return (
-    <button 
-      onClick={onPurchase}
-      className="flex flex-col items-center p-1.5 rounded-lg border bg-coffee-dark/80 min-w-[40px]"
-    >
-      <Shield className="w-4 h-4 text-warm-orange" />
-      <div className="flex gap-0.5 my-0.5">
-        {/* Level dots */}
-      </div>
-      <span className="text-[8px] text-gold">🪙{cost}</span>
-    </button>
-  );
-};
+  elapsed = now - anchor
+  gains = floor(elapsed / 30dk)
+  
+  if gains > 0:
+    energy = min(10, energy + gains)
+    if energy == 10:
+      anchor = null
+    else:
+      anchor = anchor + (gains * 30dk)  // Kalan süreyi koru
 ```
 
 ---
 
-## Pozisyon Hesaplamaları
+## Test Senaryoları
 
-### Canvas Koordinatları
-```
-CANVAS: 360 x 640 px
-
-groundY = 640 - 180 = 460  (lane)
-CART_X = 70  (yeni, 30'dan 70'e kaydı)
-CART_WIDTH = 75
-BLOCK_HEIGHT = 45
-chassisHeight = 18 (45 * 0.4)
-
-Block 0 (chassis): y = 460 - 30 - 18 = 412-430
-Block 1 (box 1):   y = 412 - 45 = 367-412
-Block 2 (box 2):   y = 367 - 45 = 322-367
-Barista:           y ≈ 300-320
-
-+1 Cargo: left = 70 + 75 + 15 = 160, top = 280
-HP tiles: left = 8, top = blockY + 10
-```
-
-### UI Bottom Area
-```
-Footer tabs:  py-2 ≈ 44px
-PLAY + Reset: py-5 ≈ 52px + gap
-Power/Damage: py-3 ≈ 48px + gap
-
-Toplam: ~160px (UI_SAFE_BOTTOM_PX = 160 ile uyumlu)
-```
+1. **İlk oyun**: 10 -> 9, timer başlar (+1 in 30:00)
+2. **Art arda oyun**: 9 -> 8 -> 7, timer aynı ritimde devam
+3. **Refresh**: State ve countdown doğru kalır
+4. **30dk bekle**: Energy +1, timer devam (eğer hala < 10)
+5. **Energy 0**: PLAY blocked, toast gösterilir
+6. **Shop tab**: Ekran açılır, Battle'a dönünce state korunur
 
 ---
 
-## Dosya Değişiklikleri
+## Implementasyon Sırası
 
-### `src/game/config.ts`
-| Satır | Değişiklik |
-|-------|------------|
-| 22 | `CART_X: 30` → `CART_X: 70` |
+1. `config.ts` - Energy sabitleri ekle
+2. `persistence.ts` - Version bump, energy state ve fonksiyonlar
+3. `ShopScreen.tsx` - Yeni placeholder ekran
+4. `GarageOverlay.tsx` - Energy UI, countdown, tab navigation, PLAY blocking
 
-### `src/game/GarageOverlay.tsx`
-| Bölüm | Değişiklik |
-|-------|------------|
-| Upgrade Tiles Container | Flex-1 → absolute inset-0 (HP tiles için) |
-| Bottom Panel | 1 satır → 3 satır yapısı |
-| +1 Cargo tile | Sağ üst köşe, cart'a bağlı koordinat |
-| HP tiles | Her block için sol tarafta küçük tile |
-| Power/Damage | Yeni HorizontalUpgradeTile component |
-| Chapter dropdown | Top bar'ın altına, sağa yaslanmış |
-| PLAY + Reset | Yan yana, PLAY geniş, Reset dar |
-
----
-
-## Kabul Kriterleri
-
-- [ ] Cart ekranın biraz sağında (HP tile'larına yer var)
-- [ ] Her cargo box'un solunda 🛡️ HP upgrade tile'ı
-- [ ] +1 Cargo butonu cart'ın sağ üst köşesinde (barista hizası)
-- [ ] Bottom'da 3 satır: Footer → PLAY+Reset → Power+Damage
-- [ ] PLAY geniş, Reset dar (yan yana)
-- [ ] Power ve Damage yatay tile formatında
-- [ ] Chapter dropdown top bar altında, tek satır yazı
-- [ ] PLAY butonu lane'e binmiyor
-
----
-
-## Teknik Notlar
-
-1. **CART_X değişikliği**: Cart sağa kayınca tüm enemy hedefleme ve gameplay aynı kalır, sadece görsel pozisyon değişir.
-
-2. **HP upgrade logic**: Her block için ayrı tile görünse de, tüm block'lar aynı HP multiplier'ı kullanır (mevcut sistem). Görsel olarak block başına tile, ama tek bir upgrade seviyesi.
-
-3. **Scale ile uyum**: Tile pozisyonları canvas koordinatlarında olduğu için scale değişse de cart'a göre sabit kalır.
-
-4. **Reset butonu**: Live'a alınca kaldırılacak - şimdilik küçük tutuyoruz.
