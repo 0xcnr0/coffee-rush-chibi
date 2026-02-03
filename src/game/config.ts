@@ -112,6 +112,12 @@ export const GAME_CONFIG = {
   MAX_PARTICLES: 100,          // hard cap for performance
   
   // ─────────────────────────────────────────────────────────────
+  // STAMINA SYSTEM (Energy - gates play sessions)
+  // ─────────────────────────────────────────────────────────────
+  ENERGY_MAX: 10,                  // Maximum stamina
+  ENERGY_REGEN_MS: 1800000,        // 30 minutes in milliseconds
+  
+  // ─────────────────────────────────────────────────────────────
   // UPGRADES (Phase 2B-3: TDS-like balance - short caps, meaningful bonuses)
   // ─────────────────────────────────────────────────────────────
   // Balance Targets:

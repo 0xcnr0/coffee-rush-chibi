@@ -4,7 +4,9 @@
 import type { GameMode, WeaponType, WeaponSlot } from './types';
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 7; // Bump: Phase 3 Weapon System
+const SAVE_VERSION = 8; // Bump: Phase 4 Energy System
+
+import { GAME_CONFIG } from './config';
 
 export interface ProgressionData {
   version: number;
@@ -23,6 +25,9 @@ export interface ProgressionData {
   lastGameMode: GameMode;
   // Phase 3: Weapon slots for each cargo box (max 2 weapons)
   weaponSlots: WeaponSlot[];
+  // Phase 4: Energy (stamina) system
+  energy: number;
+  regenAnchorTs: number | null;
 }
 
 const DEFAULT_PROGRESSION: ProgressionData = {
@@ -43,6 +48,8 @@ const DEFAULT_PROGRESSION: ProgressionData = {
     { weaponType: null, level: 0 },
     { weaponType: null, level: 0 },
   ],
+  energy: GAME_CONFIG.ENERGY_MAX,
+  regenAnchorTs: null,
 };
 
 export const loadProgression = (): ProgressionData => {
@@ -68,6 +75,8 @@ export const loadProgression = (): ProgressionData => {
         ...parsed.upgradeLevels,
       },
       weaponSlots: parsed.weaponSlots ?? DEFAULT_PROGRESSION.weaponSlots,
+      energy: parsed.energy ?? DEFAULT_PROGRESSION.energy,
+      regenAnchorTs: parsed.regenAnchorTs ?? DEFAULT_PROGRESSION.regenAnchorTs,
     };
   } catch {
     console.warn('Failed to load progression, using defaults');
@@ -196,4 +205,116 @@ export const upgradeWeapon = (slotIndex: number, cost: number): boolean => {
   
   saveProgression(current);
   return true;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENERGY (STAMINA) SYSTEM - Phase 4
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Apply pending energy regeneration based on elapsed time since anchor.
+ * Should be called on app load, garage open, and before consuming energy.
+ * Does NOT save automatically - returns the updated progression data.
+ */
+export const applyRegenNow = (): ProgressionData => {
+  const prog = loadProgression();
+  const now = Date.now();
+  
+  // If energy is full, clear anchor and return
+  if (prog.energy >= GAME_CONFIG.ENERGY_MAX) {
+    prog.energy = GAME_CONFIG.ENERGY_MAX;
+    prog.regenAnchorTs = null;
+    saveProgression(prog);
+    return prog;
+  }
+  
+  // If no anchor exists (safety), set it now
+  if (prog.regenAnchorTs === null) {
+    prog.regenAnchorTs = now;
+    saveProgression(prog);
+    return prog;
+  }
+  
+  // Calculate how many full regen intervals have passed
+  const elapsed = now - prog.regenAnchorTs;
+  const gains = Math.floor(elapsed / GAME_CONFIG.ENERGY_REGEN_MS);
+  
+  if (gains > 0) {
+    prog.energy = Math.min(GAME_CONFIG.ENERGY_MAX, prog.energy + gains);
+    
+    if (prog.energy >= GAME_CONFIG.ENERGY_MAX) {
+      // Energy is full, clear anchor
+      prog.energy = GAME_CONFIG.ENERGY_MAX;
+      prog.regenAnchorTs = null;
+    } else {
+      // Advance anchor by gains (preserve remaining time)
+      prog.regenAnchorTs = prog.regenAnchorTs + (gains * GAME_CONFIG.ENERGY_REGEN_MS);
+    }
+    
+    saveProgression(prog);
+  }
+  
+  return prog;
+};
+
+/**
+ * Consume 1 energy for a play session.
+ * Returns true if successful, false if no energy available.
+ * Starts the regen timer if this is the first spend.
+ */
+export const consumeEnergy = (): { success: boolean; newEnergy: number } => {
+  const prog = applyRegenNow(); // Always apply pending regen first
+  
+  if (prog.energy <= 0) {
+    return { success: false, newEnergy: 0 };
+  }
+  
+  prog.energy -= 1;
+  
+  // If energy just dropped below max and no anchor exists, start timer
+  if (prog.energy < GAME_CONFIG.ENERGY_MAX && prog.regenAnchorTs === null) {
+    prog.regenAnchorTs = Date.now();
+  }
+  
+  saveProgression(prog);
+  return { success: true, newEnergy: prog.energy };
+};
+
+/**
+ * Get current energy state including countdown info.
+ * Does NOT consume energy, just reads current state.
+ */
+export const getEnergyState = (): {
+  energy: number;
+  maxEnergy: number;
+  isRegenerating: boolean;
+  remainingMs: number; // Time until next +1 energy
+} => {
+  const prog = applyRegenNow();
+  const now = Date.now();
+  
+  let remainingMs = 0;
+  const isRegenerating = prog.energy < GAME_CONFIG.ENERGY_MAX && prog.regenAnchorTs !== null;
+  
+  if (isRegenerating && prog.regenAnchorTs !== null) {
+    const elapsed = now - prog.regenAnchorTs;
+    remainingMs = GAME_CONFIG.ENERGY_REGEN_MS - (elapsed % GAME_CONFIG.ENERGY_REGEN_MS);
+  }
+  
+  return {
+    energy: prog.energy,
+    maxEnergy: GAME_CONFIG.ENERGY_MAX,
+    isRegenerating,
+    remainingMs,
+  };
+};
+
+/**
+ * Format milliseconds to MM:SS display string.
+ */
+export const formatTimeRemaining = (ms: number): string => {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
