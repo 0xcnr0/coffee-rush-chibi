@@ -138,11 +138,16 @@ export interface RunTelemetry {
   beansStart: number;          // totalBeans at run start
   beansEnd: number;            // totalBeans after save
   beansEarnedActual: number;   // beansEnd - beansStart
-  tipsFromServed: number;      // tipsRef.current (includes normal + heavy + boss tips)
+  
+  // Breakdown components (all in beans)
+  tipsFromServed: number;      // tipsRef.current (includes normal + heavy + boss tips) - already in beans
   bossRewardBeans: number;     // DISPLAY ONLY: BOSS_TIP_MULTIPLIER × TIP_VALUE (already in tipsFromServed!)
   clearBonusBeans: number;     // CHAPTER_CLEAR_BONUS_BEANS (0 if failed)
+  
+  // Reconciliation
   beansTotalBreakdown: number; // tipsFromServed + clearBonusBeans (boss already in tips)
-  economyDelta: number;        // actual - breakdown (should be 0)
+  economyDelta: number;        // actual - breakdown (MUST be 0, any deviation is a bug)
+  deltaExplanation: string;    // Human-readable explanation of delta source
 }
 
 export interface DifficultyState {

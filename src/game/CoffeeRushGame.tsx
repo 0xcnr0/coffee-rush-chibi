@@ -465,6 +465,7 @@ export const CoffeeRushGame: React.FC = () => {
       clearBonusBeans: 0, // Updated in handleChapterClear
       beansTotalBreakdown: tipsFromServed, // clearBonus added in handleChapterClear
       economyDelta: 0, // Calculated after save
+      deltaExplanation: '', // Calculated after save
     };
   }, [gameMode]);
 
@@ -497,6 +498,17 @@ export const CoffeeRushGame: React.FC = () => {
     telemetry.beansEarnedActual = finalProg.totalBeans - telemetry.beansStart;
     telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
     
+    // Generate explanation if delta is non-zero
+    if (telemetry.economyDelta !== 0) {
+      const parts: string[] = [];
+      parts.push(`Start:${telemetry.beansStart}`);
+      parts.push(`End:${telemetry.beansEnd}`);
+      parts.push(`Tips:${telemetry.tipsFromServed}`);
+      parts.push(`Clear:${clearBonus}`);
+      parts.push(`Breakdown:${telemetry.beansTotalBreakdown}`);
+      telemetry.deltaExplanation = parts.join(' | ') + ` → Δ=${telemetry.economyDelta} (BUG: check save logic)`;
+    }
+    
     const totalBeans = beansEarned + clearBonus;
     setStats({
       timeSurvived: timeRef.current,
@@ -527,6 +539,16 @@ export const CoffeeRushGame: React.FC = () => {
     telemetry.beansEnd = prog.totalBeans;
     telemetry.beansEarnedActual = prog.totalBeans - telemetry.beansStart;
     telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
+    
+    // Generate explanation if delta is non-zero
+    if (telemetry.economyDelta !== 0) {
+      const parts: string[] = [];
+      parts.push(`Start:${telemetry.beansStart}`);
+      parts.push(`End:${telemetry.beansEnd}`);
+      parts.push(`Tips:${telemetry.tipsFromServed}`);
+      parts.push(`Breakdown:${telemetry.beansTotalBreakdown}`);
+      telemetry.deltaExplanation = parts.join(' | ') + ` → Δ=${telemetry.economyDelta} (BUG: check save logic)`;
+    }
     
     setStats({
       timeSurvived: timeRef.current,
