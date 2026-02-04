@@ -1,114 +1,59 @@
 
+# Ekonomi Delta Düzeltme + Tam Telemetri Planı
 
-# Ekonomi Telemetri + Dengeli Rebalance (Balanced-B) - Güncellenmiş Plan
+## Tespit Edilen Problemler
 
-## Genel Bakis
+### Problem 1: Clear Bonus Save Edilmiyor (BUG!)
+`handleChapterClear` içinde `CHAPTER_CLEAR_BONUS_BEANS` (10 beans) hesaplanıyor ama hiçbir yere kaydedilmiyor.
 
-Bu plan ChatGPT'nin 2 kritik önerisini de içeriyor:
-1. **Telemetri** - beansStart/beansEnd delta kontrolü ile double-award bug yakalama
-2. **Boss reward standardizasyonu** - formülün net olması
-3. **Balanced-B Rebalance** - ~25 run hedefli dengeli ekonomi
+**Mevcut Kod (satır 471-507):**
+```typescript
+const handleChapterClear = useCallback(() => {
+  const { beansEarned } = updateChapterClear(..., tipsRef.current);
+  const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
+  const totalBeans = beansEarned + clearBonus;
+  // ... telemetry hesaplama
+  // ❌ clearBonus hiç save edilmiyor!
+});
+```
+
+`updateChapterClear` fonksiyonu (persistence.ts satır 144-166) sadece `tipsEarned` ekliyor:
+```typescript
+totalBeans: current.totalBeans + beansEarned, // beansEarned = tipsEarned
+```
+
+**Sonuç:** Clear bonusu UI'da gösteriliyor ama gerçekte eklenmemiyor. Bu negatif delta'nın bir kaynağı.
+
+### Problem 2: Breakdown tipsRef Yerine enemiesKilled Kullanıyor
+Telemetri breakdown'ı şu formülü kullanıyor (satır 427-430):
+```typescript
+const normalTips = t.enemiesKilled.normal * GAME_CONFIG.TIP_VALUE;
+const heavyTips = t.enemiesKilled.heavy * GAME_CONFIG.TIP_VALUE;
+const bossTips = t.enemiesKilled.boss * GAME_CONFIG.BOSS_TIP_MULTIPLIER * GAME_CONFIG.TIP_VALUE;
+```
+
+Ama gerçekte save edilen değer `tipsRef.current` - bu farklı olabilir çünkü:
+- Tip'ler float edip ekrandan çıkınca `tipsRef` artıyor
+- Bazı tip'ler henüz toplanmamış olabilir
+- `enemiesKilled` ve gerçek tip sayısı uyuşmayabilir
+
+**Doğru Yaklaşım:** Breakdown'ı `tipsRef.current` (gerçek toplanan tip'ler) üzerinden hesapla.
+
+### Problem 3: Boss Reward Breakdown'da Yanlış
+Boss için `enemiesKilled.boss * BOSS_TIP_MULTIPLIER * TIP_VALUE` hesaplanıyor. Ama aslında boss öldüğünde `BOSS_TIP_MULTIPLIER` adet tip drop oluyor ve her biri `TIP_VALUE` değerinde. Yani:
+- Boss'tan gelen beans = `BOSS_TIP_MULTIPLIER * TIP_VALUE` = 3 × 2 = 6
+- Bu zaten `tipsRef.current` içinde!
+
+Breakdown'da boss'u ayrı saymak çift sayıma yol açar.
 
 ---
 
-## Aşama 1: Ekonomi Telemetrisi (Anti-Bug)
+## Çözüm Planı
 
-### ChatGPT Önerisi 1: beansStart/beansEnd Delta Kontrolü
+### 1. Clear Bonus'u Gerçekten Save Et
+`handleChapterClear` içinde clearBonus'u persistence'a ekle.
 
-Mevcut RunSummary sadece "served x tip + bonus" hesaplıyor ama bu double-award bug'ları yakalamaz.
-
-**Yeni Yaklaşım:**
-1. Run başlangıcında `beansStart = totalBeans` kaydet (ref olarak)
-2. Run sonunda `beansEnd = totalBeans` al (save sonrası)
-3. `beansEarnedActual = beansEnd - beansStart`
-4. Breakdown hesapla: `beansTotalBreakdown = tipsFromServed + bossRewardBeans + clearBonusBeans`
-5. `delta = beansEarnedActual - beansTotalBreakdown`
-6. Eğer `delta !== 0` ise uyarı göster: "⚠️ Economy mismatch (delta = X)"
-
-**Yeni Telemetri Alanları (types.ts):**
-```
-beansStart: number          // run başında totalBeans
-beansEnd: number            // run sonunda totalBeans  
-beansEarnedActual: number   // beansEnd - beansStart
-tipsFromServed: number      // served count × TIP_VALUE
-bossRewardBeans: number     // BOSS_TIP_MULTIPLIER × TIP_VALUE
-clearBonusBeans: number     // CHAPTER_CLEAR_BONUS_BEANS (0 if failed)
-beansTotalBreakdown: number // tipsFromServed + bossRewardBeans + clearBonusBeans
-economyDelta: number        // actual - breakdown (should be 0)
-```
-
-### ChatGPT Önerisi 2: Boss Reward Standardizasyonu
-
-Mevcut sistemde boss için tip drop mantığı:
-```typescript
-// Line 1018: Boss drops multiple tips
-const tipCount = enemy.kind === 'BOSS' ? GAME_CONFIG.BOSS_TIP_MULTIPLIER : 1;
-for (let i = 0; i < tipCount; i++) {
-  spawnTip(enemy.x + (i - 2) * 15, enemy.y - enemy.height);
-}
-```
-
-Bu şu anlama geliyor:
-- Boss defeat = BOSS_TIP_MULTIPLIER (3) adet tip drop
-- Her tip = TIP_VALUE (3) beans
-- **Boss Reward = 3 × 3 = 9 beans**
-
-Formül net, ama telemetri bunu göstermeli:
-```
-Boss Reward: 9 beans (3 tips × 3 beans/tip)
-```
-
-### Config Debug Gösterimi
-
-RunSummary'da küçük debug satırı:
-```
-TIP=3 | BOSS=3x | BONUS=20 | SCALE=1.45
-```
-
----
-
-## Aşama 2: CoffeeRushGame.tsx Değişiklikleri
-
-### beansStart Ref Ekleme
-
-```typescript
-const beansStartRef = useRef(0);
-
-// startGame içinde (run başlarken):
-beansStartRef.current = loadProgression().totalBeans;
-```
-
-### buildTelemetry Güncelleme
-
-```typescript
-const buildTelemetry = useCallback((): RunTelemetry => {
-  const prog = loadProgression();
-  const beansEnd = prog.totalBeans;
-  const beansStart = beansStartRef.current;
-  const beansEarnedActual = beansEnd - beansStart;
-  
-  // Breakdown hesabı
-  const normalTips = telemetryRef.current.enemiesKilled.normal * GAME_CONFIG.TIP_VALUE;
-  const heavyTips = telemetryRef.current.enemiesKilled.heavy * GAME_CONFIG.TIP_VALUE;
-  const bossTips = telemetryRef.current.enemiesKilled.boss * GAME_CONFIG.BOSS_TIP_MULTIPLIER * GAME_CONFIG.TIP_VALUE;
-  const tipsFromServed = normalTips + heavyTips + bossTips;
-  
-  return {
-    // ... mevcut alanlar
-    beansStart,
-    beansEnd,
-    beansEarnedActual,
-    tipsFromServed,
-    bossRewardBeans: bossTips,
-    clearBonusBeans: 0, // handleChapterClear'da set edilecek
-    beansTotalBreakdown: tipsFromServed,
-    economyDelta: 0, // hesaplanacak
-  };
-}, []);
-```
-
-### handleChapterClear Güncelleme
-
+**Değişiklik (CoffeeRushGame.tsx satır 471-507):**
 ```typescript
 const handleChapterClear = useCallback(() => {
   const { beansEarned } = updateChapterClear(
@@ -116,127 +61,169 @@ const handleChapterClear = useCallback(() => {
     tipsRef.current
   );
   
-  // Add chapter clear bonus
   const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
-  const totalBeans = beansEarned + clearBonus;
   
-  // Build telemetry with boss defeated
+  // ✅ Clear bonus'u gerçekten save et
+  const prog = loadProgression();
+  saveProgression({
+    ...prog,
+    totalBeans: prog.totalBeans + clearBonus,
+  });
+  
+  // Build telemetry...
+});
+```
+
+### 2. Telemetriyi tipsRef Bazlı Yap
+Breakdown'ı `enemiesKilled` yerine `tipsRef.current` üzerinden hesapla. Çünkü save edilen değer budur.
+
+**Yeni Telemetri Hesabı:**
+```typescript
+// tipsRef.current = served düşmanlardan gelen tüm tip'ler
+// Bu değer normal + heavy + boss tip'lerini içeriyor
+const tipsFromServed = tipsRef.current;
+
+// Boss reward zaten tipsFromServed içinde! Ayrıca sayma.
+// Ama telemetride göstermek istiyorsak:
+const bossRewardBeans = t.enemiesKilled.boss * GAME_CONFIG.BOSS_TIP_MULTIPLIER * GAME_CONFIG.TIP_VALUE;
+
+// Breakdown = tips (boss dahil) + clear bonus
+const beansTotalBreakdown = tipsFromServed + clearBonus;
+```
+
+### 3. types.ts Güncelleme
+`RunTelemetry` interface'inde açıklama ekle:
+
+```typescript
+// Economy telemetry (Phase 2E: Anti-bug delta control)
+beansStart: number;          // totalBeans at run start
+beansEnd: number;            // totalBeans after save
+beansEarnedActual: number;   // beansEnd - beansStart
+tipsFromServed: number;      // tipsRef.current (includes normal + heavy + boss tips)
+bossRewardBeans: number;     // Display only: BOSS_TIP_MULTIPLIER × TIP_VALUE (already in tipsFromServed)
+clearBonusBeans: number;     // CHAPTER_CLEAR_BONUS_BEANS (0 if failed)
+beansTotalBreakdown: number; // tipsFromServed + clearBonusBeans
+economyDelta: number;        // actual - breakdown (should be 0)
+```
+
+### 4. buildTelemetry Düzeltmesi
+
+```typescript
+const buildTelemetry = useCallback((): RunTelemetry => {
+  // ... mevcut kod ...
+  
+  // Phase 2E: Economy telemetry - tipsRef.current bazlı
+  const tipsFromServed = tipsRef.current; // Gerçek toplanan tip'ler
+  
+  // Boss reward sadece display için (zaten tipsFromServed içinde)
+  const bossRewardDisplay = t.enemiesKilled.boss * GAME_CONFIG.BOSS_TIP_MULTIPLIER * GAME_CONFIG.TIP_VALUE;
+  
+  return {
+    // ... diğer alanlar ...
+    tipsFromServed,
+    bossRewardBeans: bossRewardDisplay, // Display only
+    clearBonusBeans: 0, // handleChapterClear'da set edilecek
+    beansTotalBreakdown: tipsFromServed, // clearBonus sonra eklenecek
+    economyDelta: 0, // Save sonrası hesaplanacak
+  };
+}, [gameMode]);
+```
+
+### 5. handleChapterClear Tam Düzeltme
+
+```typescript
+const handleChapterClear = useCallback(() => {
+  // 1. Tips'i save et
+  const { beansEarned } = updateChapterClear(
+    timeRef.current,
+    tipsRef.current
+  );
+  
+  // 2. Clear bonus'u save et
+  const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
+  const progAfterTips = loadProgression();
+  saveProgression({
+    ...progAfterTips,
+    totalBeans: progAfterTips.totalBeans + clearBonus,
+  });
+  
+  // 3. Telemetri oluştur
   const telemetry = buildTelemetry();
   telemetry.bossOutcome = 'defeated';
   telemetry.bossHpPercent = 0;
   telemetry.clearBonusBeans = clearBonus;
   telemetry.beansTotalBreakdown = telemetry.tipsFromServed + clearBonus;
   
-  // Reload to get actual beansEnd after save
-  const beansEnd = loadProgression().totalBeans + clearBonus;
-  telemetry.beansEnd = beansEnd;
-  telemetry.beansEarnedActual = beansEnd - telemetry.beansStart;
+  // 4. Save sonrası actual değeri al
+  const finalProg = loadProgression();
+  telemetry.beansEnd = finalProg.totalBeans;
+  telemetry.beansEarnedActual = finalProg.totalBeans - telemetry.beansStart;
   telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
   
-  // ... rest of function
+  // 5. Stats'ı set et
+  const totalBeans = beansEarned + clearBonus;
+  setStats({
+    timeSurvived: timeRef.current,
+    customersServed: customersServedRef.current,
+    totalTips: tipsRef.current,
+    beansEarned: totalBeans,
+    isNewRecord: false,
+    isChapterClear: true,
+    checkpointsCleared: GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT,
+    telemetry,
+  });
+  setGameState('END');
 }, [buildTelemetry]);
 ```
 
----
-
-## Aşama 3: RunSummary.tsx Güncelleme
-
-### Yeni Economy Bölümü
+### 6. RunSummary UI Güncelleme
+Economy bölümünde boss reward'ın "display only" olduğunu belirt:
 
 ```
 Economy bölümü:
-├── Served: 25
-├── Tips: 75 beans (25 × 3)
-├── Boss Reward: 9 beans (3 tips × 3)
-├── Clear Bonus: 20 beans
+├── Tips: 62 beans (31 served)
+├── Boss: 6 beans (included above)  ← Açıklama ekle
+├── Clear Bonus: +10 beans
 ├── ────────────
-├── Breakdown: 104 beans
-├── Actual: 104 beans
-├── Delta: 0 ✓  (veya "⚠️ +X" eğer mismatch)
-```
-
-### Config Debug Satırı
-
-```
-[TIP=3 | BOSS=3x | BONUS=20 | SCALE=1.45]
-```
-(Küçük, silik renkte, en altta)
-
-### Compact Format Güncelleme
-
-```
-... | Beans:104(B:104/A:104/D:0) | ...
+├── Breakdown: 72 beans
+├── Actual: 72 beans
+├── Delta: 0 ✓
 ```
 
 ---
 
-## Aşama 4: Balanced-B Ekonomi Rebalance
+## Dosya Değişiklikleri
 
-### Mevcut vs Yeni Değerler
+| Dosya | Değişiklik |
+|-------|-----------|
+| `src/game/CoffeeRushGame.tsx` | buildTelemetry: tipsRef bazlı hesap; handleChapterClear: clearBonus save |
+| `src/game/types.ts` | RunTelemetry yorumları güncelle |
+| `src/game/RunSummary.tsx` | Economy bölümünde boss "included in tips" notu |
 
-| Parametre | Mevcut | Balanced-B |
-|-----------|--------|------------|
-| TIP_VALUE | 3 | 2 |
-| BOSS_TIP_MULTIPLIER | 3 | 3 (aynı) |
-| CHAPTER_CLEAR_BONUS_BEANS | 20 | 10 |
-| TOWER_HP_BASE_COST | 60 | 100 |
-| ESPRESSO_BASE_COST | 60 | 100 |
-| POWER_BASE_COST | 45 | 80 |
-| BLOCK_COUNT_BASE_COST | 55 | 100 |
-| UPGRADE_COST_SCALING | 1.45 | 1.55 |
+---
 
-### Yeni Upgrade Maliyetleri
+## Beklenen Sonuç
 
-| Upgrade | L1 | L2 | L3 | Toplam |
-|---------|-----|-----|-----|--------|
-| Tower HP | 100 | 155 | 240 | 495 |
-| Espresso | 100 | 155 | 240 | 495 |
-| Power | 80 | 124 | 192 | 396 |
-| Cargo | 100 | 155 | - | 255 |
-| **TOPLAM** | | | | **~1641** |
+Bu değişikliklerden sonra:
+1. **Delta her zaman 0 olmalı** (veya çok küçük edge case'lerde ±1-2)
+2. **Clear bonus gerçekten ekleniyor** (şu an 10 beans kayıp!)
+3. **Breakdown doğru hesaplanıyor** (çift sayım yok)
 
-### Yeni Kazanç Hesabı
-
-- Served × TIP_VALUE: 25 × 2 = 50 beans
-- Boss Reward: 3 × 2 = 6 beans
-- Clear Bonus: 10 beans
-- **Chapter Clear Total: ~66 beans**
-
-### Beklenen Pacing
-
-| Milestone | Run Sayısı |
-|-----------|------------|
-| İlk upgrade (L1 Power: 80) | 2-3 run |
-| Chapter 1 Boss clear | 6-10 run |
-| Full upgrade (~1641) | 25-30 run |
+Test senaryoları:
+- Normal fail run: Delta = 0
+- Chapter clear: Delta = 0
+- Leave (pause menüden çıkış): Delta = 0
 
 ---
 
 ## Teknik Özet
 
-### Dosya Değişiklikleri
+**Root Cause:** 
+1. `clearBonus` hesaplanıyor ama save edilmiyor
+2. Telemetri `enemiesKilled` kullanıyor, `tipsRef` değil
+3. Boss tip'ler hem ayrı sayılıyor hem `tipsFromServed`'de
 
-| Dosya | Değişiklik |
-|-------|-----------|
-| `src/game/types.ts` | RunTelemetry'ye 8 yeni alan ekle |
-| `src/game/config.ts` | Balanced-B değerlerini uygula |
-| `src/game/CoffeeRushGame.tsx` | beansStartRef, buildTelemetry, handleChapterClear güncellemesi |
-| `src/game/RunSummary.tsx` | Economy bölümü, config debug satırı, compact format |
-
-### Implementasyon Sırası
-
-1. `types.ts` - Yeni telemetri alanları
-2. `config.ts` - Balanced-B ekonomi değerleri
-3. `CoffeeRushGame.tsx` - beansStart tracking + telemetri hesaplama
-4. `RunSummary.tsx` - Economy UI + debug satırı
-
----
-
-## Test Senaryoları
-
-1. **Telemetri doğrulama**: Run sonunda "Breakdown" ve "Actual" aynı mı?
-2. **Delta kontrolü**: delta = 0 gösteriyor mu? (mismatch yoksa)
-3. **Config debug**: TIP=2, BONUS=10, SCALE=1.55 doğru mu?
-4. **İlk upgrade**: 2-3 run sonra L1 Power (80 beans) alınabiliyor mu?
-5. **Double-award test**: Aynı run'da Leave + GameOver durumunda delta uyarısı var mı?
-
+**Fix:**
+1. `handleChapterClear`'da clearBonus'u ayrıca save et
+2. `buildTelemetry`'de `tipsRef.current` kullan
+3. Boss reward'ı "display only" olarak işaretle (zaten tips içinde)
