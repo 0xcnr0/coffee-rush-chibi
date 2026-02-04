@@ -138,10 +138,10 @@ export interface RunTelemetry {
   beansStart: number;          // totalBeans at run start
   beansEnd: number;            // totalBeans after save
   beansEarnedActual: number;   // beansEnd - beansStart
-  tipsFromServed: number;      // served × TIP_VALUE
-  bossRewardBeans: number;     // BOSS_TIP_MULTIPLIER × TIP_VALUE
+  tipsFromServed: number;      // tipsRef.current (includes normal + heavy + boss tips)
+  bossRewardBeans: number;     // DISPLAY ONLY: BOSS_TIP_MULTIPLIER × TIP_VALUE (already in tipsFromServed!)
   clearBonusBeans: number;     // CHAPTER_CLEAR_BONUS_BEANS (0 if failed)
-  beansTotalBreakdown: number; // tipsFromServed + bossRewardBeans + clearBonusBeans
+  beansTotalBreakdown: number; // tipsFromServed + clearBonusBeans (boss already in tips)
   economyDelta: number;        // actual - breakdown (should be 0)
 }
 
