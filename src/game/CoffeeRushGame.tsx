@@ -423,11 +423,12 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
-    // Phase 2E: Economy telemetry - calculate beans breakdown
-    const normalTips = t.enemiesKilled.normal * GAME_CONFIG.TIP_VALUE;
-    const heavyTips = t.enemiesKilled.heavy * GAME_CONFIG.TIP_VALUE;
-    const bossTips = t.enemiesKilled.boss * GAME_CONFIG.BOSS_TIP_MULTIPLIER * GAME_CONFIG.TIP_VALUE;
-    const tipsFromServed = normalTips + heavyTips + bossTips;
+    // Phase 2E: Economy telemetry - use tipsRef.current as single source of truth
+    // tipsRef.current = all tips collected (includes normal + heavy + boss tips)
+    const tipsFromServed = tipsRef.current;
+    
+    // Boss reward is for display only - already included in tipsFromServed
+    const bossRewardDisplay = t.enemiesKilled.boss * GAME_CONFIG.BOSS_TIP_MULTIPLIER * GAME_CONFIG.TIP_VALUE;
     
     return {
       gameMode,
@@ -460,39 +461,43 @@ export const CoffeeRushGame: React.FC = () => {
       beansEnd: 0, // Updated after save
       beansEarnedActual: 0, // Updated after save
       tipsFromServed,
-      bossRewardBeans: bossTips,
+      bossRewardBeans: bossRewardDisplay, // Display only - already in tipsFromServed
       clearBonusBeans: 0, // Updated in handleChapterClear
-      beansTotalBreakdown: tipsFromServed,
+      beansTotalBreakdown: tipsFromServed, // clearBonus added in handleChapterClear
       economyDelta: 0, // Calculated after save
     };
   }, [gameMode]);
 
   // Phase 2B-2: Chapter Clear handler
   const handleChapterClear = useCallback(() => {
+    // 1. Save tips earned (updateChapterClear saves tipsEarned to totalBeans)
     const { beansEarned } = updateChapterClear(
       timeRef.current,
       tipsRef.current
     );
     
-    // Add chapter clear bonus
+    // 2. Add and SAVE chapter clear bonus (BUG FIX: was not being saved!)
     const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
-    const totalBeans = beansEarned + clearBonus;
+    const progAfterTips = loadProgression();
+    saveProgression({
+      ...progAfterTips,
+      totalBeans: progAfterTips.totalBeans + clearBonus,
+    });
     
-    // Build telemetry with boss defeated
+    // 3. Build telemetry with boss defeated
     const telemetry = buildTelemetry();
     telemetry.bossOutcome = 'defeated';
     telemetry.bossHpPercent = 0;
     telemetry.clearBonusBeans = clearBonus;
     telemetry.beansTotalBreakdown = telemetry.tipsFromServed + clearBonus;
     
-    // Phase 2E: Calculate actual beans earned from progression
-    const prog = loadProgression();
-    // Note: updateChapterClear already saved beansEarned, we still need to add clearBonus
-    const beansEnd = prog.totalBeans + clearBonus;
-    telemetry.beansEnd = beansEnd;
-    telemetry.beansEarnedActual = beansEnd - telemetry.beansStart;
+    // 4. Phase 2E: Calculate actual beans earned from progression (after save)
+    const finalProg = loadProgression();
+    telemetry.beansEnd = finalProg.totalBeans;
+    telemetry.beansEarnedActual = finalProg.totalBeans - telemetry.beansStart;
     telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
     
+    const totalBeans = beansEarned + clearBonus;
     setStats({
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,

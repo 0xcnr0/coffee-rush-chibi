@@ -121,10 +121,14 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             
             {/* Economy Section */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Economy</div>
-            <div>Tips: <span className="text-gold">{telemetry.tipsFromServed}</span> beans</div>
-            <div>Boss: <span className="text-gold">{telemetry.bossRewardBeans}</span> beans</div>
+            <div className="col-span-2">Tips: <span className="text-gold">{telemetry.tipsFromServed}</span> beans</div>
+            {telemetry.bossRewardBeans > 0 && (
+              <div className="col-span-2 text-coffee-light/50 text-[10px]">
+                └ Boss reward: {telemetry.bossRewardBeans} <span className="text-coffee-light/40">(included)</span>
+              </div>
+            )}
             {telemetry.clearBonusBeans > 0 && (
-              <div>Clear Bonus: <span className="text-green-400">+{telemetry.clearBonusBeans}</span></div>
+              <div className="col-span-2">Clear Bonus: <span className="text-green-400">+{telemetry.clearBonusBeans}</span></div>
             )}
             <div className="col-span-2 bg-coffee-medium/30 rounded px-2 py-1 mt-1">
               <div className="flex justify-between">
