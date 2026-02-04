@@ -1015,7 +1015,7 @@ export const CoffeeRushGame: React.FC = () => {
         }
         
         // Drop tip (boss drops bigger tip)
-        const tipCount = enemy.kind === 'BOSS' ? 5 : 1;
+        const tipCount = enemy.kind === 'BOSS' ? GAME_CONFIG.BOSS_TIP_MULTIPLIER : 1;
         for (let i = 0; i < tipCount; i++) {
           spawnTip(enemy.x + (i - 2) * 15, enemy.y - enemy.height);
         }

@@ -81,7 +81,8 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   // TIPS & REWARDS
   // ─────────────────────────────────────────────────────────────
-  TIP_VALUE: 5,                // points per tip
+  TIP_VALUE: 3,                // points per tip (v4: economy rebalance)
+  BOSS_TIP_MULTIPLIER: 3,      // boss tip count (v4: 5 → 3)
   TIP_FLOAT_SPEED: 80,         // pixels/second - float animation
   
   // ─────────────────────────────────────────────────────────────
@@ -126,29 +127,30 @@ export const GAME_CONFIG = {
   // - Chapter boss clear requires ~Box L2 + (HP or Damage) L2
   // ─────────────────────────────────────────────────────────────
   UPGRADE_MAX_LEVEL: 3,            // max level for each upgrade (TDS-style)
+  UPGRADE_COST_SCALING: 1.45,      // cost multiplier per level (v4: 1.25 → 1.45)
   
   // Tower Reinforcement - increases BLOCK_MAX_HP
   // Meaningful: +30% per level (Lv3 = +90%)
   TOWER_HP_BONUS_PER_LEVEL: 0.30,  // +30% per level
-  TOWER_HP_BASE_COST: 35,          // beans (L1: 35, L2: ~44, L3: ~55)
+  TOWER_HP_BASE_COST: 60,          // beans (v4: 35 → 60)
   MAX_BLOCK_HP_MULTIPLIER: 2.0,    // cap for blockHpMultiplier
   
   // Espresso Mastery - increases PROJECTILE_DAMAGE
   // Meaningful: +25% per level (Lv3 = +75%)
   ESPRESSO_BONUS_PER_LEVEL: 0.25,  // +25% per level
-  ESPRESSO_BASE_COST: 35,          // beans (L1: 35, L2: ~44, L3: ~55)
+  ESPRESSO_BASE_COST: 60,          // beans (v4: 35 → 60)
   MAX_DAMAGE_MULTIPLIER: 1.80,     // cap for damageMultiplier
   
   // Caffeine Flow - increases POWER_REGEN_RATE
   // Noticeable: +22% per level (Lv3 = +66%)
   POWER_BONUS_PER_LEVEL: 0.22,     // +22% per level (was ENERGY_BONUS_PER_LEVEL)
-  POWER_BASE_COST: 25,             // beans (L1: 25, L2: ~31, L3: ~39)
+  POWER_BASE_COST: 45,             // beans (v4: 25 → 45)
   MAX_POWER_MULTIPLIER: 1.70,      // cap for powerRegenMultiplier
   // ─────────────────────────────────────────────────────────────
   // BLOCK PROGRESSION (Phase 1.7) - First recommended upgrade
   // ─────────────────────────────────────────────────────────────
   BLOCK_COUNT_MAX_LEVEL: 2,        // 0→1→2 (gives 1→2→3 blocks)
-  BLOCK_COUNT_BASE_COST: 30,       // beans (L1: 30, L2: ~38) - affordable after 1-2 short runs
+  BLOCK_COUNT_BASE_COST: 55,       // beans (v4: 30 → 55)
   
   // ─────────────────────────────────────────────────────────────
   // HEAVY ENEMY (Phase 2B-1: mini-boss style)
@@ -174,7 +176,7 @@ export const GAME_CONFIG = {
   BOSS_LATCH_SLOTS: 2,             // Counts as 2 latched slots
   BOSS_ADD_SPAWN_INTERVAL: 0,      // No add spawns during Chapter 1 boss (1v1 fight)
   BOSS_INCOMING_BANNER_DURATION: 1.5, // Seconds to show "BOSS INCOMING" banner
-  CHAPTER_CLEAR_BONUS_BEANS: 50,   // Bonus beans for clearing chapter
+  CHAPTER_CLEAR_BONUS_BEANS: 20,   // Bonus beans for clearing chapter (v4: 50 → 20)
 } as const;
 
 // Colors (HSL values matching index.css)
