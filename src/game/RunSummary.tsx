@@ -145,6 +145,11 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
                   {telemetry.economyDelta === 0 ? '0 ✓' : `⚠️ ${telemetry.economyDelta > 0 ? '+' : ''}${telemetry.economyDelta}`}
                 </span>
               </div>
+              {telemetry.economyDelta !== 0 && telemetry.deltaExplanation && (
+                <div className="text-[9px] text-red-300 mt-1 border-t border-coffee-light/20 pt-1">
+                  ⚠️ {telemetry.deltaExplanation}
+                </div>
+              )}
             </div>
             
             {/* Upgrades with Multipliers */}

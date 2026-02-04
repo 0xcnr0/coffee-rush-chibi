@@ -79,10 +79,17 @@ export const GAME_CONFIG = {
   RUSH_SPEED_MULTIPLIER: 1.25, // +25% enemy speed during rush (v3)
   
   // ─────────────────────────────────────────────────────────────
-  // TIPS & REWARDS
+  // TIPS & REWARDS (Phase 2E: Economy balancing)
   // ─────────────────────────────────────────────────────────────
-  TIP_VALUE: 2,                // points per tip (v5: Balanced-B)
-  BOSS_TIP_MULTIPLIER: 3,      // boss tip count (3 tips × 2 beans = 6 beans)
+  // ECONOMY TARGETS (documentation):
+  // - Early death (CP1, ~25-35s): 50-80 beans
+  // - CP2 reached: 120-170 beans
+  // - Boss reached but died: 180-240 beans
+  // - Boss defeated: 220-300 beans
+  // - Boss clear in ~6-10 runs, full max in ~12-18 runs
+  // ─────────────────────────────────────────────────────────────
+  TIP_VALUE: 2,                // beans per tip (v5: Balanced-B)
+  BOSS_TIP_MULTIPLIER: 3,      // boss drops 3 tips × 2 beans = 6 beans
   TIP_FLOAT_SPEED: 80,         // pixels/second - float animation
   
   // ─────────────────────────────────────────────────────────────
