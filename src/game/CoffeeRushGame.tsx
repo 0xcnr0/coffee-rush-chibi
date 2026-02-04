@@ -211,6 +211,7 @@ export const CoffeeRushGame: React.FC = () => {
   const damageMultiplierRef = useRef(1);
   const energyRegenMultiplierRef = useRef(1);
   const blockHpMultiplierRef = useRef(1); // Phase 2C: Track for telemetry
+  const beansStartRef = useRef(0); // Phase 2E: Track beans at run start for economy telemetry
   const hudAccumulatorRef = useRef(0); // HUD throttle accumulator
   const fpsRef = useRef(60); // Smoothed FPS
   const effectiveBlockHpRef = useRef<number>(GAME_CONFIG.BLOCK_MAX_HP); // Store for debug
@@ -244,6 +245,9 @@ export const CoffeeRushGame: React.FC = () => {
     // Load progression and apply upgrade multipliers
     const progression = loadProgression();
     const { upgradeLevels } = progression;
+    
+    // Phase 2E: Track beans at run start for economy telemetry
+    beansStartRef.current = progression.totalBeans;
     
     // Calculate multipliers with caps (v3: prevent infinite runs)
     const blockHpMultiplier = Math.min(
@@ -419,6 +423,12 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
+    // Phase 2E: Economy telemetry - calculate beans breakdown
+    const normalTips = t.enemiesKilled.normal * GAME_CONFIG.TIP_VALUE;
+    const heavyTips = t.enemiesKilled.heavy * GAME_CONFIG.TIP_VALUE;
+    const bossTips = t.enemiesKilled.boss * GAME_CONFIG.BOSS_TIP_MULTIPLIER * GAME_CONFIG.TIP_VALUE;
+    const tipsFromServed = normalTips + heavyTips + bossTips;
+    
     return {
       gameMode,
       checkpointsReached: Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS),
@@ -445,6 +455,15 @@ export const CoffeeRushGame: React.FC = () => {
       bossAddsSpawned: t.bossAddsSpawned,
       enemiesSpawned: { ...t.enemiesSpawned },
       enemiesKilled: { ...t.enemiesKilled },
+      // Phase 2E: Economy telemetry (beansEnd will be updated after save)
+      beansStart: beansStartRef.current,
+      beansEnd: 0, // Updated after save
+      beansEarnedActual: 0, // Updated after save
+      tipsFromServed,
+      bossRewardBeans: bossTips,
+      clearBonusBeans: 0, // Updated in handleChapterClear
+      beansTotalBreakdown: tipsFromServed,
+      economyDelta: 0, // Calculated after save
     };
   }, [gameMode]);
 
@@ -456,12 +475,23 @@ export const CoffeeRushGame: React.FC = () => {
     );
     
     // Add chapter clear bonus
-    const totalBeans = beansEarned + GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
+    const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
+    const totalBeans = beansEarned + clearBonus;
     
     // Build telemetry with boss defeated
     const telemetry = buildTelemetry();
     telemetry.bossOutcome = 'defeated';
     telemetry.bossHpPercent = 0;
+    telemetry.clearBonusBeans = clearBonus;
+    telemetry.beansTotalBreakdown = telemetry.tipsFromServed + clearBonus;
+    
+    // Phase 2E: Calculate actual beans earned from progression
+    const prog = loadProgression();
+    // Note: updateChapterClear already saved beansEarned, we still need to add clearBonus
+    const beansEnd = prog.totalBeans + clearBonus;
+    telemetry.beansEnd = beansEnd;
+    telemetry.beansEarnedActual = beansEnd - telemetry.beansStart;
+    telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
     
     setStats({
       timeSurvived: timeRef.current,
@@ -484,13 +514,22 @@ export const CoffeeRushGame: React.FC = () => {
       tipsRef.current
     );
     
+    // Build telemetry
+    const telemetry = buildTelemetry();
+    
+    // Phase 2E: Calculate actual beans earned from progression
+    const prog = loadProgression();
+    telemetry.beansEnd = prog.totalBeans;
+    telemetry.beansEarnedActual = prog.totalBeans - telemetry.beansStart;
+    telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
+    
     setStats({
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
       totalTips: tipsRef.current,
       beansEarned,
       isNewRecord: isNewTimeRecord,
-      telemetry: buildTelemetry(),
+      telemetry,
     });
     setGameState('END');
   }, [buildTelemetry]);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { GAME_CONFIG } from './config';
 import type { RunTelemetry } from './types';
 
 interface RunSummaryProps {
@@ -27,6 +28,16 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
       reachedBoss: telemetry.reachedBoss,
       bossOutcome: telemetry.bossOutcome,
       bossHpPercent: telemetry.bossHpPercent,
+      
+      // Economy
+      beansStart: telemetry.beansStart,
+      beansEnd: telemetry.beansEnd,
+      beansActual: telemetry.beansEarnedActual,
+      beansBreakdown: telemetry.beansTotalBreakdown,
+      economyDelta: telemetry.economyDelta,
+      tipsFromServed: telemetry.tipsFromServed,
+      bossReward: telemetry.bossRewardBeans,
+      clearBonus: telemetry.clearBonusBeans,
       
       // Upgrades
       upgrades: telemetry.upgradeLevels,
@@ -65,7 +76,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
   
   const getCompactSummary = () => {
     const { upgradeLevels: u, effectiveMultipliers: m } = telemetry;
-    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Recovery:${telemetry.recoveryTimeTotal.toFixed(1)}s | BossAdds:${telemetry.bossAddsSpawned} | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}`;
+    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Beans:${telemetry.beansEarnedActual}(B:${telemetry.beansTotalBreakdown}/D:${telemetry.economyDelta}) | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Recovery:${telemetry.recoveryTimeTotal.toFixed(1)}s | BossAdds:${telemetry.bossAddsSpawned} | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}`;
   };
   
   const handleCopy = async (format: 'json' | 'compact') => {
@@ -107,6 +118,30 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             {telemetry.bossHpPercent > 0 && (
               <div>Boss HP: <span className="text-red-400">{telemetry.bossHpPercent}%</span></div>
             )}
+            
+            {/* Economy Section */}
+            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Economy</div>
+            <div>Tips: <span className="text-gold">{telemetry.tipsFromServed}</span> beans</div>
+            <div>Boss: <span className="text-gold">{telemetry.bossRewardBeans}</span> beans</div>
+            {telemetry.clearBonusBeans > 0 && (
+              <div>Clear Bonus: <span className="text-green-400">+{telemetry.clearBonusBeans}</span></div>
+            )}
+            <div className="col-span-2 bg-coffee-medium/30 rounded px-2 py-1 mt-1">
+              <div className="flex justify-between">
+                <span>Breakdown:</span>
+                <span className="text-gold font-bold">{telemetry.beansTotalBreakdown} beans</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Actual:</span>
+                <span className="text-gold font-bold">{telemetry.beansEarnedActual} beans</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Delta:</span>
+                <span className={telemetry.economyDelta === 0 ? 'text-green-400' : 'text-red-400 font-bold'}>
+                  {telemetry.economyDelta === 0 ? '0 ✓' : `⚠️ ${telemetry.economyDelta > 0 ? '+' : ''}${telemetry.economyDelta}`}
+                </span>
+              </div>
+            </div>
             
             {/* Upgrades with Multipliers */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Build (Upgrade Levels)</div>
@@ -161,6 +196,11 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Enemies</div>
             <div>Spawned: N{telemetry.enemiesSpawned.normal}/H{telemetry.enemiesSpawned.heavy}/B{telemetry.enemiesSpawned.boss}</div>
             <div>Killed: N{telemetry.enemiesKilled.normal}/H{telemetry.enemiesKilled.heavy}/B{telemetry.enemiesKilled.boss}</div>
+            
+            {/* Config Debug (small, muted) */}
+            <div className="col-span-2 text-coffee-light/40 text-[9px] mt-2 text-center">
+              TIP={GAME_CONFIG.TIP_VALUE} | BOSS={GAME_CONFIG.BOSS_TIP_MULTIPLIER}x | BONUS={GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS} | SCALE={GAME_CONFIG.UPGRADE_COST_SCALING}
+            </div>
           </div>
           
           {/* Copy Buttons */}

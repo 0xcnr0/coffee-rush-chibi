@@ -133,6 +133,16 @@ export interface RunTelemetry {
   // Spawn distribution
   enemiesSpawned: { normal: number; heavy: number; boss: number };
   enemiesKilled: { normal: number; heavy: number; boss: number };
+  
+  // Economy telemetry (Phase 2E: Anti-bug delta control)
+  beansStart: number;          // totalBeans at run start
+  beansEnd: number;            // totalBeans after save
+  beansEarnedActual: number;   // beansEnd - beansStart
+  tipsFromServed: number;      // served × TIP_VALUE
+  bossRewardBeans: number;     // BOSS_TIP_MULTIPLIER × TIP_VALUE
+  clearBonusBeans: number;     // CHAPTER_CLEAR_BONUS_BEANS (0 if failed)
+  beansTotalBreakdown: number; // tipsFromServed + bossRewardBeans + clearBonusBeans
+  economyDelta: number;        // actual - breakdown (should be 0)
 }
 
 export interface DifficultyState {
