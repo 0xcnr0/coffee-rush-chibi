@@ -132,7 +132,7 @@ export const purchaseUpgrade = (
 };
 
 export const getUpgradeCost = (level: number, baseCost: number): number => {
-  return Math.floor(baseCost * Math.pow(1.25, level));
+  return Math.floor(baseCost * Math.pow(GAME_CONFIG.UPGRADE_COST_SCALING, level));
 };
 
 // Calculate effective multiplier for an upgrade
