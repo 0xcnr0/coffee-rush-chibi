@@ -1,147 +1,115 @@
 
 
-# Energy Sistemi ve Shop Tab Implementasyonu
+# Ekonomi Dengeleme - Option A (Dengeli)
 
-## Genel Bakis
+## Problem Özeti
 
-ChatGPT ile yaptığın konuşmayı inceledim. İki ana özellik implement edilecek:
-1. **Timestamp-based Energy Sistemi** - 10 energy, 30dk regen, akıllı geri sayım
-2. **Shop Tab** - Footer'da gerçek bir ekran olarak açılacak
+Şu anda 2-3 Chapter 1 clear ile tüm upgrade'leri alabiliyor oyuncu:
+- Run başına kazanç: ~100-150 beans (clear için)
+- Toplam upgrade maliyeti: ~430 beans
+- Sonuç: 3 run'da full build → Oyun çok hızlı bitiyor
+
+## Hedef Pacing
+
+| Milestone | Hedef Run Sayısı |
+|-----------|------------------|
+| İlk upgrade | 1-2 run |
+| Chapter 1 Boss clear | 5-8 run |
+| Stabil clear | 12-20 run |
+| Full upgrade | 25-40 run |
 
 ---
 
-## 1. Energy Sistemi (Timestamp-Based Regen)
+## Değişiklikler
 
-### Kurallar (ChatGPT ile belirlediğin gibi)
-- Kullanıcı 10 Energy ile başlar (max 10)
-- Her PLAY, 1 Energy harcar
-- İlk harcamada tek bir 30dk regen timer başlar
-- Timer resetlenmez, kullanıcı oynamaya devam edebilir
-- 30dk sonunda +1 Energy eklenir (max 10)
-- Energy 10'a ulaşınca timer kapanır
-- Energy 0 ise oyun başlatılamaz
+### 1. Kazanç Azaltma
 
-### Persistence Değişiklikleri (`persistence.ts`)
-```text
-SAVE_VERSION -> 8 (bump)
+| Değer | Eski | Yeni | Değişim |
+|-------|------|------|---------|
+| `TIP_VALUE` | 5 | 3 | -40% |
+| Boss tip multiplier | 5x | 3x | -40% |
+| `CHAPTER_CLEAR_BONUS_BEANS` | 50 | 20 | -60% |
 
-EnergyData interface:
-- energy: number (0-10)
-- regenAnchorTs: number | null (ms timestamp)
+**Yeni Run Başına Kazanç Tahmini:**
+- Fail run (20s): ~15-25 beans (önceden 25-40)
+- Clear run: ~60-80 beans (önceden 100-150)
 
-Yeni fonksiyonlar:
-- applyRegenNow(): Her 30dk için +1 energy ekler, anchor'ı ilerletir
-- consumeEnergy(): PLAY'de energy harcar, anchor başlatır
-- getEnergyState(): Güncel energy + kalan süre döner
+### 2. Maliyet Artırma
+
+| Upgrade | Eski Base | Yeni Base | Değişim |
+|---------|-----------|-----------|---------|
+| Tower HP | 35 | 60 | +71% |
+| Espresso Damage | 35 | 60 | +71% |
+| Power Regen | 25 | 45 | +80% |
+| Add Cargo Box | 30 | 55 | +83% |
+
+### 3. Cost Scaling Artırma
+
+| Değer | Eski | Yeni |
+|-------|------|------|
+| Cost multiplier | 1.25 | 1.45 |
+
+**Yeni Upgrade Maliyetleri (Level bazlı):**
+
+| Upgrade | L1 | L2 | L3 | Toplam |
+|---------|-----|-----|-----|--------|
+| Tower HP | 60 | 87 | 126 | 273 |
+| Espresso | 60 | 87 | 126 | 273 |
+| Power | 45 | 65 | 95 | 205 |
+| Cargo L1 | 55 | 80 | - | 135 |
+| **TOPLAM** | | | | **~886 beans** |
+
+---
+
+## Teknik Değişiklikler
+
+### Dosya: `src/game/config.ts`
+
+```
+TIP_VALUE: 5 → 3
+CHAPTER_CLEAR_BONUS_BEANS: 50 → 20
+TOWER_HP_BASE_COST: 35 → 60
+ESPRESSO_BASE_COST: 35 → 60
+POWER_BASE_COST: 25 → 45
+BLOCK_COUNT_BASE_COST: 30 → 55
+
+(YENİ) BOSS_TIP_MULTIPLIER: 3  // Boss'un tip çarpanı
+(YENİ) UPGRADE_COST_SCALING: 1.45  // Cost scaling multiplier
 ```
 
-### UI Değişiklikleri (`GarageOverlay.tsx`)
-- Top bar'da energy gösterimi: `10/10` veya `5/10 (+1 in 12:34)`
-- Countdown için 1 saniyelik interval (sadece UI, gerçek regen applyRegenNow'dan)
-- PLAY butonu:
-  - Energy > 0: Oyunu başlat
-  - Energy = 0: "Out of Energy - next in mm:ss" toast/modal göster
+### Dosya: `src/game/persistence.ts`
 
-### Config Değişiklikleri (`config.ts`)
-```text
-ENERGY_MAX: 10
-ENERGY_REGEN_MS: 1800000 (30 dakika)
+```typescript
+// Line 135: Hardcoded 1.25 → config'den al
+export const getUpgradeCost = (level: number, baseCost: number): number => {
+  return Math.floor(baseCost * Math.pow(GAME_CONFIG.UPGRADE_COST_SCALING, level));
+};
 ```
 
----
+### Dosya: `src/game/CoffeeRushGame.tsx`
 
-## 2. Shop Tab (Placeholder Ekran)
-
-### Yeni Bileşen: `ShopScreen.tsx`
-TDS tarzı basit bir ekran:
-- 3-6 placeholder kart:
-  - "Energy Refill (Coming Soon)" 
-  - "Bean Pack (Coming Soon)"
-  - "Cosmetics (Coming Soon)"
-- Geri dönüş butonu veya footer'dan Battle tab'ına tıklayarak
-
-### GarageOverlay Değişiklikleri
-- Yeni state: `activeTab: 'battle' | 'shop'`
-- `activeTab === 'shop'` ise ShopScreen render edilir
-- Garage state korunur (unmount yok)
-- Footer tabs artık tıklanabilir (Battle ve Shop için)
-
----
-
-## 3. Dokunulmayacak Alanlar
-
-ChatGPT ve senin belirlediğin gibi:
-- Weapon sistemi (kilitli kalacak)
-- Garage preview / same-scene logic
-- Mevcut layout/styling (minimal değişiklikler hariç)
-
----
-
-## Teknik Detaylar
-
-### Dosya Değişiklikleri
-
-| Dosya | Değişiklik |
-|-------|-----------|
-| `src/game/config.ts` | `ENERGY_MAX`, `ENERGY_REGEN_MS` sabitleri |
-| `src/game/persistence.ts` | Version bump, energy state, regen fonksiyonları |
-| `src/game/GarageOverlay.tsx` | Energy countdown UI, tab navigation, PLAY blocking |
-| `src/game/ShopScreen.tsx` | **YENİ** - Placeholder shop ekranı |
-
-### Energy State Akışı
-
-```text
-App açılış:
-  loadProgression() -> applyRegenNow() -> UI güncelle
-
-PLAY'e basınca:
-  applyRegenNow()
-  if (energy <= 0) -> block + toast
-  else -> consumeEnergy() -> oyunu başlat
-
-Her saniye (UI timer):
-  remaining = 30dk - ((now - anchor) % 30dk)
-  display "+1 in MM:SS"
-```
-
-### applyRegenNow() Mantığı
-
-```text
-function applyRegenNow():
-  if energy >= 10:
-    energy = 10, anchor = null, return
-  
-  if anchor == null:
-    anchor = now (safety)
-  
-  elapsed = now - anchor
-  gains = floor(elapsed / 30dk)
-  
-  if gains > 0:
-    energy = min(10, energy + gains)
-    if energy == 10:
-      anchor = null
-    else:
-      anchor = anchor + (gains * 30dk)  // Kalan süreyi koru
+```typescript
+// Line 1018: Hardcoded 5 → config'den al
+const tipCount = enemy.kind === 'BOSS' ? GAME_CONFIG.BOSS_TIP_MULTIPLIER : 1;
 ```
 
 ---
 
-## Test Senaryoları
+## Beklenen Sonuçlar
 
-1. **İlk oyun**: 10 -> 9, timer başlar (+1 in 30:00)
-2. **Art arda oyun**: 9 -> 8 -> 7, timer aynı ritimde devam
-3. **Refresh**: State ve countdown doğru kalır
-4. **30dk bekle**: Energy +1, timer devam (eğer hala < 10)
-5. **Energy 0**: PLAY blocked, toast gösterilir
-6. **Shop tab**: Ekran açılır, Battle'a dönünce state korunur
+| Metrik | Eski | Yeni |
+|--------|------|------|
+| Clear başına beans | ~120 | ~70 |
+| Fail run beans | ~35 | ~20 |
+| Toplam upgrade maliyeti | ~430 | ~886 |
+| Full upgrade için run sayısı | 3-4 | ~15-20 |
+| İlk upgrade için run sayısı | 1 | 1-2 |
 
 ---
 
 ## Implementasyon Sırası
 
-1. `config.ts` - Energy sabitleri ekle
-2. `persistence.ts` - Version bump, energy state ve fonksiyonlar
-3. `ShopScreen.tsx` - Yeni placeholder ekran
-4. `GarageOverlay.tsx` - Energy UI, countdown, tab navigation, PLAY blocking
+1. `config.ts` - Tüm ekonomi sabitlerini güncelle + 2 yeni sabit ekle
+2. `persistence.ts` - Cost scaling'i config'den oku
+3. `CoffeeRushGame.tsx` - Boss tip multiplier'ı config'den oku
 
