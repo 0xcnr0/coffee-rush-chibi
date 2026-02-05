@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchaseUpgrade, getUpgradeCost, setLastGameMode, resetProgression, selectWeapon, upgradeWeapon, getEnergyState, consumeEnergy, formatTimeRemaining } from './persistence';
+import { loadProgression, purchaseUpgrade, getUpgradeCost, setLastGameMode, resetProgression, selectWeapon, upgradeWeapon, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy } from './persistence';
 import { GAME_CONFIG } from './config';
 import { toast } from 'sonner';
 import type { UpgradeInfo, GameMode, WeaponType, WeaponInfo } from './types';
@@ -628,6 +628,16 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
                   +1 in {formatTimeRemaining(energyState.remainingMs)}
                 </span>
               )}
+              {/* DEBUG: +10 Energy button */}
+              <button
+                onClick={() => {
+                  addDebugEnergy(10);
+                  setEnergyState(getEnergyState());
+                }}
+                className="ml-1 px-1.5 py-0.5 text-[9px] font-bold bg-energy/20 hover:bg-energy/40 text-energy rounded transition-colors"
+              >
+                +10
+              </button>
             </div>
             
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
