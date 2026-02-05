@@ -149,6 +149,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             {/* Debug: Detailed breakdown */}
             <div className="col-span-2 text-[9px] text-coffee-light/50 pl-2 border-l border-coffee-light/20">
               <div>Served: {telemetry.servedCount} | N:{telemetry.normalKillBeans} H:{telemetry.heavyKillBeans} B:{telemetry.bossKillBeans}</div>
+              <div>BossBonus(in tips): {telemetry.bossRewardBeans} | ClearBonus: {telemetry.clearBonusBeans}</div>
             </div>
             {telemetry.bossRewardBeans > 0 && (
               <div className="col-span-2 text-coffee-light/50 text-[10px]">
@@ -177,6 +178,14 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
                   {telemetry.economyDelta === 0 ? '0 ✓' : `⚠️ ${telemetry.economyDelta > 0 ? '+' : ''}${telemetry.economyDelta}`}
                 </span>
               </div>
+              {Math.abs(telemetry.economyDelta) > 1 && (
+                <div className="text-[9px] text-red-300 mt-1 border-t border-coffee-light/20 pt-1">
+                  <div className="font-bold">ECONOMY WARNING: delta too large</div>
+                  <div>
+                    Start→End: {telemetry.beansStart}→{telemetry.beansEnd} | Tips:{telemetry.tipsFromServed} | Boss:{telemetry.bossRewardBeans} | Clear:{telemetry.clearBonusBeans} | B:{telemetry.beansTotalBreakdown} | A:{telemetry.beansEarnedActual}
+                  </div>
+                </div>
+              )}
               {telemetry.economyDelta !== 0 && telemetry.deltaExplanation && (
                 <div className="text-[9px] text-red-300 mt-1 border-t border-coffee-light/20 pt-1">
                   ⚠️ {telemetry.deltaExplanation}
