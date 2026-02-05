@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, Coffee, Users, Home, Trophy, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { loadProgression } from './persistence';
@@ -13,6 +13,9 @@ interface EndScreenProps {
   gameMode: GameMode;
 }
 
+// Input lockout duration to prevent accidental taps
+const INPUT_LOCKOUT_MS = 400;
+
 export const EndScreen: React.FC<EndScreenProps> = ({ 
   stats, 
   onPlayAgain, 
@@ -21,6 +24,25 @@ export const EndScreen: React.FC<EndScreenProps> = ({
 }) => {
   const progression = loadProgression();
   const isChapterClear = stats.isChapterClear;
+  
+  // Input lockout state - ignore taps for first 400ms
+  const [isLocked, setIsLocked] = useState(true);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLocked(false), INPUT_LOCKOUT_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Guarded handlers
+  const handlePlayAgain = () => {
+    if (isLocked) return;
+    onPlayAgain();
+  };
+  
+  const handleHome = () => {
+    if (isLocked) return;
+    onHome();
+  };
   
   // Phase 1.8: Show hint after first death if no cargo box purchased
   const showCargoHint = !isChapterClear && progression.upgradeLevels.blockCountLevel === 0;
@@ -118,30 +140,32 @@ export const EndScreen: React.FC<EndScreenProps> = ({
           </div>
         </div>
         
-        {/* Buttons */}
-        <div className="flex flex-col gap-2 w-full max-w-xs">
+        {/* Buttons - Horizontal layout with spacing to prevent mis-taps */}
+        <div className="flex flex-row gap-4 w-full max-w-xs justify-center items-center mt-2 mb-4">
           <Button
-            onClick={onPlayAgain}
-            size="lg"
-            className="bg-gold hover:bg-gold/90 text-coffee-espresso text-lg px-8 py-4 rounded-xl shadow-lg transform hover:scale-105 transition-transform"
+            onClick={handleHome}
+            variant="outline"
+            size="default"
+            disabled={isLocked}
+            className="border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30 hover:text-coffee-foam rounded-lg px-4 py-3 disabled:opacity-50"
           >
-            🏆 Play Again
+            <Home className="w-4 h-4 mr-1" />
+            Home
           </Button>
           
           <Button
-            onClick={onHome}
-            variant="outline"
-            size="default"
-            className="border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30 hover:text-coffee-foam rounded-lg"
+            onClick={handlePlayAgain}
+            size="lg"
+            disabled={isLocked}
+            className="bg-gold hover:bg-gold/90 text-coffee-espresso text-lg px-6 py-4 rounded-xl shadow-lg transform hover:scale-105 transition-transform disabled:opacity-50"
           >
-            <Home className="w-4 h-4 mr-1" />
-            Home (Upgrades)
+            🏆 Play Again
           </Button>
         </div>
 
         {/* Run Summary Telemetry */}
         {stats.telemetry && (
-          <div className="w-full max-w-xs mt-4">
+          <div className="w-full max-w-xs mt-2">
             <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
           </div>
         )}
@@ -165,7 +189,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
       <div className="mb-6 animate-pop-in">
         {gameMode === 'CHAPTER' ? (
           <>
-            <h2 className="text-2xl font-bold text-red-400 text-center">
+          <h2 className="text-2xl font-bold text-destructive text-center">
               Chapter Failed! 😴
             </h2>
             <p className="text-coffee-cream/70 text-center mt-2">
@@ -238,30 +262,32 @@ export const EndScreen: React.FC<EndScreenProps> = ({
         </div>
       </div>
       
-      {/* Buttons */}
-      <div className="flex flex-col gap-2 w-full max-w-xs mt-4">
+      {/* Buttons - Horizontal layout with spacing to prevent mis-taps */}
+      <div className="flex flex-row gap-4 w-full max-w-xs justify-center items-center mt-4 mb-4">
         <Button
-          onClick={onPlayAgain}
-          size="lg"
-          className="bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam text-lg px-8 py-5 rounded-xl shadow-lg transform hover:scale-105 transition-transform"
+          onClick={handleHome}
+          variant="outline"
+          size="default"
+          disabled={isLocked}
+          className="border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30 hover:text-coffee-foam rounded-lg px-4 py-3 disabled:opacity-50"
         >
-          ☕ Play Again
+          <Home className="w-4 h-4 mr-1" />
+          Home
         </Button>
         
         <Button
-          onClick={onHome}
-          variant="outline"
-          size="default"
-          className="border-coffee-cream/30 text-coffee-cream hover:bg-coffee-dark/30 hover:text-coffee-foam rounded-lg"
+          onClick={handlePlayAgain}
+          size="lg"
+          disabled={isLocked}
+          className="bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam text-lg px-6 py-4 rounded-xl shadow-lg transform hover:scale-105 transition-transform disabled:opacity-50"
         >
-          <Home className="w-4 h-4 mr-1" />
-          Home (Upgrades)
+          ☕ Play Again
         </Button>
       </div>
 
       {/* Run Summary Telemetry */}
       {stats.telemetry && (
-        <div className="w-full max-w-xs mt-4">
+        <div className="w-full max-w-xs mt-2">
           <RunSummary telemetry={stats.telemetry} timeSurvived={stats.timeSurvived} />
         </div>
       )}
@@ -276,7 +302,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({
       )}
       
       {/* Share hint */}
-      <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4">
+      <p className="text-coffee-light/50 text-xs text-center max-w-xs mt-4 pb-8">
         {shareText}
       </p>
     </div>
