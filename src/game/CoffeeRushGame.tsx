@@ -1005,7 +1005,7 @@ export const CoffeeRushGame: React.FC = () => {
         if (travelTimerRef.current <= 0) {
           playPhaseRef.current = 'FIGHT';
           setPlayPhase('FIGHT');
-          lastSpawnRef.current = performance.now() / 1000; // Reset spawn timer
+          lastSpawnRef.current = timeRef.current; // Reset spawn timer to game time (not wall clock)
         }
       }
     }
