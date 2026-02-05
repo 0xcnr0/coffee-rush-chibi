@@ -244,7 +244,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             </div>
             {/* Phase A Tuning Debug */}
             <div className="col-span-2 text-cyan-400/50 text-[9px] mt-1 text-center border-t border-coffee-light/10 pt-1">
-              🔧 BOSS_HP={GAME_CONFIG.BOSS_HP} | BOMB_COST={GAME_CONFIG.TONIC_BOMB_COST} | Gates={GAME_CONFIG.GATE_1_KILL_TARGET}/{GAME_CONFIG.GATE_2_KILL_TARGET}/{GAME_CONFIG.GATE_3_KILL_TARGET} | Repair=18%
+              🔧 BOSS_HP={GAME_CONFIG.BOSS_HP} | BOMB_COST={GAME_CONFIG.TONIC_BOMB_COST} | Gates={GAME_CONFIG.GATE_1_KILL_TARGET}/{GAME_CONFIG.GATE_2_KILL_TARGET}/{GAME_CONFIG.GATE_3_KILL_TARGET} | Repair={Math.round(GAME_CONFIG.RUN_BUFF_POOL.find(b => b.type === 'repair')?.value * 100 || 0)}%
             </div>
           </div>
           

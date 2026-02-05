@@ -278,7 +278,9 @@ export const CoffeeRushGame: React.FC = () => {
     const { upgradeLevels } = progression;
     
     // Phase 2E: Track beans at run start for economy telemetry
+    // CRITICAL: Capture BEFORE any run logic - this is the source of truth
     beansStartRef.current = progression.totalBeans;
+    console.log(`[ECONOMY] Run start - beansStart: ${beansStartRef.current}`);
     
     // Calculate multipliers with caps (v3: prevent infinite runs)
     const blockHpMultiplier = Math.min(
@@ -532,50 +534,61 @@ export const CoffeeRushGame: React.FC = () => {
 
   // Phase 2B-2: Chapter Clear handler
   const handleChapterClear = useCallback(() => {
-    // 1. Save tips earned (updateChapterClear saves tipsEarned to totalBeans)
-    const { beansEarned } = updateChapterClear(
-      timeRef.current,
-      tipsRef.current
-    );
+    // Capture beansStart before any saves (in case initGame wasn't called properly)
+    const capturedBeansStart = beansStartRef.current;
+    console.log(`[ECONOMY] Chapter clear - beansStart captured: ${capturedBeansStart}, tips: ${tipsRef.current}`);
     
-    // 2. Add and SAVE chapter clear bonus (BUG FIX: was not being saved!)
+    // 1. Calculate beans to add (tips + clear bonus)
+    const tipsEarned = tipsRef.current;
     const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
-    const progAfterTips = loadProgression();
+    const totalToAdd = tipsEarned + clearBonus;
+    
+    // 2. Load current and save ONCE with all earnings
+    const current = loadProgression();
+    const newTotal = current.totalBeans + totalToAdd;
+    
+    // Update chapter records
     saveProgression({
-      ...progAfterTips,
-      totalBeans: progAfterTips.totalBeans + clearBonus,
+      ...current,
+      chapter1Cleared: true,
+      bestChapter1Time: current.bestChapter1Time > 0 
+        ? Math.min(current.bestChapter1Time, timeRef.current) 
+        : timeRef.current,
+      totalBeans: newTotal,
     });
+    
+    console.log(`[ECONOMY] Chapter clear - saved: ${current.totalBeans} + ${totalToAdd} = ${newTotal}`);
     
     // 3. Build telemetry with boss defeated
     const telemetry = buildTelemetry();
     telemetry.bossOutcome = 'defeated';
     telemetry.bossHpPercent = 0;
     telemetry.clearBonusBeans = clearBonus;
-    telemetry.beansTotalBreakdown = telemetry.tipsFromServed + clearBonus;
+    telemetry.beansTotalBreakdown = tipsEarned + clearBonus;
     
-    // 4. Phase 2E: Calculate actual beans earned from progression (after save)
-    const finalProg = loadProgression();
-    telemetry.beansEnd = finalProg.totalBeans;
-    telemetry.beansEarnedActual = finalProg.totalBeans - telemetry.beansStart;
+    // 4. Calculate actual beans earned (use captured start, not current ref)
+    telemetry.beansStart = capturedBeansStart;
+    telemetry.beansEnd = newTotal;
+    telemetry.beansEarnedActual = newTotal - capturedBeansStart;
     telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
     
     // Generate explanation if delta is non-zero
-    if (telemetry.economyDelta !== 0) {
+    if (Math.abs(telemetry.economyDelta) > 1) {
       const parts: string[] = [];
-      parts.push(`Start:${telemetry.beansStart}`);
-      parts.push(`End:${telemetry.beansEnd}`);
-      parts.push(`Tips:${telemetry.tipsFromServed}`);
+      parts.push(`Start:${capturedBeansStart}`);
+      parts.push(`End:${newTotal}`);
+      parts.push(`Tips:${tipsEarned}`);
       parts.push(`Clear:${clearBonus}`);
       parts.push(`Breakdown:${telemetry.beansTotalBreakdown}`);
       telemetry.deltaExplanation = parts.join(' | ') + ` → Δ=${telemetry.economyDelta} (BUG: check save logic)`;
+      console.warn(`[ECONOMY WARNING] Delta too large: ${telemetry.economyDelta}`, telemetry.deltaExplanation);
     }
     
-    const totalBeans = beansEarned + clearBonus;
     setStats({
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
       totalTips: tipsRef.current,
-      beansEarned: totalBeans,
+      beansEarned: totalToAdd,
       isNewRecord: false,
       isChapterClear: true,
       checkpointsCleared: GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT,
@@ -585,37 +598,51 @@ export const CoffeeRushGame: React.FC = () => {
   }, [buildTelemetry]);
   
   const handleGameOver = useCallback(() => {
-    // Update records and earn beans
-    const { isNewTimeRecord, beansEarned } = updateBestRecords(
-      timeRef.current,
-      customersServedRef.current,
-      tipsRef.current
-    );
+    // Capture beansStart before any saves
+    const capturedBeansStart = beansStartRef.current;
+    const tipsEarned = tipsRef.current;
+    console.log(`[ECONOMY] Game over - beansStart captured: ${capturedBeansStart}, tips: ${tipsEarned}`);
+    
+    // Load current and save ONCE with tips
+    const current = loadProgression();
+    const newTotal = current.totalBeans + tipsEarned;
+    
+    const isNewTimeRecord = timeRef.current > current.bestTimeSurvivedSeconds;
+    
+    saveProgression({
+      ...current,
+      bestTimeSurvivedSeconds: Math.max(current.bestTimeSurvivedSeconds, timeRef.current),
+      bestCustomersServed: Math.max(current.bestCustomersServed, customersServedRef.current),
+      totalBeans: newTotal,
+    });
+    
+    console.log(`[ECONOMY] Game over - saved: ${current.totalBeans} + ${tipsEarned} = ${newTotal}`);
     
     // Build telemetry
     const telemetry = buildTelemetry();
     
-    // Phase 2E: Calculate actual beans earned from progression
-    const prog = loadProgression();
-    telemetry.beansEnd = prog.totalBeans;
-    telemetry.beansEarnedActual = prog.totalBeans - telemetry.beansStart;
+    // Calculate actual beans earned (use captured start)
+    telemetry.beansStart = capturedBeansStart;
+    telemetry.beansEnd = newTotal;
+    telemetry.beansEarnedActual = newTotal - capturedBeansStart;
     telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
     
     // Generate explanation if delta is non-zero
-    if (telemetry.economyDelta !== 0) {
+    if (Math.abs(telemetry.economyDelta) > 1) {
       const parts: string[] = [];
-      parts.push(`Start:${telemetry.beansStart}`);
-      parts.push(`End:${telemetry.beansEnd}`);
-      parts.push(`Tips:${telemetry.tipsFromServed}`);
+      parts.push(`Start:${capturedBeansStart}`);
+      parts.push(`End:${newTotal}`);
+      parts.push(`Tips:${tipsEarned}`);
       parts.push(`Breakdown:${telemetry.beansTotalBreakdown}`);
       telemetry.deltaExplanation = parts.join(' | ') + ` → Δ=${telemetry.economyDelta} (BUG: check save logic)`;
+      console.warn(`[ECONOMY WARNING] Delta too large: ${telemetry.economyDelta}`, telemetry.deltaExplanation);
     }
     
     setStats({
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
       totalTips: tipsRef.current,
-      beansEarned,
+      beansEarned: tipsEarned,
       isNewRecord: isNewTimeRecord,
       telemetry,
     });
@@ -1038,13 +1065,9 @@ export const CoffeeRushGame: React.FC = () => {
     // Boss incoming banner countdown
     if (bossIncomingRef.current > 0) {
       bossIncomingRef.current -= deltaTime;
-    }
-    
-    if (shouldSpawnBoss && bossIncomingRef.current <= 0) {
-      // Start boss incoming banner
-      if (bossIncomingRef.current === 0) {
-        bossIncomingRef.current = GAME_CONFIG.BOSS_INCOMING_BANNER_DURATION;
-      } else {
+      // If banner just finished, spawn boss
+      if (bossIncomingRef.current <= 0) {
+        bossIncomingRef.current = -1; // Mark as "spawned" to prevent re-triggering
         // Spawn the boss
         const bossEnemy = enemyPool.acquire();
         if (bossEnemy) {
@@ -1078,8 +1101,16 @@ export const CoffeeRushGame: React.FC = () => {
           // Trigger rush during boss fight
           difficulty.isMorningRush = true;
           difficulty.rushTimer = 999; // Boss fight is continuous rush
+          
+          console.log(`[BOSS] Boss spawned at time ${currentTime}`);
         }
       }
+    }
+    
+    // Start boss banner if conditions met and not already started/spawned
+    if (shouldSpawnBoss && bossIncomingRef.current === 0) {
+      bossIncomingRef.current = GAME_CONFIG.BOSS_INCOMING_BANNER_DURATION;
+      console.log(`[BOSS] Banner started - will spawn in ${GAME_CONFIG.BOSS_INCOMING_BANNER_DURATION}s`);
     }
     
     // Update boss state if boss is active
