@@ -243,6 +243,11 @@ export const CoffeeRushGame: React.FC = () => {
   const energyRegenMultiplierRef = useRef(1);
   const blockHpMultiplierRef = useRef(1); // Phase 2C: Track for telemetry
   const beansStartRef = useRef(0); // Phase 2E: Track beans at run start for economy telemetry
+
+  // Phase 2E: End-of-run idempotency guard (prevents double-award / triple-award bugs)
+  const endHandledRef = useRef(false);
+  const endReasonRef = useRef<'gameover' | 'clear' | null>(null);
+
   const hudAccumulatorRef = useRef(0); // HUD throttle accumulator
   const fpsRef = useRef(60); // Smoothed FPS
   const effectiveBlockHpRef = useRef<number>(GAME_CONFIG.BLOCK_MAX_HP); // Store for debug
@@ -276,12 +281,16 @@ export const CoffeeRushGame: React.FC = () => {
     // Load progression and apply upgrade multipliers
     const progression = loadProgression();
     const { upgradeLevels } = progression;
-    
+
+    // Phase 2E: Reset end-of-run idempotency guard (MUST reset per run)
+    endHandledRef.current = false;
+    endReasonRef.current = null;
+
     // Phase 2E: Track beans at run start for economy telemetry
     // CRITICAL: Capture BEFORE any run logic - this is the source of truth
     beansStartRef.current = progression.totalBeans;
     console.log(`[ECONOMY] Run start - beansStart: ${beansStartRef.current}`);
-    
+
     // Calculate multipliers with caps (v3: prevent infinite runs)
     const blockHpMultiplier = Math.min(
       getUpgradeMultiplier(upgradeLevels.towerHpLevel, GAME_CONFIG.TOWER_HP_BONUS_PER_LEVEL),
@@ -534,10 +543,21 @@ export const CoffeeRushGame: React.FC = () => {
 
   // Phase 2B-2: Chapter Clear handler
   const handleChapterClear = useCallback(() => {
+    // Phase 2E: Idempotent end guard (prevents duplicate saves / duplicate bean awards)
+    if (endHandledRef.current) {
+      console.warn(`[END GUARD] handleChapterClear ignored (already handled: ${endReasonRef.current})`);
+      return;
+    }
+    endHandledRef.current = true;
+    endReasonRef.current = 'clear';
+
+    // Immediately stop sim updates so no other end conditions can fire this frame
+    isSimulationFrozenRef.current = true;
+
     // Capture beansStart before any saves (in case initGame wasn't called properly)
     const capturedBeansStart = beansStartRef.current;
     console.log(`[ECONOMY] Chapter clear - beansStart captured: ${capturedBeansStart}, tips: ${tipsRef.current}`);
-    
+
     // 1. Calculate beans to add (tips + clear bonus)
     const tipsEarned = tipsRef.current;
     const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
@@ -575,6 +595,7 @@ export const CoffeeRushGame: React.FC = () => {
     // Generate explanation if delta is non-zero
     if (Math.abs(telemetry.economyDelta) > 1) {
       const parts: string[] = [];
+      parts.push(`EndReason:${endReasonRef.current ?? 'unknown'}`);
       parts.push(`Start:${capturedBeansStart}`);
       parts.push(`End:${newTotal}`);
       parts.push(`Tips:${tipsEarned}`);
@@ -583,7 +604,7 @@ export const CoffeeRushGame: React.FC = () => {
       telemetry.deltaExplanation = parts.join(' | ') + ` → Δ=${telemetry.economyDelta} (BUG: check save logic)`;
       console.warn(`[ECONOMY WARNING] Delta too large: ${telemetry.economyDelta}`, telemetry.deltaExplanation);
     }
-    
+
     setStats({
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
@@ -598,11 +619,22 @@ export const CoffeeRushGame: React.FC = () => {
   }, [buildTelemetry]);
   
   const handleGameOver = useCallback(() => {
+    // Phase 2E: Idempotent end guard (prevents duplicate saves / duplicate bean awards)
+    if (endHandledRef.current) {
+      console.warn(`[END GUARD] handleGameOver ignored (already handled: ${endReasonRef.current})`);
+      return;
+    }
+    endHandledRef.current = true;
+    endReasonRef.current = 'gameover';
+
+    // Immediately stop sim updates so no other end conditions can fire this frame
+    isSimulationFrozenRef.current = true;
+
     // Capture beansStart before any saves
     const capturedBeansStart = beansStartRef.current;
     const tipsEarned = tipsRef.current;
     console.log(`[ECONOMY] Game over - beansStart captured: ${capturedBeansStart}, tips: ${tipsEarned}`);
-    
+
     // Load current and save ONCE with tips
     const current = loadProgression();
     const newTotal = current.totalBeans + tipsEarned;
@@ -630,6 +662,7 @@ export const CoffeeRushGame: React.FC = () => {
     // Generate explanation if delta is non-zero
     if (Math.abs(telemetry.economyDelta) > 1) {
       const parts: string[] = [];
+      parts.push(`EndReason:${endReasonRef.current ?? 'unknown'}`);
       parts.push(`Start:${capturedBeansStart}`);
       parts.push(`End:${newTotal}`);
       parts.push(`Tips:${tipsEarned}`);
@@ -637,7 +670,7 @@ export const CoffeeRushGame: React.FC = () => {
       telemetry.deltaExplanation = parts.join(' | ') + ` → Δ=${telemetry.economyDelta} (BUG: check save logic)`;
       console.warn(`[ECONOMY WARNING] Delta too large: ${telemetry.economyDelta}`, telemetry.deltaExplanation);
     }
-    
+
     setStats({
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
