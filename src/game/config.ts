@@ -134,30 +134,30 @@ export const GAME_CONFIG = {
   // - Chapter boss clear requires ~Box L2 + (HP or Damage) L2
   // ─────────────────────────────────────────────────────────────
   UPGRADE_MAX_LEVEL: 3,            // max level for each upgrade (TDS-style)
-  UPGRADE_COST_SCALING: 1.55,      // cost multiplier per level (v5: Balanced-B)
+  UPGRADE_COST_SCALING: 1.65,      // cost multiplier per level (Phase A tuning: +0.10)
   
   // Tower Reinforcement - increases BLOCK_MAX_HP
   // Meaningful: +30% per level (Lv3 = +90%)
   TOWER_HP_BONUS_PER_LEVEL: 0.30,  // +30% per level
-  TOWER_HP_BASE_COST: 100,         // beans (v5: Balanced-B)
+  TOWER_HP_BASE_COST: 150,         // beans (Phase A tuning: +50%)
   MAX_BLOCK_HP_MULTIPLIER: 2.0,    // cap for blockHpMultiplier
   
   // Espresso Mastery - increases PROJECTILE_DAMAGE
   // Meaningful: +25% per level (Lv3 = +75%)
   ESPRESSO_BONUS_PER_LEVEL: 0.25,  // +25% per level
-  ESPRESSO_BASE_COST: 100,         // beans (v5: Balanced-B)
+  ESPRESSO_BASE_COST: 150,         // beans (Phase A tuning: +50%)
   MAX_DAMAGE_MULTIPLIER: 1.80,     // cap for damageMultiplier
   
   // Caffeine Flow - increases POWER_REGEN_RATE
   // Noticeable: +22% per level (Lv3 = +66%)
   POWER_BONUS_PER_LEVEL: 0.22,     // +22% per level (was ENERGY_BONUS_PER_LEVEL)
-  POWER_BASE_COST: 80,             // beans (v5: Balanced-B)
+  POWER_BASE_COST: 120,            // beans (Phase A tuning: +50%)
   MAX_POWER_MULTIPLIER: 1.70,      // cap for powerRegenMultiplier
   // ─────────────────────────────────────────────────────────────
   // BLOCK PROGRESSION (Phase 1.7) - First recommended upgrade
   // ─────────────────────────────────────────────────────────────
   BLOCK_COUNT_MAX_LEVEL: 2,        // 0→1→2 (gives 1→2→3 blocks)
-  BLOCK_COUNT_BASE_COST: 100,      // beans (v5: Balanced-B)
+  BLOCK_COUNT_BASE_COST: 150,      // beans (Phase A tuning: +50%)
   
   // ─────────────────────────────────────────────────────────────
   // HEAVY ENEMY (Phase 2B-1: mini-boss style)
@@ -181,13 +181,13 @@ export const GAME_CONFIG = {
   ENABLE_GATE_CHAPTER_FLOW: true,  // Feature flag (set to false to use legacy time-based system)
   
   // Travel phase
-  TRAVEL_DURATION: 4,              // seconds between gates (no spawns)
+  TRAVEL_DURATION: 5,              // seconds between gates (Phase A tuning: +1s pacing)
   TRAVEL_DESPAWN_DELAY: 0.5,       // seconds to fade-out remaining enemies during travel
   
   // Gate kill targets (Phase A tuning: 15-run boss clear target)
-  GATE_1_KILL_TARGET: 20,
-  GATE_2_KILL_TARGET: 30,
-  GATE_3_KILL_TARGET: 40,
+  GATE_1_KILL_TARGET: 24,          // Phase A tuning: +4
+  GATE_2_KILL_TARGET: 34,          // Phase A tuning: +4
+  GATE_3_KILL_TARGET: 44,          // Phase A tuning: +4
   
   // Pick overlay
   PICK_CARDS_OFFERED: 3,
@@ -199,7 +199,7 @@ export const GAME_CONFIG = {
     { type: 'block_hp', name: 'Steel Brew', icon: '🛡️', description: '+20% block HP', value: 1.20 },
     { type: 'power_regen', name: 'Quick Refill', icon: '⚡', description: '+25% power regen', value: 1.25 },
     { type: 'attack_speed', name: 'Caffeine Rush', icon: '☕', description: '+10% attack speed', value: 0.90 },
-    { type: 'repair', name: 'Repair Kit', icon: '🔧', description: 'Heal 18% HP', value: 0.18 },
+    { type: 'repair', name: 'Repair Kit', icon: '🔧', description: 'Heal 12% HP', value: 0.12 },
   ] as const,
   
   // Boss stats
@@ -210,7 +210,7 @@ export const GAME_CONFIG = {
   BOSS_LATCH_SLOTS: 2,             // Counts as 2 latched slots
   BOSS_ADD_SPAWN_INTERVAL: 0,      // No add spawns during Chapter 1 boss (1v1 fight)
   BOSS_INCOMING_BANNER_DURATION: 1.5, // Seconds to show "BOSS INCOMING" banner
-  CHAPTER_CLEAR_BONUS_BEANS: 10,   // Bonus beans for clearing chapter (v5: Balanced-B)
+  CHAPTER_CLEAR_BONUS_BEANS: 5,    // Bonus beans for clearing chapter (Phase A tuning: halved)
 } as const;
 
 // Colors (HSL values matching index.css)
