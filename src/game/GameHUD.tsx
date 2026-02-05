@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Clock, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GAME_CONFIG } from './config';
-import type { GameMode, BossState } from './types';
+import type { GameMode, BossState, PlayPhase, GateState } from './types';
 
 interface GameHUDProps {
   timeSurvived: number;
@@ -18,6 +18,10 @@ interface GameHUDProps {
   bossState: BossState;
   bossIncomingTimer: number;
   checkpointIndex: number;
+  // Phase 3A: New props for gate flow
+  playPhase?: PlayPhase;
+  gateState?: GateState;
+  travelTimer?: number;
 }
 
 const CHECKPOINT_INTERVAL = 20;
@@ -37,6 +41,9 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   bossState,
   bossIncomingTimer,
   checkpointIndex,
+  playPhase,
+  gateState,
+  travelTimer,
 }) => {
   const [showNice, setShowNice] = useState(false);
   const [lastBreatherTimer, setLastBreatherTimer] = useState(0);
@@ -61,6 +68,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
 
   const isChapter = gameMode === 'CHAPTER';
   const bossCheckpoint = GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT;
+  const isGateFlow = GAME_CONFIG.ENABLE_GATE_CHAPTER_FLOW && isChapter;
 
   // Calculate power as numeric + bar percentage
   const powerPercent = (power / maxPower) * 100;
@@ -69,6 +77,15 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   
   return (
     <>
+      {/* Phase 3A: Travel countdown banner (R2) */}
+      {isGateFlow && playPhase === 'TRAVEL' && travelTimer !== undefined && travelTimer > 0 && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
+          <div className="bg-coffee-dark/90 text-coffee-cream px-6 py-3 rounded-xl text-lg font-bold animate-pulse border border-coffee-medium shadow-xl">
+            🚶 TRAVEL... {Math.ceil(travelTimer)}
+          </div>
+        </div>
+      )}
+      
       {/* BOSS INCOMING Banner */}
       {bossIncomingTimer > 0 && (
         <div className="absolute top-1/3 left-0 right-0 z-30 flex justify-center">
@@ -104,39 +121,92 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       <div className={`absolute top-0 left-0 right-0 flex flex-col gap-2 p-3 z-10 ${isMorningRush && !bossState.isActive ? 'morning-rush-pulse bg-warm-orange/20' : ''} ${bossState.isActive ? 'bg-red-900/20' : ''}`}>
         {/* Chapter/Endless Progress Bar */}
         {isChapter ? (
-          <div className="flex flex-col gap-1 px-1">
-            <div className="flex gap-1">
-              {[1, 2, 3].map((cp) => {
-                const cpProgress = checkpointIndex >= cp ? 100 : 
-                                   checkpointIndex === cp - 1 ? 
-                                   ((timeSurvived % GAME_CONFIG.CHECKPOINT_SECONDS) / GAME_CONFIG.CHECKPOINT_SECONDS) * 100 : 0;
-                return (
-                  <div key={cp} className="flex-1 flex flex-col items-center">
-                    <div className="w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60">
-                      <div 
-                        className="h-full transition-all duration-300 bg-gold"
-                        style={{ width: `${cpProgress}%` }}
-                      />
+          isGateFlow && gateState ? (
+            // Phase 3A: Gate-based progress bar
+            <div className="flex flex-col gap-1 px-1">
+              <div className="flex gap-1">
+                {[1, 2, 3].map((gate) => {
+                  const gateProgress = gateState.index > gate ? 100 : 
+                                       gateState.index === gate ? 
+                                       (gateState.currentKills / gateState.targetKills) * 100 : 0;
+                  const isCurrent = gateState.index === gate;
+                  const isCleared = gateState.index > gate;
+                  return (
+                    <div key={gate} className="flex-1 flex flex-col items-center">
+                      <div className={`w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60 ${isCurrent && playPhase === 'FIGHT' ? 'ring-1 ring-warm-orange' : ''}`}>
+                        <div 
+                          className={`h-full transition-all duration-300 ${isCleared ? 'bg-gold' : 'bg-warm-orange'}`}
+                          style={{ width: `${gateProgress}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <span className={`text-[10px] mt-0.5 ${isCleared ? 'text-gold' : isCurrent ? 'text-warm-orange' : 'text-coffee-cream/40'}`}>
+                          G{gate}
+                        </span>
+                        {isCurrent && playPhase === 'FIGHT' && (
+                          <span className="text-[9px] text-coffee-cream/60">{gateState.currentKills}/{gateState.targetKills}</span>
+                        )}
+                      </div>
                     </div>
-                    <span className={`text-[10px] mt-0.5 ${checkpointIndex >= cp ? 'text-gold' : 'text-coffee-cream/40'}`}>
-                      CP{cp}
-                    </span>
+                  );
+                })}
+                <div className="flex-1 flex flex-col items-center">
+                  <div className={`w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60 ${bossIncomingTimer > 0 || bossState.isActive ? 'ring-1 ring-destructive animate-pulse' : ''}`}>
+                    <div 
+                      className={`h-full transition-all duration-300 ${bossState.isActive ? 'bg-destructive' : playPhase === 'BOSS' ? 'bg-destructive/70' : 'bg-transparent'}`}
+                      style={{ width: `${bossState.isActive ? (bossState.hp / bossState.maxHp) * 100 : (playPhase === 'BOSS' ? 100 : 0)}%` }}
+                    />
                   </div>
-                );
-              })}
-              <div className="flex-1 flex flex-col items-center">
-                <div className={`w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60 ${bossIncomingTimer > 0 || bossState.isActive ? 'ring-1 ring-red-500 animate-pulse' : ''}`}>
-                  <div 
-                    className={`h-full transition-all duration-300 ${bossState.isActive ? 'bg-red-500' : 'bg-red-400'}`}
-                    style={{ width: `${bossState.isActive ? (bossState.hp / bossState.maxHp) * 100 : (checkpointIndex >= bossCheckpoint ? 100 : 0)}%` }}
-                  />
+                  <span className={`text-[10px] mt-0.5 ${bossState.isActive ? 'text-destructive font-bold animate-pulse' : playPhase === 'BOSS' ? 'text-destructive' : 'text-coffee-cream/40'}`}>
+                    👑BOSS
+                  </span>
                 </div>
-                <span className={`text-[10px] mt-0.5 ${bossState.isActive ? 'text-red-400 font-bold animate-pulse' : checkpointIndex >= bossCheckpoint ? 'text-red-400' : 'text-coffee-cream/40'}`}>
-                  👑BOSS
-                </span>
+              </div>
+              {/* Phase indicator badge */}
+              {playPhase === 'FIGHT' && !bossState.isActive && (
+                <div className="flex justify-center">
+                  <span className="bg-warm-orange/80 text-coffee-foam px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    ⚔️ FIGHT
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Legacy: Time-based checkpoint progress bar
+            <div className="flex flex-col gap-1 px-1">
+              <div className="flex gap-1">
+                {[1, 2, 3].map((cp) => {
+                  const cpProgress = checkpointIndex >= cp ? 100 : 
+                                     checkpointIndex === cp - 1 ? 
+                                     ((timeSurvived % GAME_CONFIG.CHECKPOINT_SECONDS) / GAME_CONFIG.CHECKPOINT_SECONDS) * 100 : 0;
+                  return (
+                    <div key={cp} className="flex-1 flex flex-col items-center">
+                      <div className="w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60">
+                        <div 
+                          className="h-full transition-all duration-300 bg-gold"
+                          style={{ width: `${cpProgress}%` }}
+                        />
+                      </div>
+                      <span className={`text-[10px] mt-0.5 ${checkpointIndex >= cp ? 'text-gold' : 'text-coffee-cream/40'}`}>
+                        CP{cp}
+                      </span>
+                    </div>
+                  );
+                })}
+                <div className="flex-1 flex flex-col items-center">
+                  <div className={`w-full h-2 rounded-full overflow-hidden bg-coffee-dark/60 ${bossIncomingTimer > 0 || bossState.isActive ? 'ring-1 ring-destructive animate-pulse' : ''}`}>
+                    <div 
+                      className={`h-full transition-all duration-300 ${bossState.isActive ? 'bg-destructive' : 'bg-destructive/70'}`}
+                      style={{ width: `${bossState.isActive ? (bossState.hp / bossState.maxHp) * 100 : (checkpointIndex >= bossCheckpoint ? 100 : 0)}%` }}
+                    />
+                  </div>
+                  <span className={`text-[10px] mt-0.5 ${bossState.isActive ? 'text-destructive font-bold animate-pulse' : checkpointIndex >= bossCheckpoint ? 'text-destructive' : 'text-coffee-cream/40'}`}>
+                    👑BOSS
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )
         ) : (
           <div className="flex gap-1 px-1">
             {Array.from({ length: TOTAL_CHECKPOINTS }).map((_, i) => (

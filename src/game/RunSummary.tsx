@@ -68,6 +68,16 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
       recoveryTime: Math.round(telemetry.recoveryTimeTotal * 10) / 10,
       bossAdds: telemetry.bossAddsSpawned,
       
+      // Phase 3A: Segment telemetry
+      phaseAtDeath: telemetry.phaseAtDeath,
+      gatesCleared: telemetry.gatesCleared,
+      gateIndexReached: telemetry.gateIndexReached,
+      buffsPicked: telemetry.runBuffsPicked,
+      timeInTravel: Math.round(telemetry.timeInTravel * 10) / 10,
+      timeInFight: Math.round(telemetry.timeInFight * 10) / 10,
+      timeInPick: Math.round(telemetry.timeInPick * 10) / 10,
+      timeInBoss: Math.round(telemetry.timeInBoss * 10) / 10,
+      
       // Spawns
       spawned: telemetry.enemiesSpawned,
       killed: telemetry.enemiesKilled,
@@ -76,7 +86,9 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
   
   const getCompactSummary = () => {
     const { upgradeLevels: u, effectiveMultipliers: m } = telemetry;
-    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Beans:${telemetry.beansEarnedActual}(B:${telemetry.beansTotalBreakdown}/D:${telemetry.economyDelta}) | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Recovery:${telemetry.recoveryTimeTotal.toFixed(1)}s | BossAdds:${telemetry.bossAddsSpawned} | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}`;
+    const gateInfo = telemetry.gatesCleared !== undefined ? ` | Gates:${telemetry.gatesCleared}/3@${telemetry.phaseAtDeath || 'N/A'}` : '';
+    const buffInfo = telemetry.runBuffsPicked?.length ? ` | Buffs:${telemetry.runBuffsPicked.join(',')}` : '';
+    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached}${gateInfo} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Beans:${telemetry.beansEarnedActual}(B:${telemetry.beansTotalBreakdown}/D:${telemetry.economyDelta}) | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Recovery:${telemetry.recoveryTimeTotal.toFixed(1)}s | BossAdds:${telemetry.bossAddsSpawned} | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}${buffInfo}`;
   };
   
   const handleCopy = async (format: 'json' | 'compact') => {
@@ -114,9 +126,21 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-1">Run Result</div>
             <div>Mode: <span className="text-gold">{telemetry.gameMode}</span></div>
             <div>CP: <span className="text-warm-orange">{telemetry.checkpointsReached}</span></div>
-            <div>Boss: <span className={telemetry.bossOutcome === 'defeated' ? 'text-green-400' : 'text-coffee-light'}>{telemetry.bossOutcome}</span></div>
+            
+            {/* Phase 3A: Gate/Phase info */}
+            {telemetry.gatesCleared !== undefined && (
+              <>
+                <div>Gates: <span className="text-gold">{telemetry.gatesCleared}/3</span></div>
+                <div>Phase: <span className="text-warm-orange">{telemetry.phaseAtDeath || 'N/A'}</span></div>
+              </>
+            )}
+            {telemetry.runBuffsPicked && telemetry.runBuffsPicked.length > 0 && (
+              <div className="col-span-2">Buffs: <span className="text-energy">{telemetry.runBuffsPicked.join(', ')}</span></div>
+            )}
+            
+            <div>Boss: <span className={telemetry.bossOutcome === 'defeated' ? 'text-energy' : 'text-coffee-light'}>{telemetry.bossOutcome}</span></div>
             {telemetry.bossHpPercent > 0 && (
-              <div>Boss HP: <span className="text-red-400">{telemetry.bossHpPercent}%</span></div>
+              <div>Boss HP: <span className="text-destructive">{telemetry.bossHpPercent}%</span></div>
             )}
             
             {/* Economy Section */}

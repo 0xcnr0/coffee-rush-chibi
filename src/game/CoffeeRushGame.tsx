@@ -15,9 +15,13 @@ import {
   updateChapterClear,
   getUpgradeMultiplier 
 } from './persistence';
+import { PickOverlay } from './PickOverlay';
 import type { 
   GameState, 
   GameMode,
+  PlayPhase,
+  GateState,
+  RunBuff,
   CartBlock, 
   Enemy, 
   EnemyKind,
@@ -139,6 +143,33 @@ export const CoffeeRushGame: React.FC = () => {
   });
   const bossIncomingRef = useRef<number>(0); // Timer for "BOSS INCOMING" banner
   const bossEnemyRef = useRef<Enemy | null>(null); // Track the boss enemy entity
+  
+  // Phase 3A: PlayPhase state (CHAPTER only with gate flow)
+  const [playPhase, setPlayPhase] = useState<PlayPhase>('TRAVEL');
+  const playPhaseRef = useRef<PlayPhase>('TRAVEL');
+  
+  // Phase 3A: Gate tracking
+  const [gateState, setGateState] = useState<GateState>({
+    index: 1, targetKills: GAME_CONFIG.GATE_1_KILL_TARGET, currentKills: 0, isCleared: false
+  });
+  const gateStateRef = useRef<GateState>({
+    index: 1, targetKills: GAME_CONFIG.GATE_1_KILL_TARGET, currentKills: 0, isCleared: false
+  });
+  
+  // Phase 3A: Run buffs (temporary for this run only)
+  const runBuffsRef = useRef<RunBuff[]>([]);
+  
+  // Phase 3A: Travel timer
+  const travelTimerRef = useRef<number>(0);
+  
+  // Phase 3A: Simulation freeze (R3: different from pause - loop runs but sim stopped)
+  const isSimulationFrozenRef = useRef<boolean>(false);
+  
+  // Phase 3A: Phase time tracking for telemetry
+  const phaseTimersRef = useRef({ travel: 0, fight: 0, pick: 0, boss: 0 });
+  
+  // Phase 3A: Attack speed multiplier (for Caffeine Rush buff)
+  const attackSpeedMultiplierRef = useRef<number>(1);
   
   const [debugInfo, setDebugInfo] = useState<{
     fps: number;
@@ -366,6 +397,22 @@ export const CoffeeRushGame: React.FC = () => {
     setBossState(bossStateRef.current);
     bossIncomingRef.current = 0;
     bossEnemyRef.current = null;
+    
+    // Phase 3A: Reset PlayPhase state (CHAPTER mode with gate flow)
+    playPhaseRef.current = 'TRAVEL';
+    setPlayPhase('TRAVEL');
+    travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
+    gateStateRef.current = { 
+      index: 1, 
+      targetKills: GAME_CONFIG.GATE_1_KILL_TARGET, 
+      currentKills: 0, 
+      isCleared: false 
+    };
+    setGateState(gateStateRef.current);
+    runBuffsRef.current = [];
+    isSimulationFrozenRef.current = false;
+    phaseTimersRef.current = { travel: 0, fight: 0, pick: 0, boss: 0 };
+    attackSpeedMultiplierRef.current = 1;
   }, [enemyPool, projectilePool, tipPool, particlePool]);
   
   const handlePlay = useCallback((mode: GameMode) => {
@@ -466,6 +513,15 @@ export const CoffeeRushGame: React.FC = () => {
       beansTotalBreakdown: tipsFromServed, // clearBonus added in handleChapterClear
       economyDelta: 0, // Calculated after save
       deltaExplanation: '', // Calculated after save
+      // Phase 3A: Segment telemetry
+      phaseAtDeath: playPhaseRef.current,
+      gatesCleared: gateStateRef.current.index - (gateStateRef.current.isCleared ? 0 : 1),
+      gateIndexReached: gateStateRef.current.index,
+      runBuffsPicked: runBuffsRef.current.map(b => b.name),
+      timeInTravel: phaseTimersRef.current.travel,
+      timeInFight: phaseTimersRef.current.fight,
+      timeInPick: phaseTimersRef.current.pick,
+      timeInBoss: phaseTimersRef.current.boss,
     };
   }, [gameMode]);
 
@@ -708,7 +764,64 @@ export const CoffeeRushGame: React.FC = () => {
     });
   }, [enemyPool, spawnParticles]);
   
-  // Main game loop
+  // Phase 3A: Buff selection handler
+  const handleBuffSelect = useCallback((buff: RunBuff) => {
+    // Add to run buffs list
+    runBuffsRef.current.push(buff);
+    
+    // Apply buff effect
+    switch (buff.type) {
+      case 'damage':
+        damageMultiplierRef.current *= buff.value;
+        break;
+      case 'block_hp':
+        // Increase max HP of all blocks (doesn't heal, just increases cap)
+        blocksRef.current.forEach(block => {
+          block.maxHp = Math.floor(block.maxHp * buff.value);
+        });
+        break;
+      case 'power_regen':
+        energyRegenMultiplierRef.current *= buff.value;
+        break;
+      case 'attack_speed':
+        // Lower value = faster attack (0.9 = 10% faster)
+        attackSpeedMultiplierRef.current *= buff.value;
+        break;
+      case 'repair':
+        // Instant repair: heal all blocks by X%
+        blocksRef.current.forEach(block => {
+          if (!block.destroyed) {
+            block.hp = Math.min(block.maxHp, block.hp + Math.floor(block.maxHp * buff.value));
+          }
+        });
+        break;
+      case 'bomb_charge':
+        // Add energy equal to bomb cost (instant charge)
+        energyRef.current = Math.min(GAME_CONFIG.MAX_POWER, energyRef.current + GAME_CONFIG.TONIC_BOMB_COST);
+        setEnergy(energyRef.current);
+        break;
+    }
+    
+    // Advance to next gate
+    const nextIndex = gateStateRef.current.index + 1;
+    const targetKills = nextIndex === 2 
+      ? GAME_CONFIG.GATE_2_KILL_TARGET 
+      : GAME_CONFIG.GATE_3_KILL_TARGET;
+    
+    gateStateRef.current = {
+      index: nextIndex,
+      targetKills,
+      currentKills: 0,
+      isCleared: false
+    };
+    setGateState(gateStateRef.current);
+    
+    // R3: Unfreeze simulation and start travel
+    isSimulationFrozenRef.current = false;
+    travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
+    playPhaseRef.current = 'TRAVEL';
+    setPlayPhase('TRAVEL');
+  }, []);
   const gameLoop = useCallback((deltaTime: number) => {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
@@ -716,6 +829,34 @@ export const CoffeeRushGame: React.FC = () => {
     const difficulty = difficultyRef.current;
     const blocks = blocksRef.current;
     const currentTime = timeRef.current;
+    
+    // Phase 3A: PlayPhase time tracking for telemetry
+    if (gameMode === 'CHAPTER' && GAME_CONFIG.ENABLE_GATE_CHAPTER_FLOW) {
+      const phase = playPhaseRef.current.toLowerCase() as 'travel' | 'fight' | 'pick' | 'boss';
+      phaseTimersRef.current[phase] += deltaTime;
+    }
+    
+    // Phase 3A: If simulation frozen (PICK phase), skip sim updates but continue loop
+    if (isSimulationFrozenRef.current) {
+      // Only render, skip all sim updates
+      const ctx = canvasRef.current?.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
+        drawGame(
+          ctx,
+          blocks,
+          enemyPool.getActive(),
+          projectilePool.getActive(),
+          tipPool.getActive(),
+          particlePool.getActive(),
+          difficulty,
+          screenShakeRef.current,
+          bossStateRef.current,
+          bossIncomingRef.current
+        );
+      }
+      return; // Skip all sim updates
+    }
     
     // Update time
     timeRef.current += deltaTime;
@@ -840,12 +981,54 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
-    // Phase 2B-2: Boss spawn logic (Chapter mode only)
-    const checkpointIndex = Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS);
-    const shouldSpawnBoss = gameMode === 'CHAPTER' 
-      && checkpointIndex >= GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT 
-      && !bossStateRef.current.isActive 
-      && bossEnemyRef.current === null;
+    // ═══════════════════════════════════════════════════════════════════════
+    // PHASE 3A: TRAVEL PHASE HANDLER (CHAPTER only, flag ON)
+    // ═══════════════════════════════════════════════════════════════════════
+    if (gameMode === 'CHAPTER' && GAME_CONFIG.ENABLE_GATE_CHAPTER_FLOW) {
+      const phase = playPhaseRef.current;
+      
+      // TRAVEL phase: countdown, no spawns, despawn remaining enemies
+      if (phase === 'TRAVEL') {
+        travelTimerRef.current -= deltaTime;
+        
+        // R2: Despawn remaining enemies during travel (fade-out effect)
+        enemyPool.getActive().forEach(enemy => {
+          if (enemy.state !== 'SERVED' && !enemy.isServed) {
+            enemy.hp = 0; // Force serve → despawn
+            enemy.state = 'SERVED';
+            enemy.isServed = true;
+            enemy.servedTimer = GAME_CONFIG.TRAVEL_DESPAWN_DELAY;
+          }
+        });
+        
+        // Transition to FIGHT when travel ends
+        if (travelTimerRef.current <= 0) {
+          playPhaseRef.current = 'FIGHT';
+          setPlayPhase('FIGHT');
+          lastSpawnRef.current = performance.now() / 1000; // Reset spawn timer
+        }
+      }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOSS SPAWN LOGIC (Phase 3A: Gate-based OR Legacy time-based)
+    // ═══════════════════════════════════════════════════════════════════════
+    let shouldSpawnBoss = false;
+    
+    if (gameMode === 'CHAPTER') {
+      if (GAME_CONFIG.ENABLE_GATE_CHAPTER_FLOW) {
+        // R4: Gate-based trigger (checkpoint logic completely bypassed)
+        shouldSpawnBoss = playPhaseRef.current === 'BOSS'
+          && !bossStateRef.current.isActive 
+          && bossEnemyRef.current === null;
+      } else {
+        // Legacy: Time-based trigger
+        const checkpointIndex = Math.floor(timeRef.current / GAME_CONFIG.CHECKPOINT_SECONDS);
+        shouldSpawnBoss = checkpointIndex >= GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT 
+          && !bossStateRef.current.isActive 
+          && bossEnemyRef.current === null;
+      }
+    }
     
     // Boss incoming banner countdown
     if (bossIncomingRef.current > 0) {
@@ -921,9 +1104,21 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
+    // ═══════════════════════════════════════════════════════════════════════
+    // SPAWN GUARD (Phase 3A: R1 - Only spawn during FIGHT phase in gate mode)
+    // ═══════════════════════════════════════════════════════════════════════
+    let canSpawn = true;
+    
+    if (gameMode === 'CHAPTER' && GAME_CONFIG.ENABLE_GATE_CHAPTER_FLOW) {
+      // R1: Only spawn during FIGHT phase (not TRAVEL, PICK, or BOSS)
+      canSpawn = playPhaseRef.current === 'FIGHT' 
+        && bossIncomingRef.current <= 0;
+    } else {
+      // Legacy behavior (flag OFF or ENDLESS mode)
+      canSpawn = bossIncomingRef.current <= 0 && !bossStateRef.current.isActive;
+    }
+    
     // Spawn enemies (v3.2: warmup pre-rush uses slower spawn rate)
-    // Block spawning when boss incoming banner is showing or boss is active (1v1 fight)
-    const canSpawn = bossIncomingRef.current <= 0 && !bossStateRef.current.isActive;
     
     const isWarmup = timeRef.current < GAME_CONFIG.EARLY_GAME_SECONDS 
       && difficulty.level === 0 
@@ -957,9 +1152,10 @@ export const CoffeeRushGame: React.FC = () => {
       lastSpawnRef.current = currentTime;
     }
     
-    // Auto-attack
+    // Auto-attack (Phase 3A: Apply attack speed multiplier from buffs)
     const enemies = enemyPool.getActive().filter(e => !e.isServed && e.state !== 'SERVED');
-    if (enemies.length > 0 && currentTime - lastAttackRef.current > GAME_CONFIG.AUTO_ATTACK_INTERVAL / 1000) {
+    const effectiveAttackInterval = GAME_CONFIG.AUTO_ATTACK_INTERVAL * attackSpeedMultiplierRef.current;
+    if (enemies.length > 0 && currentTime - lastAttackRef.current > effectiveAttackInterval / 1000) {
       // Find nearest enemy (lowest x = closest to cart)
       const cartX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
       let nearest = enemies[0];
@@ -1078,6 +1274,32 @@ export const CoffeeRushGame: React.FC = () => {
           telemetryRef.current.enemiesKilled.heavy++;
         } else {
           telemetryRef.current.enemiesKilled.normal++;
+        }
+        
+        // ═══════════════════════════════════════════════════════════════════
+        // PHASE 3A: GATE CLEAR CHECK (only during FIGHT phase, non-boss)
+        // ═══════════════════════════════════════════════════════════════════
+        if (gameMode === 'CHAPTER' && GAME_CONFIG.ENABLE_GATE_CHAPTER_FLOW 
+            && playPhaseRef.current === 'FIGHT' && enemy.kind !== 'BOSS') {
+          gateStateRef.current.currentKills++;
+          setGateState({ ...gateStateRef.current });
+          
+          // Check gate clear
+          if (gateStateRef.current.currentKills >= gateStateRef.current.targetKills) {
+            gateStateRef.current.isCleared = true;
+            
+            if (gateStateRef.current.index >= 3) {
+              // All gates cleared → BOSS phase
+              playPhaseRef.current = 'BOSS';
+              setPlayPhase('BOSS');
+              // Boss will spawn via boss spawn logic above
+            } else {
+              // Show pick overlay → freeze simulation (R3)
+              playPhaseRef.current = 'PICK';
+              setPlayPhase('PICK');
+              isSimulationFrozenRef.current = true; // R3: Freeze, don't pause loop
+            }
+          }
         }
         
         // Drop tip (boss drops bigger tip)
@@ -1316,6 +1538,17 @@ export const CoffeeRushGame: React.FC = () => {
             bossState={bossState}
             bossIncomingTimer={bossIncomingRef.current}
             checkpointIndex={debugInfo.checkpointIndex}
+            playPhase={playPhase}
+            gateState={gateState}
+            travelTimer={travelTimerRef.current}
+          />
+        )}
+        
+        {/* Phase 3A: Pick Overlay (CHAPTER only, PICK phase) */}
+        {gameState === 'PLAY' && playPhase === 'PICK' && gameMode === 'CHAPTER' && GAME_CONFIG.ENABLE_GATE_CHAPTER_FLOW && (
+          <PickOverlay
+            gateIndex={gateStateRef.current.index}
+            onSelect={handleBuffSelect}
           />
         )}
         

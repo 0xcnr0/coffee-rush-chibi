@@ -172,8 +172,35 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   // CHAPTER MODE + BOSS (Phase 2B-2: TDS-style win condition)
   // ─────────────────────────────────────────────────────────────
-  CHAPTER1_BOSS_CHECKPOINT: 3,     // Boss spawns after 3 checkpoints (60s)
+  CHAPTER1_BOSS_CHECKPOINT: 3,     // Boss spawns after 3 checkpoints (60s) - LEGACY (used when ENABLE_GATE_CHAPTER_FLOW = false)
   CHECKPOINT_SECONDS: 20,          // Seconds per checkpoint segment
+  
+  // ─────────────────────────────────────────────────────────────
+  // PHASE 3A: SEGMENTED CHAPTER FLOW (TDS-style TRAVEL → FIGHT → PICK → BOSS)
+  // ─────────────────────────────────────────────────────────────
+  ENABLE_GATE_CHAPTER_FLOW: true,  // Feature flag (set to false to use legacy time-based system)
+  
+  // Travel phase
+  TRAVEL_DURATION: 4,              // seconds between gates (no spawns)
+  TRAVEL_DESPAWN_DELAY: 0.5,       // seconds to fade-out remaining enemies during travel
+  
+  // Gate kill targets (tunable)
+  GATE_1_KILL_TARGET: 15,
+  GATE_2_KILL_TARGET: 20,
+  GATE_3_KILL_TARGET: 25,
+  
+  // Pick overlay
+  PICK_CARDS_OFFERED: 3,
+  
+  // Run buff definitions (run-only, reset after each run)
+  RUN_BUFF_POOL: [
+    { type: 'damage', name: 'Hot Shot', icon: '🔥', description: '+15% damage', value: 1.15 },
+    { type: 'block_hp', name: 'Steel Brew', icon: '🛡️', description: '+20% block HP', value: 1.20 },
+    { type: 'power_regen', name: 'Quick Refill', icon: '⚡', description: '+25% power regen', value: 1.25 },
+    { type: 'attack_speed', name: 'Caffeine Rush', icon: '☕', description: '+10% attack speed', value: 0.90 },
+    { type: 'repair', name: 'Repair Kit', icon: '🔧', description: 'Heal 30% HP', value: 0.30 },
+    { type: 'bomb_charge', name: 'Extra Shot', icon: '💣', description: '+1 bomb charge', value: 1 },
+  ] as const,
   
   // Boss stats
   BOSS_HP: 600,                    // High HP pool (tunable)
