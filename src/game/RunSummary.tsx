@@ -234,6 +234,10 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             <div className="col-span-2 text-coffee-light/40 text-[9px] mt-2 text-center">
               TIP={GAME_CONFIG.TIP_VALUE} | BOSS={GAME_CONFIG.BOSS_TIP_MULTIPLIER}x | BONUS={GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS} | SCALE={GAME_CONFIG.UPGRADE_COST_SCALING}
             </div>
+            {/* Phase A Tuning Debug */}
+            <div className="col-span-2 text-cyan-400/50 text-[9px] mt-1 text-center border-t border-coffee-light/10 pt-1">
+              🔧 BOSS_HP={GAME_CONFIG.BOSS_HP} | BOMB_COST={GAME_CONFIG.TONIC_BOMB_COST} | Gates={GAME_CONFIG.GATE_1_KILL_TARGET}/{GAME_CONFIG.GATE_2_KILL_TARGET}/{GAME_CONFIG.GATE_3_KILL_TARGET} | HotShot=1.10
+            </div>
           </div>
           
           {/* Copy Buttons */}
