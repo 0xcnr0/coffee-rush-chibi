@@ -3,6 +3,28 @@
 export type GameState = 'MENU' | 'PLAY' | 'END' | 'CHAPTER_CLEAR'; // Phase 2B-2: Added CHAPTER_CLEAR
 export type GameMode = 'ENDLESS' | 'CHAPTER'; // Phase 2B-2: Game mode selection
 
+// Phase 3A: PlayPhase for segmented chapter flow
+export type PlayPhase = 'TRAVEL' | 'FIGHT' | 'PICK' | 'BOSS';
+
+// Phase 3A: Gate progress tracking
+export interface GateState {
+  index: number;           // 1, 2, 3
+  targetKills: number;     // enemies to serve for this gate
+  currentKills: number;    // enemies served this gate
+  isCleared: boolean;
+}
+
+// Phase 3A: Run-only buff system (temporary, reset after run)
+export type RunBuffType = 'damage' | 'block_hp' | 'power_regen' | 'attack_speed' | 'repair' | 'bomb_charge';
+
+export interface RunBuff {
+  type: RunBuffType;
+  name: string;
+  icon: string;
+  description: string;
+  value: number;  // multiplier (1.15 = +15%) or flat value for repair/bomb
+}
+
 export interface Vector2 {
   x: number;
   y: number;
@@ -129,6 +151,16 @@ export interface RunTelemetry {
   // Pacing telemetry (Phase 2D)
   recoveryTimeTotal: number; // total seconds in post-rush recovery
   bossAddsSpawned: number; // should be 0 in Chapter 1
+  
+  // Phase 3A: Segment telemetry
+  phaseAtDeath: PlayPhase | null;
+  gatesCleared: number;
+  gateIndexReached: number;
+  runBuffsPicked: string[];
+  timeInTravel: number;
+  timeInFight: number;
+  timeInPick: number;
+  timeInBoss: number;
   
   // Spawn distribution
   enemiesSpawned: { normal: number; heavy: number; boss: number };
