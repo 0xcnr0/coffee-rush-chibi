@@ -867,8 +867,21 @@ export const CoffeeRushGame: React.FC = () => {
         break;
     }
     
-    // Advance to next gate
-    const nextIndex = gateStateRef.current.index + 1;
+    // Advance to next gate (or BOSS if Gate 3 was just cleared)
+    const currentGateIndex = gateStateRef.current.index;
+    const nextIndex = currentGateIndex + 1;
+    
+    // Phase A: Gate 3 clear → BOSS phase (no more gates)
+    if (currentGateIndex >= 3) {
+      // Gate 3 was just cleared with buff selected → now go to BOSS
+      isSimulationFrozenRef.current = false;
+      playPhaseRef.current = 'BOSS';
+      setPlayPhase('BOSS');
+      // gateState stays at 3, isCleared = true
+      return;
+    }
+    
+    // Normal gate advancement (Gate 1→2, Gate 2→3)
     const targetKills = nextIndex === 2 
       ? GAME_CONFIG.GATE_2_KILL_TARGET 
       : GAME_CONFIG.GATE_3_KILL_TARGET;
@@ -1357,17 +1370,11 @@ export const CoffeeRushGame: React.FC = () => {
           if (gateStateRef.current.currentKills >= gateStateRef.current.targetKills) {
             gateStateRef.current.isCleared = true;
             
-            if (gateStateRef.current.index >= 3) {
-              // All gates cleared → BOSS phase
-              playPhaseRef.current = 'BOSS';
-              setPlayPhase('BOSS');
-              // Boss will spawn via boss spawn logic above
-            } else {
-              // Show pick overlay → freeze simulation (R3)
-              playPhaseRef.current = 'PICK';
-              setPlayPhase('PICK');
-              isSimulationFrozenRef.current = true; // R3: Freeze, don't pause loop
-            }
+            // Phase A: ALL gates (including Gate 3) trigger PICK overlay first
+            // After Gate 3 PICK, handleBuffSelect will transition to BOSS
+            playPhaseRef.current = 'PICK';
+            setPlayPhase('PICK');
+            isSimulationFrozenRef.current = true; // R3: Freeze, don't pause loop
           }
         }
         

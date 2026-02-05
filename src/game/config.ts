@@ -203,7 +203,7 @@ export const GAME_CONFIG = {
   ] as const,
   
   // Boss stats
-  BOSS_HP: 1100,                   // High HP pool (Phase A tuning: 900→1100 for 15-run target)
+  BOSS_HP: 990,                    // High HP pool (Phase A tuning: -10% for faster kill @ run 11-12)
   BOSS_SPEED_MULT: 0.6,            // 60% of normal speed
   BOSS_SIZE_MULT: 1.4,             // 40% larger than normal
   BOSS_TICK_DAMAGE_MULT: 3.0,      // 3x latched tick damage
