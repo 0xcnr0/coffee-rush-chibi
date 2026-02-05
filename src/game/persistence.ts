@@ -318,3 +318,14 @@ export const formatTimeRemaining = (ms: number): string => {
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
+
+/**
+ * DEBUG ONLY: Add 10 energy (temporary testing tool).
+ * Bypasses max cap for testing purposes.
+ */
+export const addDebugEnergy = (amount: number = 10): number => {
+  const prog = loadProgression();
+  prog.energy += amount;
+  saveProgression(prog);
+  return prog.energy;
+};
