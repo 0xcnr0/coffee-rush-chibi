@@ -176,6 +176,12 @@ export interface RunTelemetry {
   bossRewardBeans: number;     // DISPLAY ONLY: BOSS_TIP_MULTIPLIER × TIP_VALUE (already in tipsFromServed!)
   clearBonusBeans: number;     // CHAPTER_CLEAR_BONUS_BEANS (0 if failed)
   
+  // Debug: detailed breakdown
+  servedCount: number;         // customersServedRef.current for validation
+  normalKillBeans: number;     // enemiesKilled.normal × TIP_VALUE
+  heavyKillBeans: number;      // enemiesKilled.heavy × TIP_VALUE
+  bossKillBeans: number;       // enemiesKilled.boss × TIP_VALUE × BOSS_TIP_MULTIPLIER
+  
   // Reconciliation
   beansTotalBreakdown: number; // tipsFromServed + clearBonusBeans (boss already in tips)
   economyDelta: number;        // actual - breakdown (MUST be 0, any deviation is a bug)

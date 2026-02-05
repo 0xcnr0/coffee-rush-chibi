@@ -510,6 +510,11 @@ export const CoffeeRushGame: React.FC = () => {
       tipsFromServed,
       bossRewardBeans: bossRewardDisplay, // Display only - already in tipsFromServed
       clearBonusBeans: 0, // Updated in handleChapterClear
+      // Debug: detailed breakdown for validation
+      servedCount: customersServedRef.current,
+      normalKillBeans: t.enemiesKilled.normal * GAME_CONFIG.TIP_VALUE,
+      heavyKillBeans: t.enemiesKilled.heavy * GAME_CONFIG.TIP_VALUE,
+      bossKillBeans: t.enemiesKilled.boss * GAME_CONFIG.TIP_VALUE * GAME_CONFIG.BOSS_TIP_MULTIPLIER,
       beansTotalBreakdown: tipsFromServed, // clearBonus added in handleChapterClear
       economyDelta: 0, // Calculated after save
       deltaExplanation: '', // Calculated after save
@@ -1549,6 +1554,7 @@ export const CoffeeRushGame: React.FC = () => {
           <PickOverlay
             gateIndex={gateStateRef.current.index}
             onSelect={handleBuffSelect}
+            pickedBuffTypes={runBuffsRef.current.map(b => b.type)}
           />
         )}
         

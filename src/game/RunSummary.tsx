@@ -146,6 +146,10 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             {/* Economy Section */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Economy</div>
             <div className="col-span-2">Tips: <span className="text-gold">{telemetry.tipsFromServed}</span> beans</div>
+            {/* Debug: Detailed breakdown */}
+            <div className="col-span-2 text-[9px] text-coffee-light/50 pl-2 border-l border-coffee-light/20">
+              <div>Served: {telemetry.servedCount} | N:{telemetry.normalKillBeans} H:{telemetry.heavyKillBeans} B:{telemetry.bossKillBeans}</div>
+            </div>
             {telemetry.bossRewardBeans > 0 && (
               <div className="col-span-2 text-coffee-light/50 text-[10px]">
                 └ Boss reward: {telemetry.bossRewardBeans} <span className="text-coffee-light/40">(included)</span>
@@ -162,6 +166,10 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
               <div className="flex justify-between">
                 <span>Actual:</span>
                 <span className="text-gold font-bold">{telemetry.beansEarnedActual} beans</span>
+              </div>
+              <div className="flex justify-between text-[9px] text-coffee-light/50">
+                <span>Start→End:</span>
+                <span>{telemetry.beansStart}→{telemetry.beansEnd}</span>
               </div>
               <div className="flex justify-between">
                 <span>Delta:</span>
@@ -236,7 +244,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             </div>
             {/* Phase A Tuning Debug */}
             <div className="col-span-2 text-cyan-400/50 text-[9px] mt-1 text-center border-t border-coffee-light/10 pt-1">
-              🔧 BOSS_HP={GAME_CONFIG.BOSS_HP} | BOMB_COST={GAME_CONFIG.TONIC_BOMB_COST} | Gates={GAME_CONFIG.GATE_1_KILL_TARGET}/{GAME_CONFIG.GATE_2_KILL_TARGET}/{GAME_CONFIG.GATE_3_KILL_TARGET} | HotShot=1.10
+              🔧 BOSS_HP={GAME_CONFIG.BOSS_HP} | BOMB_COST={GAME_CONFIG.TONIC_BOMB_COST} | Gates={GAME_CONFIG.GATE_1_KILL_TARGET}/{GAME_CONFIG.GATE_2_KILL_TARGET}/{GAME_CONFIG.GATE_3_KILL_TARGET} | Repair=18%
             </div>
           </div>
           

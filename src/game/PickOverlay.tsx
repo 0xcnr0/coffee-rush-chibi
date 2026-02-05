@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { GAME_CONFIG } from './config';
-import type { RunBuff } from './types';
+import type { RunBuff, RunBuffType } from './types';
 
 interface PickOverlayProps {
   gateIndex: number;
   onSelect: (buff: RunBuff) => void;
+  pickedBuffTypes: RunBuffType[]; // Already picked buff types this run
 }
 
 // Fisher-Yates shuffle
@@ -18,11 +19,14 @@ const shuffleArray = <T,>(arr: readonly T[]): T[] => {
   return result;
 };
 
-export const PickOverlay: React.FC<PickOverlayProps> = ({ gateIndex, onSelect }) => {
-  const options = useMemo(() => 
-    shuffleArray(GAME_CONFIG.RUN_BUFF_POOL).slice(0, GAME_CONFIG.PICK_CARDS_OFFERED) as RunBuff[],
-    []
-  );
+export const PickOverlay: React.FC<PickOverlayProps> = ({ gateIndex, onSelect, pickedBuffTypes }) => {
+  // Filter out already-picked buffs, then shuffle and pick
+  const options = useMemo(() => {
+    const availableBuffs = GAME_CONFIG.RUN_BUFF_POOL.filter(
+      buff => !pickedBuffTypes.includes(buff.type)
+    );
+    return shuffleArray(availableBuffs).slice(0, GAME_CONFIG.PICK_CARDS_OFFERED) as RunBuff[];
+  }, [pickedBuffTypes]);
   
   return (
     <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-50 p-4">
