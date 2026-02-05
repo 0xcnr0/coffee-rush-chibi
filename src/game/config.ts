@@ -184,26 +184,26 @@ export const GAME_CONFIG = {
   TRAVEL_DURATION: 4,              // seconds between gates (no spawns)
   TRAVEL_DESPAWN_DELAY: 0.5,       // seconds to fade-out remaining enemies during travel
   
-  // Gate kill targets (Phase A tuning: increased for longer gates)
-  GATE_1_KILL_TARGET: 18,
-  GATE_2_KILL_TARGET: 26,
-  GATE_3_KILL_TARGET: 34,
+  // Gate kill targets (Phase A tuning: 15-run boss clear target)
+  GATE_1_KILL_TARGET: 20,
+  GATE_2_KILL_TARGET: 30,
+  GATE_3_KILL_TARGET: 40,
   
   // Pick overlay
   PICK_CARDS_OFFERED: 3,
   
   // Run buff definitions (run-only, reset after each run)
-  // Phase A tuning: Hot Shot reduced 1.15→1.10, bomb_charge removed
+  // Phase A tuning: Hot Shot 1.10, Repair nerfed 30%→18%, bomb_charge removed
   RUN_BUFF_POOL: [
     { type: 'damage', name: 'Hot Shot', icon: '🔥', description: '+10% damage', value: 1.10 },
     { type: 'block_hp', name: 'Steel Brew', icon: '🛡️', description: '+20% block HP', value: 1.20 },
     { type: 'power_regen', name: 'Quick Refill', icon: '⚡', description: '+25% power regen', value: 1.25 },
     { type: 'attack_speed', name: 'Caffeine Rush', icon: '☕', description: '+10% attack speed', value: 0.90 },
-    { type: 'repair', name: 'Repair Kit', icon: '🔧', description: 'Heal 30% HP', value: 0.30 },
+    { type: 'repair', name: 'Repair Kit', icon: '🔧', description: 'Heal 18% HP', value: 0.18 },
   ] as const,
   
   // Boss stats
-  BOSS_HP: 900,                    // High HP pool (Phase A tuning: 600→900 for harder boss)
+  BOSS_HP: 1100,                   // High HP pool (Phase A tuning: 900→1100 for 15-run target)
   BOSS_SPEED_MULT: 0.6,            // 60% of normal speed
   BOSS_SIZE_MULT: 1.4,             // 40% larger than normal
   BOSS_TICK_DAMAGE_MULT: 3.0,      // 3x latched tick damage
