@@ -1,122 +1,113 @@
 
-# Phase A Final Tuning — 15-Run Boss Clear Hedefi
+# Chapter 1 Balance Tuning + Travel Badge Removal
 
-## Mevcut Durum Analizi
+## Hedef Metrikler
 
-| Parametre | Şu Anki Değer | Sorun |
-|-----------|---------------|-------|
-| Gate hedefleri | 20/30/40 | Boss'a 8-10 run'da ulaşılıyor (çok hızlı) |
-| TIP_VALUE | 2 | Coin kazanımı yüksek |
-| Upgrade costs | 100/100/80/100 | İlk upgrade'ler çok kolay |
-| UPGRADE_COST_SCALING | 1.55 | Scaling düşük |
-| BOSS_HP | 1100 | Orta (şimdilik dokunmuyoruz) |
-| Repair Kit | 18% | Gate'leri trivialize ediyor |
-| Duplicate buffs | ✅ Engelleniyor | OK |
+| Milestone | Hedef Run | Beklenen Upgrade Durumu |
+|-----------|-----------|-------------------------|
+| G1 Clear | Run 3-4 | 1 upgrade (E1 veya H1) |
+| G2 Clear | Run 7-9 | 2-3 upgrade |
+| G3 Clear | Run 10-12 | 3-4 upgrade |
+| Boss Kill | Run 13-16 | Near-max (B2/H2-3/D2-3/E2) |
 
----
+## Yapilacak Degisiklikler
 
-## Yapılacak Değişiklikler (Sadece config.ts)
+### 1. Travel Badge Tamamen Kaldir
 
-### 1. Gate Progression — Boss'a ulaşmayı yavaşlat
+**Dosya:** `src/game/GameHUD.tsx` (satir 80-96)
+
+Mevcut "🚶 TRAVEL" badge overlay'i tamamen silinecek. TRAVEL fazinda:
+- Parallax animasyonu devam edecek
+- Tekerlek donecek
+- Hicbir UI elementi gosterilmeyecek (saf hareket hissi)
+
+### 2. Economy Boost - Upgrade Maliyetlerini Dusur
+
+**Dosya:** `src/game/config.ts`
+
+| Parametre | Eski | Yeni | Etki |
+|-----------|------|------|------|
+| `TOWER_HP_BASE_COST` | 150 | 80 | Ilk HP upgrade 2 run'da alinabilir |
+| `ESPRESSO_BASE_COST` | 150 | 80 | Ilk DPS upgrade 2 run'da alinabilir |
+| `POWER_BASE_COST` | 120 | 70 | En ucuz, bomb spam icin |
+| `BLOCK_COUNT_BASE_COST` | 150 | 100 | Cargo box biraz daha pahali (cunku cok guclu) |
+| `UPGRADE_COST_SCALING` | 1.65 | 1.50 | Sonraki seviyeler daha erisilebilir |
+
+**Yeni maliyet tablosu (ornek Tower HP):**
+- Level 1: 80 beans (~2 run)
+- Level 2: 120 beans (~3 run)
+- Level 3: 180 beans (~4-5 run)
+- Toplam max: 380 beans (~10-12 run)
+
+### 3. Gate Hedeflerini Dusur (Daha Hizli Ilerleme)
+
+**Dosya:** `src/game/config.ts`
+
+| Parametre | Eski | Yeni | Etki |
+|-----------|------|------|------|
+| `GATE_1_KILL_TARGET` | 24 | 18 | G1 daha hizli clear |
+| `GATE_2_KILL_TARGET` | 34 | 26 | G2 daha erisilebilir |
+| `GATE_3_KILL_TARGET` | 44 | 34 | G3 hala challenge ama asiri degil |
+
+### 4. 0-Upgrade Survivability Artir
+
+**Dosya:** `src/game/config.ts`
+
+| Parametre | Eski | Yeni | Etki |
+|-----------|------|------|------|
+| `BLOCK_MAX_HP` | 330 | 380 | +15% HP, 0-upgrade biraz daha uzun yasasin |
+| `EARLY_GAME_SECONDS` | 18 | 22 | Warmup biraz uzun, rahat baslangic |
+
+## Degismeyecek Seyler
+
+- `TIP_VALUE`: 2 (coin kazanimi ayni)
+- `BOSS_HP`: 990 (boss zorlugu ayni)
+- `RUSH_SPAWN_MULTIPLIER`: 2.3 (rush intensity ayni)
+- Latch sistemi, bomb mekanigi, run buff pool
+
+## Beklenen Sonuc
 
 ```text
-GATE_1_KILL_TARGET: 20 → 24
-GATE_2_KILL_TARGET: 30 → 34
-GATE_3_KILL_TARGET: 40 → 44
-TRAVEL_DURATION: 4 → 5  (küçük pacing artışı)
+Run 1-2: 35-40 beans → Ilk upgrade alinabilir (80 bean)
+Run 3-4: G1 clear (1-2 upgrade ile)
+Run 5-8: G2 clear (3-4 upgrade ile)
+Run 9-12: G3 + Boss gorulebilir
+Run 13-16: Boss kill (near-max upgrades)
 ```
 
-**Etki:** Her run ~15-20% daha uzun sürer, boss'a ulaşmak için daha fazla pratik gerekir.
+## Teknik Detaylar
 
----
+### GameHUD.tsx Degisikligi
+Satirlar 80-96 arasindaki TRAVEL badge blogu tamamen silinecek:
+```tsx
+// SILINECEK BLOK:
+{isGateFlow && playPhase === 'TRAVEL' && (
+  <div className="absolute top-1/2 ...">
+    ...TRAVEL badge...
+  </div>
+)}
+```
 
-### 2. Economy — Upgrade almak daha uzun sürsün
-
+### config.ts Degisiklikleri (Tek dosya, 10 satir)
 ```text
-TIP_VALUE: 2 → 2  (şimdilik değiştirme, önce upgrade costs test)
-
-TOWER_HP_BASE_COST: 100 → 150  (+50%)
-ESPRESSO_BASE_COST: 100 → 150  (+50%)
-POWER_BASE_COST: 80 → 120      (+50%)
-BLOCK_COUNT_BASE_COST: 100 → 150  (+50%)
-
-UPGRADE_COST_SCALING: 1.55 → 1.65  (+0.10)
-
-CHAPTER_CLEAR_BONUS_BEANS: 10 → 5  (yarıya indir)
+Satir 25:  BLOCK_MAX_HP: 330 → 380
+Satir 45:  EARLY_GAME_SECONDS: 18 → 22
+Satir 137: UPGRADE_COST_SCALING: 1.65 → 1.50
+Satir 142: TOWER_HP_BASE_COST: 150 → 80
+Satir 148: ESPRESSO_BASE_COST: 150 → 80
+Satir 154: POWER_BASE_COST: 120 → 70
+Satir 160: BLOCK_COUNT_BASE_COST: 150 → 100
+Satir 188: GATE_1_KILL_TARGET: 24 → 18
+Satir 189: GATE_2_KILL_TARGET: 34 → 26
+Satir 190: GATE_3_KILL_TARGET: 44 → 34
 ```
 
-**Yeni maliyet tablosu (örnek Tower HP):**
-- Level 1: 150 beans (eskiden 100)
-- Level 2: 248 beans (eskiden 155)
-- Level 3: 409 beans (eskiden 240)
-- **Toplam max:** 807 beans (eskiden 495)
+## Test Plani
 
-**Etki:** İlk upgrade için ~3-4 run, full build için ~18-25 run gerekir.
+Degisiklik sonrasi 5 run at (fresh save, 0 upgrade):
+1. Run 1-2: Kac bean kazanildi? Ilk upgrade alinabildi mi?
+2. Run 3-4: G1 gecildi mi?
+3. Run 7-9: G2 gecildi mi?
+4. Run 13+: Boss kill oldu mu?
 
----
-
-### 3. Repair Buff Nerf — Gate'leri trivialize etmesin
-
-```text
-RUN_BUFF_POOL içinde Repair Kit:
-value: 0.18 → 0.12  (12% heal)
-description: 'Heal 18% HP' → 'Heal 12% HP'
-```
-
-**Etki:** Repair artık "run kurtarıcı" değil, "biraz nefes aldırıcı" olur.
-
----
-
-### 4. Boss HP — Şimdilik dokunmuyoruz
-
-BOSS_HP: 1100 (değişmez)
-
-**Neden:** Önce economy + gate pacing test edilmeli. Boss zaten 1v1 ve yeterince uzun sürüyor. Eğer test sonrası hala kolay gelirse +10-15% ekleriz.
-
----
-
-## Değişiklik Özeti (Tek Dosya: config.ts)
-
-| Satır | Eski | Yeni |
-|-------|------|------|
-| 137 | `UPGRADE_COST_SCALING: 1.55` | `UPGRADE_COST_SCALING: 1.65` |
-| 142 | `TOWER_HP_BASE_COST: 100` | `TOWER_HP_BASE_COST: 150` |
-| 148 | `ESPRESSO_BASE_COST: 100` | `ESPRESSO_BASE_COST: 150` |
-| 154 | `POWER_BASE_COST: 80` | `POWER_BASE_COST: 120` |
-| 160 | `BLOCK_COUNT_BASE_COST: 100` | `BLOCK_COUNT_BASE_COST: 150` |
-| 184 | `TRAVEL_DURATION: 4` | `TRAVEL_DURATION: 5` |
-| 188 | `GATE_1_KILL_TARGET: 20` | `GATE_1_KILL_TARGET: 24` |
-| 189 | `GATE_2_KILL_TARGET: 30` | `GATE_2_KILL_TARGET: 34` |
-| 190 | `GATE_3_KILL_TARGET: 40` | `GATE_3_KILL_TARGET: 44` |
-| 202 | `value: 0.18` | `value: 0.12` |
-| 202 | `description: 'Heal 18% HP'` | `description: 'Heal 12% HP'` |
-| 213 | `CHAPTER_CLEAR_BONUS_BEANS: 10` | `CHAPTER_CLEAR_BONUS_BEANS: 5` |
-
----
-
-## Hedef Metrikler (Test Sonrası Beklenti)
-
-| Run Aralığı | Beklenen Durum |
-|-------------|----------------|
-| Run 1-3 | Gate 1-2 civarında ölüm, ilk upgrade'e yaklaşma (~80-120 beans) |
-| Run 4-8 | Gate 2-3'ü görme, 1-2 upgrade alma, boss'ta ölüm |
-| Run 12-18 | Boss clear |
-
----
-
-## Test Checklist
-
-Değişiklik sonrası 5 run at ve summary'leri paylaş:
-1. Fresh save (0 upgrade) — Gate nereye kadar?
-2. 1-2 upgrade ile — Gate 3'e ulaşıldı mı?
-3. Boss'a ulaşılan run — Boss'ta ölüm mü, clear mı?
-4. Economy delta kontrolü — D:0 veya ±1 mi?
-
----
-
-## Neden Bu Yaklaşım Minimum Maliyet?
-
-- **Tek dosya değişikliği** (config.ts)
-- **Yeni sistem yok** — sadece sayılar
-- **Refactor yok** — mevcut yapı korunuyor
-- **Test hızlı** — 5 run ile doğrulanır
+Basari kriteri: Boss kill 13-16 run arasinda olmali.
