@@ -77,11 +77,20 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   
   return (
     <>
-      {/* Phase 3A: Travel countdown banner (R2) */}
-      {isGateFlow && playPhase === 'TRAVEL' && travelTimer !== undefined && travelTimer > 0 && (
+      {/* Phase 3A: Travel badge (no countdown number) */}
+      {isGateFlow && playPhase === 'TRAVEL' && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30">
-          <div className="bg-coffee-dark/90 text-coffee-cream px-6 py-3 rounded-xl text-lg font-bold animate-pulse border border-coffee-medium shadow-xl">
-            🚶 TRAVEL... {Math.ceil(travelTimer)}
+          <div className="bg-coffee-dark/90 text-coffee-cream px-6 py-3 rounded-xl text-lg font-bold animate-pulse border border-coffee-medium shadow-xl flex items-center gap-3">
+            <span>🚶 TRAVEL</span>
+            {/* Mini progress bar */}
+            {travelTimer !== undefined && (
+              <div className="w-16 h-2 bg-coffee-medium/50 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-warm-orange transition-all duration-200"
+                  style={{ width: `${((GAME_CONFIG.TRAVEL_DURATION - travelTimer) / GAME_CONFIG.TRAVEL_DURATION) * 100}%` }}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

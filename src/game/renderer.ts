@@ -1,5 +1,10 @@
 import { GAME_CONFIG, COLORS } from './config';
-import type { CartBlock, Enemy, EnemyKind, Projectile, TipDrop, Particle, DifficultyState, BossState } from './types';
+import type { CartBlock, Enemy, EnemyKind, Projectile, TipDrop, Particle, DifficultyState, BossState, PlayPhase } from './types';
+
+// Parallax state (module-level for animation continuity)
+let parallaxOffset1 = 0;
+let parallaxOffset2 = 0;
+let wheelRotation = 0;
 
 /**
  * Draw the full game scene with all entities
@@ -14,22 +19,32 @@ export function drawGame(
   difficulty: DifficultyState,
   screenShake: { x: number; y: number },
   bossState?: BossState,
-  bossIncomingTimer?: number
+  bossIncomingTimer?: number,
+  playPhase?: PlayPhase,
+  deltaTime?: number
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
+  
+  // Update parallax and wheel animation during TRAVEL
+  const isTraveling = playPhase === 'TRAVEL';
+  if (isTraveling && deltaTime) {
+    parallaxOffset1 = (parallaxOffset1 + 30 * deltaTime) % 120;  // slow layer
+    parallaxOffset2 = (parallaxOffset2 + 80 * deltaTime) % 60;   // fast layer
+    wheelRotation += 8 * deltaTime;  // wheel rotation
+  }
   
   // Apply screen shake
   ctx.save();
   ctx.translate(screenShake.x, screenShake.y);
   
-  // Draw background
-  drawBackground(ctx);
+  // Draw background with parallax during TRAVEL
+  drawBackground(ctx, isTraveling);
   
-  // Draw ground
-  drawGround(ctx);
+  // Draw ground with speed lines during TRAVEL
+  drawGround(ctx, isTraveling);
   
-  // Draw cart blocks
-  drawCart(ctx, blocks);
+  // Draw cart blocks (wheel animation handled inside)
+  drawCart(ctx, blocks, isTraveling);
   
   // Draw barista on top
   drawBarista(ctx, blocks);
@@ -99,7 +114,7 @@ export function drawMenuScene(
   drawBarista(ctx, blocks);
 }
 
-function drawBackground(ctx: CanvasRenderingContext2D) {
+function drawBackground(ctx: CanvasRenderingContext2D, isTraveling: boolean = false) {
   const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CONFIG.CANVAS_HEIGHT);
   gradient.addColorStop(0, 'hsl(30, 40%, 70%)'); // warm morning sky
   gradient.addColorStop(0.6, 'hsl(35, 50%, 80%)');
@@ -108,11 +123,22 @@ function drawBackground(ctx: CanvasRenderingContext2D) {
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
   
-  // Draw some simple clouds
+  // Draw some simple clouds (parallax layer 1 - slow)
   ctx.fillStyle = 'hsla(0, 0%, 100%, 0.6)';
-  drawCloud(ctx, 50, 80, 40);
-  drawCloud(ctx, 200, 50, 30);
-  drawCloud(ctx, 300, 100, 35);
+  const cloudOffset = isTraveling ? parallaxOffset1 : 0;
+  drawCloud(ctx, (50 + cloudOffset) % (GAME_CONFIG.CANVAS_WIDTH + 80) - 40, 80, 40);
+  drawCloud(ctx, (200 + cloudOffset * 0.7) % (GAME_CONFIG.CANVAS_WIDTH + 60) - 30, 50, 30);
+  drawCloud(ctx, (300 + cloudOffset * 0.5) % (GAME_CONFIG.CANVAS_WIDTH + 70) - 35, 100, 35);
+  
+  // Parallax layer 2 (fast) - subtle ground streaks during travel
+  if (isTraveling) {
+    ctx.fillStyle = 'hsla(35, 40%, 70%, 0.15)';
+    for (let i = 0; i < 5; i++) {
+      const streakX = ((i * 80 + parallaxOffset2 * 3) % (GAME_CONFIG.CANVAS_WIDTH + 40)) - 20;
+      const streakY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET - 30 - (i * 15);
+      ctx.fillRect(streakX, streakY, 35, 3);
+    }
+  }
 }
 
 function drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
@@ -123,7 +149,7 @@ function drawCloud(ctx: CanvasRenderingContext2D, x: number, y: number, size: nu
   ctx.fill();
 }
 
-function drawGround(ctx: CanvasRenderingContext2D) {
+function drawGround(ctx: CanvasRenderingContext2D, isTraveling: boolean = false) {
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   
   // Street/sidewalk - fills from groundY to bottom of canvas
@@ -133,9 +159,18 @@ function drawGround(ctx: CanvasRenderingContext2D) {
   // Sidewalk line (top edge of ground)
   ctx.fillStyle = COLORS.cream;
   ctx.fillRect(0, groundY, GAME_CONFIG.CANVAS_WIDTH, 4);
+  
+  // Speed lines during TRAVEL
+  if (isTraveling) {
+    ctx.fillStyle = 'hsla(40, 50%, 80%, 0.4)';
+    for (let i = 0; i < 6; i++) {
+      const lineX = ((i * 70 + parallaxOffset2 * 4) % (GAME_CONFIG.CANVAS_WIDTH + 50)) - 25;
+      ctx.fillRect(lineX, groundY + 20 + (i * 12), 40, 2);
+    }
+  }
 }
 
-function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
+function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[], isTraveling: boolean = false) {
   const activeBlocks = blocks
     .filter(b => !b.destroyed)
     .slice()
@@ -143,20 +178,66 @@ function drawCart(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   const { CART_X, CART_WIDTH, BLOCK_HEIGHT } = GAME_CONFIG;
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   
-  // Draw wheels
+  // Draw wheels with rotation during TRAVEL
   const wheelY = groundY - 15;
   ctx.fillStyle = COLORS.espresso;
-  ctx.beginPath();
-  ctx.arc(CART_X + 20, wheelY, 15, 0, Math.PI * 2);
-  ctx.arc(CART_X + CART_WIDTH - 20, wheelY, 15, 0, Math.PI * 2);
-  ctx.fill();
   
-  // Draw wheel centers
-  ctx.fillStyle = COLORS.cream;
+  // Left wheel
+  ctx.save();
+  ctx.translate(CART_X + 20, wheelY);
+  ctx.rotate(isTraveling ? wheelRotation : 0);
   ctx.beginPath();
-  ctx.arc(CART_X + 20, wheelY, 5, 0, Math.PI * 2);
-  ctx.arc(CART_X + CART_WIDTH - 20, wheelY, 5, 0, Math.PI * 2);
+  ctx.arc(0, 0, 15, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+  
+  // Right wheel
+  ctx.save();
+  ctx.translate(CART_X + CART_WIDTH - 20, wheelY);
+  ctx.rotate(isTraveling ? wheelRotation : 0);
+  ctx.beginPath();
+  ctx.arc(0, 0, 15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  
+  // Draw wheel centers (spokes for rotation visibility)
+  ctx.fillStyle = COLORS.cream;
+  ctx.save();
+  ctx.translate(CART_X + 20, wheelY);
+  ctx.rotate(isTraveling ? wheelRotation : 0);
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.fill();
+  // Spoke lines for rotation visibility
+  if (isTraveling) {
+    ctx.strokeStyle = COLORS.cream;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-10, 0);
+    ctx.lineTo(10, 0);
+    ctx.moveTo(0, -10);
+    ctx.lineTo(0, 10);
+    ctx.stroke();
+  }
+  ctx.restore();
+  
+  ctx.save();
+  ctx.translate(CART_X + CART_WIDTH - 20, wheelY);
+  ctx.rotate(isTraveling ? wheelRotation : 0);
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.fill();
+  if (isTraveling) {
+    ctx.strokeStyle = COLORS.cream;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-10, 0);
+    ctx.lineTo(10, 0);
+    ctx.moveTo(0, -10);
+    ctx.lineTo(0, 10);
+    ctx.stroke();
+  }
+  ctx.restore();
   
   // Draw each active block
   // Chassis is 40% height, cargo boxes stack directly on top

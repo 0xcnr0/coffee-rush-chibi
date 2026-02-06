@@ -930,7 +930,9 @@ export const CoffeeRushGame: React.FC = () => {
           difficulty,
           screenShakeRef.current,
           bossStateRef.current,
-          bossIncomingRef.current
+          bossIncomingRef.current,
+          playPhaseRef.current,
+          deltaTime
         );
       }
       return; // Skip all sim updates
@@ -1532,7 +1534,9 @@ export const CoffeeRushGame: React.FC = () => {
       difficulty,
       screenShakeRef.current,
       bossStateRef.current,
-      bossIncomingRef.current
+      bossIncomingRef.current,
+      playPhaseRef.current,
+      deltaTime
     );
   }, [
     enemyPool, 
