@@ -38,12 +38,12 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   // SPAWNING
   // ─────────────────────────────────────────────────────────────
-  BASE_SPAWN_INTERVAL: 650,    // ms between spawns (v3: heavy post-warmup)
-  MIN_SPAWN_INTERVAL: 260,     // ms - floor to prevent overload
+  BASE_SPAWN_INTERVAL: 750,    // ms between spawns (Phase A.2: +15% for lighter pressure)
+  MIN_SPAWN_INTERVAL: 300,     // ms - floor to prevent overload (Phase A.2: +15%)
   
   // v3.2: Warmup period before first Rush
   EARLY_GAME_SECONDS: 18,      // warmup duration in seconds
-  EARLY_BASE_SPAWN_INTERVAL: 950, // ms - relaxed spawning during warmup
+  EARLY_BASE_SPAWN_INTERVAL: 1100, // ms - relaxed spawning during warmup (Phase A.2: +15%)
   
   // ─────────────────────────────────────────────────────────────
   // COMBAT (auto-attack)
@@ -75,7 +75,7 @@ export const GAME_CONFIG = {
   // MORNING RUSH (v3: real panic mode)
   // ─────────────────────────────────────────────────────────────
   RUSH_DURATION: 9,            // seconds (longer panic window)
-  RUSH_SPAWN_MULTIPLIER: 2.8,  // spawn rate multiplier during rush
+  RUSH_SPAWN_MULTIPLIER: 2.3,  // spawn rate multiplier during rush (Phase A.2: 2.8→2.3)
   RUSH_SPEED_MULTIPLIER: 1.25, // +25% enemy speed during rush (v3)
   
   // ─────────────────────────────────────────────────────────────
