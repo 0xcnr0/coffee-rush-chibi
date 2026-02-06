@@ -22,7 +22,7 @@ export const GAME_CONFIG = {
   CART_X: 70,                  // pixels from left edge (Phase 2C.8.2: moved right for HP tiles)
   CART_WIDTH: 75,              // pixels (v3.3: slightly smaller)
   BLOCK_HEIGHT: 45,            // pixels per block (v3.3: proportional)
-  BLOCK_MAX_HP: 330,           // HP per block (v3.2: +10% for single block survivability)
+  BLOCK_MAX_HP: 380,           // HP per block (Phase B: +15% for 0-upgrade survivability)
   BLOCK_COUNT: 1,              // number of stacked blocks (v3.1: start with 1)
   
   // ─────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export const GAME_CONFIG = {
   MIN_SPAWN_INTERVAL: 300,     // ms - floor to prevent overload (Phase A.2: +15%)
   
   // v3.2: Warmup period before first Rush
-  EARLY_GAME_SECONDS: 18,      // warmup duration in seconds
+  EARLY_GAME_SECONDS: 22,      // warmup duration in seconds (Phase B: extended for comfort)
   EARLY_BASE_SPAWN_INTERVAL: 1100, // ms - relaxed spawning during warmup (Phase A.2: +15%)
   
   // ─────────────────────────────────────────────────────────────
@@ -134,30 +134,30 @@ export const GAME_CONFIG = {
   // - Chapter boss clear requires ~Box L2 + (HP or Damage) L2
   // ─────────────────────────────────────────────────────────────
   UPGRADE_MAX_LEVEL: 3,            // max level for each upgrade (TDS-style)
-  UPGRADE_COST_SCALING: 1.65,      // cost multiplier per level (Phase A tuning: +0.10)
+  UPGRADE_COST_SCALING: 1.50,      // cost multiplier per level (Phase B: smoother progression)
   
   // Tower Reinforcement - increases BLOCK_MAX_HP
   // Meaningful: +30% per level (Lv3 = +90%)
   TOWER_HP_BONUS_PER_LEVEL: 0.30,  // +30% per level
-  TOWER_HP_BASE_COST: 150,         // beans (Phase A tuning: +50%)
+  TOWER_HP_BASE_COST: 80,          // beans (Phase B: first upgrade in ~2 runs)
   MAX_BLOCK_HP_MULTIPLIER: 2.0,    // cap for blockHpMultiplier
   
   // Espresso Mastery - increases PROJECTILE_DAMAGE
   // Meaningful: +25% per level (Lv3 = +75%)
   ESPRESSO_BONUS_PER_LEVEL: 0.25,  // +25% per level
-  ESPRESSO_BASE_COST: 150,         // beans (Phase A tuning: +50%)
+  ESPRESSO_BASE_COST: 80,          // beans (Phase B: first upgrade in ~2 runs)
   MAX_DAMAGE_MULTIPLIER: 1.80,     // cap for damageMultiplier
   
   // Caffeine Flow - increases POWER_REGEN_RATE
   // Noticeable: +22% per level (Lv3 = +66%)
   POWER_BONUS_PER_LEVEL: 0.22,     // +22% per level (was ENERGY_BONUS_PER_LEVEL)
-  POWER_BASE_COST: 120,            // beans (Phase A tuning: +50%)
+  POWER_BASE_COST: 70,             // beans (Phase B: cheapest for bomb spam)
   MAX_POWER_MULTIPLIER: 1.70,      // cap for powerRegenMultiplier
   // ─────────────────────────────────────────────────────────────
   // BLOCK PROGRESSION (Phase 1.7) - First recommended upgrade
   // ─────────────────────────────────────────────────────────────
   BLOCK_COUNT_MAX_LEVEL: 2,        // 0→1→2 (gives 1→2→3 blocks)
-  BLOCK_COUNT_BASE_COST: 150,      // beans (Phase A tuning: +50%)
+  BLOCK_COUNT_BASE_COST: 100,      // beans (Phase B: cargo box slightly pricier)
   
   // ─────────────────────────────────────────────────────────────
   // HEAVY ENEMY (Phase 2B-1: mini-boss style)
@@ -185,9 +185,9 @@ export const GAME_CONFIG = {
   TRAVEL_DESPAWN_DELAY: 0.5,       // seconds to fade-out remaining enemies during travel
   
   // Gate kill targets (Phase A tuning: 15-run boss clear target)
-  GATE_1_KILL_TARGET: 24,          // Phase A tuning: +4
-  GATE_2_KILL_TARGET: 34,          // Phase A tuning: +4
-  GATE_3_KILL_TARGET: 44,          // Phase A tuning: +4
+  GATE_1_KILL_TARGET: 18,          // Phase B: faster G1 clear
+  GATE_2_KILL_TARGET: 26,          // Phase B: more accessible G2
+  GATE_3_KILL_TARGET: 34,          // Phase B: challenge but not extreme
   
   // Pick overlay
   PICK_CARDS_OFFERED: 3,
