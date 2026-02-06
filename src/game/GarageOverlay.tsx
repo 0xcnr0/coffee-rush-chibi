@@ -562,7 +562,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
       <>
         <ShopScreen 
           onBack={() => setActiveTab('battle')} 
-          totalBeans={progression.totalBeans} 
+          totalCoins={progression.totalCoins} 
         />
         {/* Footer tabs remain visible */}
         <div className="absolute bottom-0 left-0 right-0 bg-coffee-dark/90 border-t border-coffee-medium/30 z-30">
@@ -642,7 +642,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
             
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
               <span className="text-sm">🪙</span>
-              <span className="text-gold font-bold text-xs">{progression.totalBeans}</span>
+              <span className="text-gold font-bold text-xs">{progression.totalCoins}</span>
             </div>
 
             <button
@@ -688,7 +688,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
             >
               <SmallHPTile
                 currentLevel={hpLevel}
-                beans={progression.totalBeans}
+                beans={progression.totalCoins}
                 onPurchase={() => handlePurchase(UPGRADES[0])}
                 baseCost={UPGRADES[0].baseCost}
               />
@@ -706,7 +706,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         >
           <CargoTile
             currentLevel={cargoLevel}
-            beans={progression.totalBeans}
+            beans={progression.totalCoins}
             onPurchase={() => handlePurchase(CARGO_UPGRADE)}
             baseCost={CARGO_UPGRADE.baseCost}
           />
@@ -738,7 +738,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
                 <WeaponUpgradeTile
                   weapon={selectedWeapon}
                   currentLevel={weaponSlot.level}
-                  beans={progression.totalBeans}
+                  beans={progression.totalCoins}
                   onUpgrade={() => handleUpgradeWeapon(slotIndex, Math.floor(selectedWeapon.upgradeCost * Math.pow(1.2, weaponSlot.level - 1)))}
                   locked={true}
                 />
@@ -748,7 +748,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
                   <WeaponSelectionTile
                     key={weapon.type}
                     weapon={weapon}
-                    beans={progression.totalBeans}
+                    beans={progression.totalCoins}
                     onSelect={() => handleSelectWeapon(slotIndex, weapon.type, weapon.baseCost)}
                     locked={true}
                   />
@@ -773,13 +773,13 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           <HorizontalUpgradeTile
             upgrade={UPGRADES[2]} // Power
             currentLevel={progression.upgradeLevels.energyRegenLevel ?? 0}
-            beans={progression.totalBeans}
+            beans={progression.totalCoins}
             onPurchase={() => handlePurchase(UPGRADES[2])}
           />
           <HorizontalUpgradeTile
             upgrade={UPGRADES[1]} // Espresso/Damage
             currentLevel={progression.upgradeLevels.espressoDamageLevel ?? 0}
-            beans={progression.totalBeans}
+            beans={progression.totalCoins}
             onPurchase={() => handlePurchase(UPGRADES[1])}
           />
         </div>

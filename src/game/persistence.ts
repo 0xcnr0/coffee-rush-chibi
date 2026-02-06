@@ -12,7 +12,7 @@ export interface ProgressionData {
   version: number;
   bestTimeSurvivedSeconds: number;
   bestCustomersServed: number;
-  totalBeans: number;
+  totalCoins: number;
   upgradeLevels: {
     towerHpLevel: number;
     espressoDamageLevel: number;
@@ -34,7 +34,7 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   version: SAVE_VERSION,
   bestTimeSurvivedSeconds: 0,
   bestCustomersServed: 0,
-  totalBeans: 0,
+  totalCoins: 0,
   upgradeLevels: {
     towerHpLevel: 0,
     espressoDamageLevel: 0,
@@ -58,6 +58,13 @@ export const loadProgression = (): ProgressionData => {
     if (!stored) return { ...DEFAULT_PROGRESSION };
     
     const parsed = JSON.parse(stored);
+    
+    // MIGRATION: beans → coins (backward compatibility for Sprint 0)
+    if (parsed.totalBeans !== undefined && parsed.totalCoins === undefined) {
+      console.info('[MIGRATION] Converting totalBeans → totalCoins');
+      parsed.totalCoins = parsed.totalBeans;
+      delete parsed.totalBeans;
+    }
     
     // Version check - reset if version mismatch (hard reset all players)
     if (!parsed.version || parsed.version !== SAVE_VERSION) {
@@ -96,23 +103,23 @@ export const updateBestRecords = (
   timeSurvived: number,
   customersServed: number,
   tipsEarned: number
-): { isNewTimeRecord: boolean; beansEarned: number } => {
+): { isNewTimeRecord: boolean; coinsEarned: number } => {
   const current = loadProgression();
   
   const isNewTimeRecord = timeSurvived > current.bestTimeSurvivedSeconds;
-  const beansEarned = tipsEarned; // 1 tip = 1 bean
+  const coinsEarned = tipsEarned; // 1 tip = 1 coin
   
   const updated: ProgressionData = {
     ...current,
     version: SAVE_VERSION,
     bestTimeSurvivedSeconds: Math.max(current.bestTimeSurvivedSeconds, timeSurvived),
     bestCustomersServed: Math.max(current.bestCustomersServed, customersServed),
-    totalBeans: current.totalBeans + beansEarned,
+    totalCoins: current.totalCoins + coinsEarned,
   };
   
   saveProgression(updated);
   
-  return { isNewTimeRecord, beansEarned };
+  return { isNewTimeRecord, coinsEarned };
 };
 
 export const purchaseUpgrade = (
@@ -121,10 +128,10 @@ export const purchaseUpgrade = (
 ): boolean => {
   const current = loadProgression();
   
-  if (current.totalBeans < cost) return false;
+  if (current.totalCoins < cost) return false;
   if (current.upgradeLevels[upgradeKey] >= 20) return false;
   
-  current.totalBeans -= cost;
+  current.totalCoins -= cost;
   current.upgradeLevels[upgradeKey] += 1;
   
   saveProgression(current);
@@ -144,11 +151,11 @@ export const getUpgradeMultiplier = (level: number, bonusPerLevel: number): numb
 export const updateChapterClear = (
   timeSurvived: number,
   tipsEarned: number
-): { beansEarned: number; isNewChapterRecord: boolean } => {
+): { coinsEarned: number; isNewChapterRecord: boolean } => {
   const current = loadProgression();
   
   const isNewChapterRecord = !current.chapter1Cleared || timeSurvived < current.bestChapter1Time;
-  const beansEarned = tipsEarned; // Base beans from tips (bonus added separately)
+  const coinsEarned = tipsEarned; // Base coins from tips (bonus added separately)
   
   const updated: ProgressionData = {
     ...current,
@@ -157,12 +164,12 @@ export const updateChapterClear = (
     bestChapter1Time: current.bestChapter1Time > 0 
       ? Math.min(current.bestChapter1Time, timeSurvived) 
       : timeSurvived,
-    totalBeans: current.totalBeans + beansEarned,
+    totalCoins: current.totalCoins + coinsEarned,
   };
   
   saveProgression(updated);
   
-  return { beansEarned, isNewChapterRecord };
+  return { coinsEarned, isNewChapterRecord };
 };
 
 // Phase 2B-2: Save last game mode preference
@@ -180,11 +187,11 @@ export const resetProgression = (): void => {
 export const selectWeapon = (slotIndex: number, weaponType: WeaponType, cost: number): boolean => {
   const current = loadProgression();
   
-  if (current.totalBeans < cost) return false;
+  if (current.totalCoins < cost) return false;
   if (slotIndex < 0 || slotIndex >= current.weaponSlots.length) return false;
   if (current.weaponSlots[slotIndex].weaponType !== null) return false; // Already has weapon
   
-  current.totalBeans -= cost;
+  current.totalCoins -= cost;
   current.weaponSlots[slotIndex] = { weaponType, level: 1 };
   
   saveProgression(current);
@@ -195,12 +202,12 @@ export const selectWeapon = (slotIndex: number, weaponType: WeaponType, cost: nu
 export const upgradeWeapon = (slotIndex: number, cost: number): boolean => {
   const current = loadProgression();
   
-  if (current.totalBeans < cost) return false;
+  if (current.totalCoins < cost) return false;
   if (slotIndex < 0 || slotIndex >= current.weaponSlots.length) return false;
   if (current.weaponSlots[slotIndex].weaponType === null) return false; // No weapon
   if (current.weaponSlots[slotIndex].level >= 5) return false; // Max level
   
-  current.totalBeans -= cost;
+  current.totalCoins -= cost;
   current.weaponSlots[slotIndex].level += 1;
   
   saveProgression(current);
@@ -328,4 +335,15 @@ export const addDebugEnergy = (amount: number = 10): number => {
   prog.energy += amount;
   saveProgression(prog);
   return prog.energy;
+};
+
+/**
+ * DEBUG ONLY: Add coins to the player's balance.
+ * For testing purposes.
+ */
+export const addDebugCoins = (amount: number = 200): number => {
+  const prog = loadProgression();
+  prog.totalCoins += amount;
+  saveProgression(prog);
+  return prog.totalCoins;
 };

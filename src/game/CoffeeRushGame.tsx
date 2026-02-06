@@ -94,7 +94,7 @@ export const CoffeeRushGame: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('MENU');
   const [gameMode, setGameMode] = useState<GameMode>('CHAPTER');
   const [isPaused, setIsPaused] = useState(false);
-  const [stats, setStats] = useState<GameStats>({ timeSurvived: 0, customersServed: 0, totalTips: 0, beansEarned: 0, isNewRecord: false });
+  const [stats, setStats] = useState<GameStats>({ timeSurvived: 0, customersServed: 0, totalTips: 0, coinsEarned: 0, isNewRecord: false });
   const [energy, setEnergy] = useState<number>(0); // Phase 1.6A: Start at 0 (TDS pacing)
   const [tips, setTips] = useState(0);
   const [timeSurvived, setTimeSurvived] = useState(0);
@@ -242,7 +242,7 @@ export const CoffeeRushGame: React.FC = () => {
   const damageMultiplierRef = useRef(1);
   const energyRegenMultiplierRef = useRef(1);
   const blockHpMultiplierRef = useRef(1); // Phase 2C: Track for telemetry
-  const beansStartRef = useRef(0); // Phase 2E: Track beans at run start for economy telemetry
+  const coinsStartRef = useRef(0); // Phase 2E: Track coins at run start for economy telemetry
 
   // Phase 2E: End-of-run idempotency guard (prevents double-award / triple-award bugs)
   const endHandledRef = useRef(false);
@@ -286,10 +286,10 @@ export const CoffeeRushGame: React.FC = () => {
     endHandledRef.current = false;
     endReasonRef.current = null;
 
-    // Phase 2E: Track beans at run start for economy telemetry
+    // Phase 2E: Track coins at run start for economy telemetry
     // CRITICAL: Capture BEFORE any run logic - this is the source of truth
-    beansStartRef.current = progression.totalBeans;
-    console.log(`[ECONOMY] Run start - beansStart: ${beansStartRef.current}`);
+    coinsStartRef.current = progression.totalCoins;
+    console.log(`[ECONOMY] Run start - coinsStart: ${coinsStartRef.current}`);
 
     // Calculate multipliers with caps (v3: prevent infinite runs)
     const blockHpMultiplier = Math.min(
@@ -444,14 +444,14 @@ export const CoffeeRushGame: React.FC = () => {
   
   // Phase 2C.6: Leave game - award tips but no bonuses/records
   const handleLeave = useCallback(() => {
-    const beansEarned = tipsRef.current;
+    const coinsEarned = tipsRef.current;
     
     // Award earned tips only (no chapter bonus, no record updates)
-    if (beansEarned > 0) {
+    if (coinsEarned > 0) {
       const current = loadProgression();
       saveProgression({
         ...current,
-        totalBeans: current.totalBeans + beansEarned,
+        totalCoins: current.totalCoins + coinsEarned,
       });
     }
     
@@ -514,19 +514,19 @@ export const CoffeeRushGame: React.FC = () => {
       bossAddsSpawned: t.bossAddsSpawned,
       enemiesSpawned: { ...t.enemiesSpawned },
       enemiesKilled: { ...t.enemiesKilled },
-      // Phase 2E: Economy telemetry (beansEnd will be updated after save)
-      beansStart: beansStartRef.current,
-      beansEnd: 0, // Updated after save
-      beansEarnedActual: 0, // Updated after save
+      // Phase 2E: Economy telemetry (coinsEnd will be updated after save)
+      coinsStart: coinsStartRef.current,
+      coinsEnd: 0, // Updated after save
+      coinsEarnedActual: 0, // Updated after save
       tipsFromServed,
-      bossRewardBeans: bossRewardDisplay, // Display only - already in tipsFromServed
-      clearBonusBeans: 0, // Updated in handleChapterClear
+      bossRewardCoins: bossRewardDisplay, // Display only - already in tipsFromServed
+      clearBonusCoins: 0, // Updated in handleChapterClear
       // Debug: detailed breakdown for validation
       servedCount: customersServedRef.current,
-      normalKillBeans: t.enemiesKilled.normal * GAME_CONFIG.TIP_VALUE,
-      heavyKillBeans: t.enemiesKilled.heavy * GAME_CONFIG.TIP_VALUE,
-      bossKillBeans: t.enemiesKilled.boss * GAME_CONFIG.TIP_VALUE * GAME_CONFIG.BOSS_TIP_MULTIPLIER,
-      beansTotalBreakdown: tipsFromServed, // clearBonus added in handleChapterClear
+      normalKillCoins: t.enemiesKilled.normal * GAME_CONFIG.TIP_VALUE,
+      heavyKillCoins: t.enemiesKilled.heavy * GAME_CONFIG.TIP_VALUE,
+      bossKillCoins: t.enemiesKilled.boss * GAME_CONFIG.TIP_VALUE * GAME_CONFIG.BOSS_TIP_MULTIPLIER,
+      coinsTotalBreakdown: tipsFromServed, // clearBonus added in handleChapterClear
       economyDelta: 0, // Calculated after save
       deltaExplanation: '', // Calculated after save
       // Phase 3A: Segment telemetry
@@ -554,18 +554,18 @@ export const CoffeeRushGame: React.FC = () => {
     // Immediately stop sim updates so no other end conditions can fire this frame
     isSimulationFrozenRef.current = true;
 
-    // Capture beansStart before any saves (in case initGame wasn't called properly)
-    const capturedBeansStart = beansStartRef.current;
-    console.log(`[ECONOMY] Chapter clear - beansStart captured: ${capturedBeansStart}, tips: ${tipsRef.current}`);
+    // Capture coinsStart before any saves (in case initGame wasn't called properly)
+    const capturedCoinsStart = coinsStartRef.current;
+    console.log(`[ECONOMY] Chapter clear - coinsStart captured: ${capturedCoinsStart}, tips: ${tipsRef.current}`);
 
-    // 1. Calculate beans to add (tips + clear bonus)
+    // 1. Calculate coins to add (tips + clear bonus)
     const tipsEarned = tipsRef.current;
-    const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS;
+    const clearBonus = GAME_CONFIG.CHAPTER_CLEAR_BONUS_COINS;
     const totalToAdd = tipsEarned + clearBonus;
     
     // 2. Load current and save ONCE with all earnings
     const current = loadProgression();
-    const newTotal = current.totalBeans + totalToAdd;
+    const newTotal = current.totalCoins + totalToAdd;
     
     // Update chapter records
     saveProgression({
@@ -574,33 +574,33 @@ export const CoffeeRushGame: React.FC = () => {
       bestChapter1Time: current.bestChapter1Time > 0 
         ? Math.min(current.bestChapter1Time, timeRef.current) 
         : timeRef.current,
-      totalBeans: newTotal,
+      totalCoins: newTotal,
     });
     
-    console.log(`[ECONOMY] Chapter clear - saved: ${current.totalBeans} + ${totalToAdd} = ${newTotal}`);
+    console.log(`[ECONOMY] Chapter clear - saved: ${current.totalCoins} + ${totalToAdd} = ${newTotal}`);
     
     // 3. Build telemetry with boss defeated
     const telemetry = buildTelemetry();
     telemetry.bossOutcome = 'defeated';
     telemetry.bossHpPercent = 0;
-    telemetry.clearBonusBeans = clearBonus;
-    telemetry.beansTotalBreakdown = tipsEarned + clearBonus;
+    telemetry.clearBonusCoins = clearBonus;
+    telemetry.coinsTotalBreakdown = tipsEarned + clearBonus;
     
-    // 4. Calculate actual beans earned (use captured start, not current ref)
-    telemetry.beansStart = capturedBeansStart;
-    telemetry.beansEnd = newTotal;
-    telemetry.beansEarnedActual = newTotal - capturedBeansStart;
-    telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
+    // 4. Calculate actual coins earned (use captured start, not current ref)
+    telemetry.coinsStart = capturedCoinsStart;
+    telemetry.coinsEnd = newTotal;
+    telemetry.coinsEarnedActual = newTotal - capturedCoinsStart;
+    telemetry.economyDelta = telemetry.coinsEarnedActual - telemetry.coinsTotalBreakdown;
     
     // Generate explanation if delta is non-zero
     if (Math.abs(telemetry.economyDelta) > 1) {
       const parts: string[] = [];
       parts.push(`EndReason:${endReasonRef.current ?? 'unknown'}`);
-      parts.push(`Start:${capturedBeansStart}`);
+      parts.push(`Start:${capturedCoinsStart}`);
       parts.push(`End:${newTotal}`);
       parts.push(`Tips:${tipsEarned}`);
       parts.push(`Clear:${clearBonus}`);
-      parts.push(`Breakdown:${telemetry.beansTotalBreakdown}`);
+      parts.push(`Breakdown:${telemetry.coinsTotalBreakdown}`);
       telemetry.deltaExplanation = parts.join(' | ') + ` → Δ=${telemetry.economyDelta} (BUG: check save logic)`;
       console.warn(`[ECONOMY WARNING] Delta too large: ${telemetry.economyDelta}`, telemetry.deltaExplanation);
     }
@@ -609,7 +609,7 @@ export const CoffeeRushGame: React.FC = () => {
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
       totalTips: tipsRef.current,
-      beansEarned: totalToAdd,
+      coinsEarned: totalToAdd,
       isNewRecord: false,
       isChapterClear: true,
       checkpointsCleared: GAME_CONFIG.CHAPTER1_BOSS_CHECKPOINT,
@@ -619,7 +619,7 @@ export const CoffeeRushGame: React.FC = () => {
   }, [buildTelemetry]);
   
   const handleGameOver = useCallback(() => {
-    // Phase 2E: Idempotent end guard (prevents duplicate saves / duplicate bean awards)
+    // Phase 2E: Idempotent end guard (prevents duplicate saves / duplicate coin awards)
     if (endHandledRef.current) {
       console.warn(`[END GUARD] handleGameOver ignored (already handled: ${endReasonRef.current})`);
       return;
@@ -630,14 +630,14 @@ export const CoffeeRushGame: React.FC = () => {
     // Immediately stop sim updates so no other end conditions can fire this frame
     isSimulationFrozenRef.current = true;
 
-    // Capture beansStart before any saves
-    const capturedBeansStart = beansStartRef.current;
+    // Capture coinsStart before any saves
+    const capturedCoinsStart = coinsStartRef.current;
     const tipsEarned = tipsRef.current;
-    console.log(`[ECONOMY] Game over - beansStart captured: ${capturedBeansStart}, tips: ${tipsEarned}`);
+    console.log(`[ECONOMY] Game over - coinsStart captured: ${capturedCoinsStart}, tips: ${tipsEarned}`);
 
     // Load current and save ONCE with tips
     const current = loadProgression();
-    const newTotal = current.totalBeans + tipsEarned;
+    const newTotal = current.totalCoins + tipsEarned;
     
     const isNewTimeRecord = timeRef.current > current.bestTimeSurvivedSeconds;
     
@@ -645,28 +645,28 @@ export const CoffeeRushGame: React.FC = () => {
       ...current,
       bestTimeSurvivedSeconds: Math.max(current.bestTimeSurvivedSeconds, timeRef.current),
       bestCustomersServed: Math.max(current.bestCustomersServed, customersServedRef.current),
-      totalBeans: newTotal,
+      totalCoins: newTotal,
     });
     
-    console.log(`[ECONOMY] Game over - saved: ${current.totalBeans} + ${tipsEarned} = ${newTotal}`);
+    console.log(`[ECONOMY] Game over - saved: ${current.totalCoins} + ${tipsEarned} = ${newTotal}`);
     
     // Build telemetry
     const telemetry = buildTelemetry();
     
-    // Calculate actual beans earned (use captured start)
-    telemetry.beansStart = capturedBeansStart;
-    telemetry.beansEnd = newTotal;
-    telemetry.beansEarnedActual = newTotal - capturedBeansStart;
-    telemetry.economyDelta = telemetry.beansEarnedActual - telemetry.beansTotalBreakdown;
+    // Calculate actual coins earned (use captured start)
+    telemetry.coinsStart = capturedCoinsStart;
+    telemetry.coinsEnd = newTotal;
+    telemetry.coinsEarnedActual = newTotal - capturedCoinsStart;
+    telemetry.economyDelta = telemetry.coinsEarnedActual - telemetry.coinsTotalBreakdown;
     
     // Generate explanation if delta is non-zero
     if (Math.abs(telemetry.economyDelta) > 1) {
       const parts: string[] = [];
       parts.push(`EndReason:${endReasonRef.current ?? 'unknown'}`);
-      parts.push(`Start:${capturedBeansStart}`);
+      parts.push(`Start:${capturedCoinsStart}`);
       parts.push(`End:${newTotal}`);
       parts.push(`Tips:${tipsEarned}`);
-      parts.push(`Breakdown:${telemetry.beansTotalBreakdown}`);
+      parts.push(`Breakdown:${telemetry.coinsTotalBreakdown}`);
       telemetry.deltaExplanation = parts.join(' | ') + ` → Δ=${telemetry.economyDelta} (BUG: check save logic)`;
       console.warn(`[ECONOMY WARNING] Delta too large: ${telemetry.economyDelta}`, telemetry.deltaExplanation);
     }
@@ -675,7 +675,7 @@ export const CoffeeRushGame: React.FC = () => {
       timeSurvived: timeRef.current,
       customersServed: customersServedRef.current,
       totalTips: tipsRef.current,
-      beansEarned: tipsEarned,
+      coinsEarned: tipsEarned,
       isNewRecord: isNewTimeRecord,
       telemetry,
     });

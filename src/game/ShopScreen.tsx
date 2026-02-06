@@ -3,7 +3,7 @@ import { Zap, Package, Sparkles, Lock } from 'lucide-react';
 
 interface ShopScreenProps {
   onBack: () => void;
-  totalBeans: number;
+  totalCoins: number;
 }
 
 interface ShopItem {
@@ -50,7 +50,7 @@ const SHOP_ITEMS: ShopItem[] = [
   },
 ];
 
-export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, totalBeans }) => {
+export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, totalCoins }) => {
   return (
     <div className="absolute inset-0 flex flex-col z-20 bg-coffee-espresso/95">
       {/* Header */}
@@ -58,7 +58,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, totalBeans }) =>
         <h1 className="text-xl font-bold text-coffee-cream">🛒 Shop</h1>
         <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-3 py-1.5">
           <span className="text-sm">🪙</span>
-          <span className="text-gold font-bold text-sm">{totalBeans}</span>
+          <span className="text-gold font-bold text-sm">{totalCoins}</span>
         </div>
       </div>
 
