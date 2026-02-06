@@ -82,14 +82,14 @@ export const GAME_CONFIG = {
   // TIPS & REWARDS (Phase 2E: Economy balancing)
   // ─────────────────────────────────────────────────────────────
   // ECONOMY TARGETS (documentation):
-  // - Early death (CP1, ~25-35s): 50-80 beans
-  // - CP2 reached: 120-170 beans
-  // - Boss reached but died: 180-240 beans
-  // - Boss defeated: 220-300 beans
+  // - Early death (CP1, ~25-35s): 50-80 coins
+  // - CP2 reached: 120-170 coins
+  // - Boss reached but died: 180-240 coins
+  // - Boss defeated: 220-300 coins
   // - Boss clear in ~6-10 runs, full max in ~12-18 runs
   // ─────────────────────────────────────────────────────────────
-  TIP_VALUE: 2,                // beans per tip (v5: Balanced-B)
-  BOSS_TIP_MULTIPLIER: 3,      // boss drops 3 tips × 2 beans = 6 beans
+  TIP_VALUE: 2,                // coins per tip (v5: Balanced-B)
+  BOSS_TIP_MULTIPLIER: 3,      // boss drops 3 tips × 2 coins = 6 coins
   TIP_FLOAT_SPEED: 80,         // pixels/second - float animation
   
   // ─────────────────────────────────────────────────────────────
@@ -139,25 +139,25 @@ export const GAME_CONFIG = {
   // Tower Reinforcement - increases BLOCK_MAX_HP
   // Meaningful: +30% per level (Lv3 = +90%)
   TOWER_HP_BONUS_PER_LEVEL: 0.30,  // +30% per level
-  TOWER_HP_BASE_COST: 80,          // beans (Phase B: first upgrade in ~2 runs)
+  TOWER_HP_BASE_COST: 80,          // coins (Phase B: first upgrade in ~2 runs)
   MAX_BLOCK_HP_MULTIPLIER: 2.0,    // cap for blockHpMultiplier
   
   // Espresso Mastery - increases PROJECTILE_DAMAGE
   // Meaningful: +25% per level (Lv3 = +75%)
   ESPRESSO_BONUS_PER_LEVEL: 0.25,  // +25% per level
-  ESPRESSO_BASE_COST: 80,          // beans (Phase B: first upgrade in ~2 runs)
+  ESPRESSO_BASE_COST: 80,          // coins (Phase B: first upgrade in ~2 runs)
   MAX_DAMAGE_MULTIPLIER: 1.80,     // cap for damageMultiplier
   
   // Caffeine Flow - increases POWER_REGEN_RATE
   // Noticeable: +22% per level (Lv3 = +66%)
   POWER_BONUS_PER_LEVEL: 0.22,     // +22% per level (was ENERGY_BONUS_PER_LEVEL)
-  POWER_BASE_COST: 70,             // beans (Phase B: cheapest for bomb spam)
+  POWER_BASE_COST: 70,             // coins (Phase B: cheapest for bomb spam)
   MAX_POWER_MULTIPLIER: 1.70,      // cap for powerRegenMultiplier
   // ─────────────────────────────────────────────────────────────
   // BLOCK PROGRESSION (Phase 1.7) - First recommended upgrade
   // ─────────────────────────────────────────────────────────────
   BLOCK_COUNT_MAX_LEVEL: 2,        // 0→1→2 (gives 1→2→3 blocks)
-  BLOCK_COUNT_BASE_COST: 100,      // beans (Phase B: cargo box slightly pricier)
+  BLOCK_COUNT_BASE_COST: 100,      // coins (Phase B: cargo box slightly pricier)
   
   // ─────────────────────────────────────────────────────────────
   // HEAVY ENEMY (Phase 2B-1: mini-boss style)
@@ -210,7 +210,7 @@ export const GAME_CONFIG = {
   BOSS_LATCH_SLOTS: 2,             // Counts as 2 latched slots
   BOSS_ADD_SPAWN_INTERVAL: 0,      // No add spawns during Chapter 1 boss (1v1 fight)
   BOSS_INCOMING_BANNER_DURATION: 1.5, // Seconds to show "BOSS INCOMING" banner
-  CHAPTER_CLEAR_BONUS_BEANS: 5,    // Bonus beans for clearing chapter (Phase A tuning: halved)
+  CHAPTER_CLEAR_BONUS_COINS: 5,    // Bonus coins for clearing chapter (Phase A tuning: halved)
 } as const;
 
 // Colors (HSL values matching index.css)

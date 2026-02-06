@@ -101,7 +101,7 @@ export interface GameStats {
   timeSurvived: number; // in seconds
   customersServed: number;
   totalTips: number;
-  beansEarned: number;
+  coinsEarned: number;
   isNewRecord: boolean;
   isChapterClear?: boolean; // Phase 2B-2: Chapter clear flag
   checkpointsCleared?: number; // Phase 2B-2
@@ -167,23 +167,23 @@ export interface RunTelemetry {
   enemiesKilled: { normal: number; heavy: number; boss: number };
   
   // Economy telemetry (Phase 2E: Anti-bug delta control)
-  beansStart: number;          // totalBeans at run start
-  beansEnd: number;            // totalBeans after save
-  beansEarnedActual: number;   // beansEnd - beansStart
+  coinsStart: number;          // totalCoins at run start
+  coinsEnd: number;            // totalCoins after save
+  coinsEarnedActual: number;   // coinsEnd - coinsStart
   
-  // Breakdown components (all in beans)
-  tipsFromServed: number;      // tipsRef.current (includes normal + heavy + boss tips) - already in beans
-  bossRewardBeans: number;     // DISPLAY ONLY: BOSS_TIP_MULTIPLIER × TIP_VALUE (already in tipsFromServed!)
-  clearBonusBeans: number;     // CHAPTER_CLEAR_BONUS_BEANS (0 if failed)
+  // Breakdown components (all in coins)
+  tipsFromServed: number;      // tipsRef.current (includes normal + heavy + boss tips) - already in coins
+  bossRewardCoins: number;     // DISPLAY ONLY: BOSS_TIP_MULTIPLIER × TIP_VALUE (already in tipsFromServed!)
+  clearBonusCoins: number;     // CHAPTER_CLEAR_BONUS_COINS (0 if failed)
   
   // Debug: detailed breakdown
   servedCount: number;         // customersServedRef.current for validation
-  normalKillBeans: number;     // enemiesKilled.normal × TIP_VALUE
-  heavyKillBeans: number;      // enemiesKilled.heavy × TIP_VALUE
-  bossKillBeans: number;       // enemiesKilled.boss × TIP_VALUE × BOSS_TIP_MULTIPLIER
+  normalKillCoins: number;     // enemiesKilled.normal × TIP_VALUE
+  heavyKillCoins: number;      // enemiesKilled.heavy × TIP_VALUE
+  bossKillCoins: number;       // enemiesKilled.boss × TIP_VALUE × BOSS_TIP_MULTIPLIER
   
   // Reconciliation
-  beansTotalBreakdown: number; // tipsFromServed + clearBonusBeans (boss already in tips)
+  coinsTotalBreakdown: number; // tipsFromServed + clearBonusCoins (boss already in tips)
   economyDelta: number;        // actual - breakdown (MUST be 0, any deviation is a bug)
   deltaExplanation: string;    // Human-readable explanation of delta source
 }

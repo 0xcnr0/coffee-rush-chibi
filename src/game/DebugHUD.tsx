@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GAME_CONFIG } from './config';
-import { loadProgression, saveProgression } from './persistence';
+import { loadProgression, saveProgression, addDebugCoins } from './persistence';
 import type { BossState, GameMode } from './types';
 
 interface DebugHUDProps {
@@ -68,11 +68,9 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
     : GAME_CONFIG.MAX_LATCHED_ENEMIES;
 
   // Dev tool handlers
-  const handleAddBeans = () => {
-    const prog = loadProgression();
-    prog.totalBeans += 200;
-    saveProgression(prog);
-    alert(`+200 beans! Total: ${prog.totalBeans}`);
+  const handleAddCoins = () => {
+    const newTotal = addDebugCoins(200);
+    alert(`+200 coins! Total: ${newTotal}`);
   };
   
   const handleSetUpgradePreset = (level: number) => {
@@ -207,10 +205,10 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
                 {showDevTools && (
                   <div className="space-y-2 border border-purple-500/50 rounded p-2 bg-purple-900/30">
                     <button
-                      onClick={handleAddBeans}
+                      onClick={handleAddCoins}
                       className="w-full py-1 px-2 rounded text-[10px] bg-gold text-coffee-espresso font-bold"
                     >
-                      💰 +200 Beans
+                      💰 +200 Coins
                     </button>
                     
                     <div className="text-[10px] text-purple-300">Set All Upgrades:</div>

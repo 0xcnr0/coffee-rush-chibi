@@ -110,16 +110,16 @@ export const EndScreen: React.FC<EndScreenProps> = ({
           </div>
         </div>
         
-        {/* Beans Earned (with bonus) */}
+        {/* Coins Earned (with bonus) */}
         <div className="bg-gold/30 border border-gold/50 rounded-xl p-3 w-full max-w-xs mb-3 animate-pop-in">
           <div className="flex items-center justify-center gap-3">
-            <span className="text-xl">🫘</span>
+            <span className="text-xl">🪙</span>
             <div className="text-center">
               <div className="text-xl font-bold text-gold">
-                +{stats.beansEarned}
+                +{stats.coinsEarned}
               </div>
               <div className="text-[10px] text-coffee-cream/70">
-                (Tips + {GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS} Clear Bonus)
+                (Tips + {GAME_CONFIG.CHAPTER_CLEAR_BONUS_COINS} Clear Bonus)
               </div>
             </div>
           </div>
@@ -254,11 +254,11 @@ export const EndScreen: React.FC<EndScreenProps> = ({
         </div>
         
         <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
-          <span className="text-lg block mb-1">🫘</span>
+          <span className="text-lg block mb-1">🪙</span>
           <div className="text-xl font-bold text-secondary">
-            +{stats.beansEarned}
+            +{stats.coinsEarned}
           </div>
-          <div className="text-xs text-coffee-light">Beans</div>
+          <div className="text-xs text-coffee-light">Coins</div>
         </div>
       </div>
       

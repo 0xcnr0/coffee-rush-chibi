@@ -30,14 +30,14 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
       bossHpPercent: telemetry.bossHpPercent,
       
       // Economy
-      beansStart: telemetry.beansStart,
-      beansEnd: telemetry.beansEnd,
-      beansActual: telemetry.beansEarnedActual,
-      beansBreakdown: telemetry.beansTotalBreakdown,
+      coinsStart: telemetry.coinsStart,
+      coinsEnd: telemetry.coinsEnd,
+      coinsActual: telemetry.coinsEarnedActual,
+      coinsBreakdown: telemetry.coinsTotalBreakdown,
       economyDelta: telemetry.economyDelta,
       tipsFromServed: telemetry.tipsFromServed,
-      bossReward: telemetry.bossRewardBeans,
-      clearBonus: telemetry.clearBonusBeans,
+      bossReward: telemetry.bossRewardCoins,
+      clearBonus: telemetry.clearBonusCoins,
       
       // Upgrades
       upgrades: telemetry.upgradeLevels,
@@ -88,7 +88,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
     const { upgradeLevels: u, effectiveMultipliers: m } = telemetry;
     const gateInfo = telemetry.gatesCleared !== undefined ? ` | Gates:${telemetry.gatesCleared}/3@${telemetry.phaseAtDeath || 'N/A'}` : '';
     const buffInfo = telemetry.runBuffsPicked?.length ? ` | Buffs:${telemetry.runBuffsPicked.join(',')}` : '';
-    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached}${gateInfo} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Beans:${telemetry.beansEarnedActual}(B:${telemetry.beansTotalBreakdown}/D:${telemetry.economyDelta}) | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Recovery:${telemetry.recoveryTimeTotal.toFixed(1)}s | BossAdds:${telemetry.bossAddsSpawned} | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}${buffInfo}`;
+    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached}${gateInfo} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Coins:${telemetry.coinsEarnedActual}(B:${telemetry.coinsTotalBreakdown}/D:${telemetry.economyDelta}) | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Recovery:${telemetry.recoveryTimeTotal.toFixed(1)}s | BossAdds:${telemetry.bossAddsSpawned} | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}${buffInfo}`;
   };
   
   const handleCopy = async (format: 'json' | 'compact') => {
@@ -145,32 +145,32 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             
             {/* Economy Section */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Economy</div>
-            <div className="col-span-2">Tips: <span className="text-gold">{telemetry.tipsFromServed}</span> beans</div>
+            <div className="col-span-2">Tips: <span className="text-gold">{telemetry.tipsFromServed}</span> coins</div>
             {/* Debug: Detailed breakdown */}
             <div className="col-span-2 text-[9px] text-coffee-light/50 pl-2 border-l border-coffee-light/20">
-              <div>Served: {telemetry.servedCount} | N:{telemetry.normalKillBeans} H:{telemetry.heavyKillBeans} B:{telemetry.bossKillBeans}</div>
-              <div>BossBonus(in tips): {telemetry.bossRewardBeans} | ClearBonus: {telemetry.clearBonusBeans}</div>
+              <div>Served: {telemetry.servedCount} | N:{telemetry.normalKillCoins} H:{telemetry.heavyKillCoins} B:{telemetry.bossKillCoins}</div>
+              <div>BossBonus(in tips): {telemetry.bossRewardCoins} | ClearBonus: {telemetry.clearBonusCoins}</div>
             </div>
-            {telemetry.bossRewardBeans > 0 && (
+            {telemetry.bossRewardCoins > 0 && (
               <div className="col-span-2 text-coffee-light/50 text-[10px]">
-                └ Boss reward: {telemetry.bossRewardBeans} <span className="text-coffee-light/40">(included)</span>
+                └ Boss reward: {telemetry.bossRewardCoins} <span className="text-coffee-light/40">(included)</span>
               </div>
             )}
-            {telemetry.clearBonusBeans > 0 && (
-              <div className="col-span-2">Clear Bonus: <span className="text-green-400">+{telemetry.clearBonusBeans}</span></div>
+            {telemetry.clearBonusCoins > 0 && (
+              <div className="col-span-2">Clear Bonus: <span className="text-green-400">+{telemetry.clearBonusCoins}</span></div>
             )}
             <div className="col-span-2 bg-coffee-medium/30 rounded px-2 py-1 mt-1">
               <div className="flex justify-between">
                 <span>Breakdown:</span>
-                <span className="text-gold font-bold">{telemetry.beansTotalBreakdown} beans</span>
+                <span className="text-gold font-bold">{telemetry.coinsTotalBreakdown} coins</span>
               </div>
               <div className="flex justify-between">
                 <span>Actual:</span>
-                <span className="text-gold font-bold">{telemetry.beansEarnedActual} beans</span>
+                <span className="text-gold font-bold">{telemetry.coinsEarnedActual} coins</span>
               </div>
               <div className="flex justify-between text-[9px] text-coffee-light/50">
                 <span>Start→End:</span>
-                <span>{telemetry.beansStart}→{telemetry.beansEnd}</span>
+                <span>{telemetry.coinsStart}→{telemetry.coinsEnd}</span>
               </div>
               <div className="flex justify-between">
                 <span>Delta:</span>
@@ -182,7 +182,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
                 <div className="text-[9px] text-red-300 mt-1 border-t border-coffee-light/20 pt-1">
                   <div className="font-bold">ECONOMY WARNING: delta too large</div>
                   <div>
-                    Start→End: {telemetry.beansStart}→{telemetry.beansEnd} | Tips:{telemetry.tipsFromServed} | Boss:{telemetry.bossRewardBeans} | Clear:{telemetry.clearBonusBeans} | B:{telemetry.beansTotalBreakdown} | A:{telemetry.beansEarnedActual}
+                    Start→End: {telemetry.coinsStart}→{telemetry.coinsEnd} | Tips:{telemetry.tipsFromServed} | Boss:{telemetry.bossRewardCoins} | Clear:{telemetry.clearBonusCoins} | B:{telemetry.coinsTotalBreakdown} | A:{telemetry.coinsEarnedActual}
                   </div>
                 </div>
               )}
@@ -249,7 +249,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             
             {/* Config Debug (small, muted) */}
             <div className="col-span-2 text-coffee-light/40 text-[9px] mt-2 text-center">
-              TIP={GAME_CONFIG.TIP_VALUE} | BOSS={GAME_CONFIG.BOSS_TIP_MULTIPLIER}x | BONUS={GAME_CONFIG.CHAPTER_CLEAR_BONUS_BEANS} | SCALE={GAME_CONFIG.UPGRADE_COST_SCALING}
+              TIP={GAME_CONFIG.TIP_VALUE} | BOSS={GAME_CONFIG.BOSS_TIP_MULTIPLIER}x | BONUS={GAME_CONFIG.CHAPTER_CLEAR_BONUS_COINS} | SCALE={GAME_CONFIG.UPGRADE_COST_SCALING}
             </div>
             {/* Phase A Tuning Debug */}
             <div className="col-span-2 text-cyan-400/50 text-[9px] mt-1 text-center border-t border-coffee-light/10 pt-1">
