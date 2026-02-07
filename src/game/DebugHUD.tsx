@@ -76,11 +76,11 @@ export const DebugHUD: React.FC<DebugHUDProps> = ({
   const handleSetUpgradePreset = (level: number) => {
     const prog = loadProgression();
     prog.upgradeLevels = {
-      towerHpLevel: Math.min(level, GAME_CONFIG.UPGRADE_MAX_LEVEL),
       espressoDamageLevel: Math.min(level, GAME_CONFIG.UPGRADE_MAX_LEVEL),
       energyRegenLevel: Math.min(level, GAME_CONFIG.UPGRADE_MAX_LEVEL),
       blockCountLevel: Math.min(level, GAME_CONFIG.BLOCK_COUNT_MAX_LEVEL),
     };
+    prog.cargoBoxHpLevels = prog.cargoBoxHpLevels.map(() => Math.min(level, GAME_CONFIG.UPGRADE_MAX_LEVEL));
     saveProgression(prog);
     alert(`Upgrades set to level ${level}. Restart game to apply.`);
   };

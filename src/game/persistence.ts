@@ -4,7 +4,7 @@
 import type { GameMode, WeaponType, WeaponSlot } from './types';
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 8; // Bump: Phase 4 Energy System
+const SAVE_VERSION = 9; // Bump: Independent cargo box HP
 
 import { GAME_CONFIG } from './config';
 
@@ -14,12 +14,13 @@ export interface ProgressionData {
   bestCustomersServed: number;
   totalCoins: number;
   upgradeLevels: {
-    towerHpLevel: number;
     espressoDamageLevel: number;
     energyRegenLevel: number;
-    blockCountLevel: number; // Phase 1.7: 0=1block, 1=2blocks, 2=3blocks
+    blockCountLevel: number;
   };
-  // Phase 2B-2: Chapter mode tracking
+  // Independent cargo box HP levels (one per possible cargo box, max 3)
+  cargoBoxHpLevels: number[];
+  // Chapter mode tracking
   chapter1Cleared: boolean;
   bestChapter1Time: number;
   lastGameMode: GameMode;
@@ -36,11 +37,11 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   bestCustomersServed: 0,
   totalCoins: 0,
   upgradeLevels: {
-    towerHpLevel: 0,
     espressoDamageLevel: 0,
     energyRegenLevel: 0,
     blockCountLevel: 0,
   },
+  cargoBoxHpLevels: [0, 0, 0],
   chapter1Cleared: false,
   bestChapter1Time: 0,
   lastGameMode: 'CHAPTER',
@@ -82,6 +83,7 @@ export const loadProgression = (): ProgressionData => {
         ...parsed.upgradeLevels,
       },
       weaponSlots: parsed.weaponSlots ?? DEFAULT_PROGRESSION.weaponSlots,
+      cargoBoxHpLevels: parsed.cargoBoxHpLevels ?? DEFAULT_PROGRESSION.cargoBoxHpLevels,
       energy: parsed.energy ?? DEFAULT_PROGRESSION.energy,
       regenAnchorTs: parsed.regenAnchorTs ?? DEFAULT_PROGRESSION.regenAnchorTs,
     };
@@ -133,6 +135,21 @@ export const purchaseUpgrade = (
   
   current.totalCoins -= cost;
   current.upgradeLevels[upgradeKey] += 1;
+  
+  saveProgression(current);
+  return true;
+};
+
+// Purchase HP upgrade for a specific cargo box
+export const purchaseCargoBoxHp = (boxIndex: number, cost: number): boolean => {
+  const current = loadProgression();
+  
+  if (current.totalCoins < cost) return false;
+  if (boxIndex < 0 || boxIndex >= current.cargoBoxHpLevels.length) return false;
+  if (current.cargoBoxHpLevels[boxIndex] >= GAME_CONFIG.UPGRADE_MAX_LEVEL) return false;
+  
+  current.totalCoins -= cost;
+  current.cargoBoxHpLevels[boxIndex] += 1;
   
   saveProgression(current);
   return true;

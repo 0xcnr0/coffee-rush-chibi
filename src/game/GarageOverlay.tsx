@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchaseUpgrade, getUpgradeCost, setLastGameMode, resetProgression, selectWeapon, upgradeWeapon, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy } from './persistence';
+import { loadProgression, purchaseUpgrade, purchaseCargoBoxHp, getUpgradeCost, setLastGameMode, resetProgression, selectWeapon, upgradeWeapon, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy } from './persistence';
 import { GAME_CONFIG } from './config';
 import { toast } from 'sonner';
 import type { UpgradeInfo, GameMode, WeaponType, WeaponInfo } from './types';
@@ -16,12 +16,12 @@ interface GarageOverlayProps {
 // Upgrade definitions
 const UPGRADES: UpgradeInfo[] = [
   {
-    key: 'towerHpLevel',
-    name: 'HP',
-    description: 'Increases cart durability',
-    icon: 'shield',
-    bonusPerLevel: GAME_CONFIG.TOWER_HP_BONUS_PER_LEVEL,
-    baseCost: GAME_CONFIG.TOWER_HP_BASE_COST,
+    key: 'espressoDamageLevel',
+    name: 'Espresso',
+    description: 'Shot damage',
+    icon: 'coffee',
+    bonusPerLevel: GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL,
+    baseCost: GAME_CONFIG.ESPRESSO_BASE_COST,
   },
   {
     key: 'espressoDamageLevel',
@@ -452,6 +452,16 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
     }
   };
 
+  const handleCargoBoxHpUpgrade = (cargoIndex: number) => {
+    const level = cargoBoxHpLevels[cargoIndex] ?? 0;
+    if (level >= GAME_CONFIG.UPGRADE_MAX_LEVEL) return;
+    const cost = getUpgradeCost(level, GAME_CONFIG.TOWER_HP_BASE_COST);
+    if (purchaseCargoBoxHp(cargoIndex, cost)) {
+      setProgression(loadProgression());
+      onProgressionChange?.();
+    }
+  };
+
   const handlePlay = () => {
     // Try to consume energy
     const result = consumeEnergy();
@@ -552,7 +562,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   const cartRightEdge = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
 
   // Upgrade states
-  const hpLevel = progression.upgradeLevels.towerHpLevel ?? 0;
+  const cargoBoxHpLevels = progression.cargoBoxHpLevels ?? [0, 0, 0];
   const cargoLevel = progression.upgradeLevels.blockCountLevel ?? 0;
   const cargoMaxed = cargoLevel >= GAME_CONFIG.BLOCK_COUNT_MAX_LEVEL;
 
@@ -687,10 +697,10 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
               }}
             >
               <SmallHPTile
-                currentLevel={hpLevel}
+                currentLevel={cargoBoxHpLevels[i] ?? 0}
                 beans={progression.totalCoins}
-                onPurchase={() => handlePurchase(UPGRADES[0])}
-                baseCost={UPGRADES[0].baseCost}
+                onPurchase={() => handleCargoBoxHpUpgrade(i)}
+                baseCost={GAME_CONFIG.TOWER_HP_BASE_COST}
               />
             </div>
           );
@@ -771,16 +781,16 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         {/* Row 3: Power + Damage (horizontal tiles) */}
         <div className="flex gap-2">
           <HorizontalUpgradeTile
-            upgrade={UPGRADES[2]} // Power
+            upgrade={UPGRADES[1]} // Power
             currentLevel={progression.upgradeLevels.energyRegenLevel ?? 0}
             beans={progression.totalCoins}
-            onPurchase={() => handlePurchase(UPGRADES[2])}
+            onPurchase={() => handlePurchase(UPGRADES[1])}
           />
           <HorizontalUpgradeTile
-            upgrade={UPGRADES[1]} // Espresso/Damage
+            upgrade={UPGRADES[0]} // Espresso/Damage
             currentLevel={progression.upgradeLevels.espressoDamageLevel ?? 0}
             beans={progression.totalCoins}
-            onPurchase={() => handlePurchase(UPGRADES[1])}
+            onPurchase={() => handlePurchase(UPGRADES[0])}
           />
         </div>
         
