@@ -291,11 +291,8 @@ export const CoffeeRushGame: React.FC = () => {
     coinsStartRef.current = progression.totalCoins;
     console.log(`[ECONOMY] Run start - coinsStart: ${coinsStartRef.current}`);
 
-    // Calculate multipliers with caps (v3: prevent infinite runs)
-    const blockHpMultiplier = Math.min(
-      getUpgradeMultiplier(upgradeLevels.towerHpLevel, GAME_CONFIG.TOWER_HP_BONUS_PER_LEVEL),
-      GAME_CONFIG.MAX_BLOCK_HP_MULTIPLIER
-    );
+    // Per-box HP: each cargo box uses its own cargoBoxHpLevels[i]
+    // Chassis (index 0) gets base HP, no upgrade
     const damageMultiplier = Math.min(
       getUpgradeMultiplier(upgradeLevels.espressoDamageLevel, GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL),
       GAME_CONFIG.MAX_DAMAGE_MULTIPLIER
@@ -305,33 +302,46 @@ export const CoffeeRushGame: React.FC = () => {
       GAME_CONFIG.MAX_POWER_MULTIPLIER
     );
     
-    // Apply multipliers to effective values (stored in refs)
-    const effectiveBlockHp = Math.floor(GAME_CONFIG.BLOCK_MAX_HP * blockHpMultiplier);
-    effectiveBlockHpRef.current = effectiveBlockHp; // Store for debug
-    
     // Phase 1.7: Calculate block count from upgrade level
-    const blockCount = 1 + (upgradeLevels.blockCountLevel ?? 0); // 1, 2, or 3
+    const blockCount = 1 + (upgradeLevels.blockCountLevel ?? 0);
     
-    // Reset blocks with upgraded HP
+    // Reset blocks with per-box HP upgrades
     const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
-    blocksRef.current = Array.from({ length: blockCount }, (_, i) => ({
-      id: i,
-      hp: effectiveBlockHp,
-      maxHp: effectiveBlockHp,
-      y: groundY - 30 - (i + 1) * GAME_CONFIG.BLOCK_HEIGHT,
-      height: GAME_CONFIG.BLOCK_HEIGHT,
-      destroyed: false,
-    }));
+    const baseHp: number = GAME_CONFIG.BLOCK_MAX_HP;
+    blocksRef.current = Array.from({ length: blockCount }, (_, i) => {
+      // Chassis (i=0) gets base HP, cargo boxes get individual upgrades
+      let blockHp: number = baseHp;
+      if (i > 0) {
+        const cargoIndex = i - 1;
+        const hpLevel = progression.cargoBoxHpLevels?.[cargoIndex] ?? 0;
+        const multiplier = Math.min(
+          getUpgradeMultiplier(hpLevel, GAME_CONFIG.TOWER_HP_BONUS_PER_LEVEL),
+          GAME_CONFIG.MAX_BLOCK_HP_MULTIPLIER
+        );
+        blockHp = Math.floor(baseHp * multiplier);
+      }
+      return {
+        id: i,
+        hp: blockHp,
+        maxHp: blockHp,
+        y: groundY - 30 - (i + 1) * GAME_CONFIG.BLOCK_HEIGHT,
+        height: GAME_CONFIG.BLOCK_HEIGHT,
+        destroyed: false,
+      };
+    });
+    
+    // Store effective HP for debug (use chassis HP as reference)
+    effectiveBlockHpRef.current = GAME_CONFIG.BLOCK_MAX_HP;
     
     // Store multipliers for use in game loop
     damageMultiplierRef.current = damageMultiplier;
     energyRegenMultiplierRef.current = energyRegenMultiplier;
-    blockHpMultiplierRef.current = blockHpMultiplier; // Phase 2C: Store for telemetry
+    blockHpMultiplierRef.current = 1; // No longer global; per-box
     
     // Phase 2C: Store upgrade levels for telemetry
     telemetryRef.current.upgradeLevels = {
       blockCountLevel: upgradeLevels.blockCountLevel ?? 0,
-      towerHpLevel: upgradeLevels.towerHpLevel,
+      towerHpLevel: 0, // Legacy field for telemetry compat
       espressoDamageLevel: upgradeLevels.espressoDamageLevel,
       energyRegenLevel: upgradeLevels.energyRegenLevel,
     };

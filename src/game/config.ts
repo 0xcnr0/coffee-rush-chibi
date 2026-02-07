@@ -22,7 +22,7 @@ export const GAME_CONFIG = {
   CART_X: 70,                  // pixels from left edge (Phase 2C.8.2: moved right for HP tiles)
   CART_WIDTH: 75,              // pixels (v3.3: slightly smaller)
   BLOCK_HEIGHT: 45,            // pixels per block (v3.3: proportional)
-  BLOCK_MAX_HP: 380,           // HP per block (Phase B: +15% for 0-upgrade survivability)
+  BLOCK_MAX_HP: 220,           // HP per block (Balance Overhaul: mid-range for Run 1 ~25-30s)
   BLOCK_COUNT: 1,              // number of stacked blocks (v3.1: start with 1)
   
   // ─────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export const GAME_CONFIG = {
   MIN_SPAWN_INTERVAL: 300,     // ms - floor to prevent overload (Phase A.2: +15%)
   
   // v3.2: Warmup period before first Rush
-  EARLY_GAME_SECONDS: 22,      // warmup duration in seconds (Phase B: extended for comfort)
+  EARLY_GAME_SECONDS: 15,      // warmup duration in seconds (Balance Overhaul: rush arrives sooner)
   EARLY_BASE_SPAWN_INTERVAL: 1100, // ms - relaxed spawning during warmup (Phase A.2: +15%)
   
   // ─────────────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ export const GAME_CONFIG = {
   MAX_LATCHED_ENEMIES: 5,        // normal max attackers at cart
   RUSH_LATCHED_BONUS: 2,         // extra slots during Rush (total 7)
   LATCHED_TICK_INTERVAL: 0.5,    // seconds between damage ticks
-  LATCHED_TICK_DAMAGE: 4,        // damage per tick (stacks with multiple)
+  LATCHED_TICK_DAMAGE: 5,        // damage per tick (Balance Overhaul: slightly more pressure)
   LATCHED_QUEUE_SPACING: 12,     // pixels between queued enemies (v3.3: clearer queue)
   
   // ─────────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ export const GAME_CONFIG = {
   // - Chapter boss clear requires ~Box L2 + (HP or Damage) L2
   // ─────────────────────────────────────────────────────────────
   UPGRADE_MAX_LEVEL: 3,            // max level for each upgrade (TDS-style)
-  UPGRADE_COST_SCALING: 1.50,      // cost multiplier per level (Phase B: smoother progression)
+  UPGRADE_COST_SCALING: 1.65,      // cost multiplier per level (Balance Overhaul: requires grinding)
   
   // Tower Reinforcement - increases BLOCK_MAX_HP
   // Meaningful: +30% per level (Lv3 = +90%)
@@ -156,8 +156,8 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   // BLOCK PROGRESSION (Phase 1.7) - First recommended upgrade
   // ─────────────────────────────────────────────────────────────
-  BLOCK_COUNT_MAX_LEVEL: 2,        // 0→1→2 (gives 1→2→3 blocks)
-  BLOCK_COUNT_BASE_COST: 100,      // coins (Phase B: cargo box slightly pricier)
+  BLOCK_COUNT_MAX_LEVEL: 3,        // 0→1→2→3 (gives 1→2→3→4 blocks, Balance Overhaul)
+  BLOCK_COUNT_BASE_COST: 30,       // coins (Balance Overhaul: affordable after Run 1)
   
   // ─────────────────────────────────────────────────────────────
   // HEAVY ENEMY (Phase 2B-1: mini-boss style)
@@ -185,9 +185,9 @@ export const GAME_CONFIG = {
   TRAVEL_DESPAWN_DELAY: 0.5,       // seconds to fade-out remaining enemies during travel
   
   // Gate kill targets (Phase A tuning: 15-run boss clear target)
-  GATE_1_KILL_TARGET: 18,          // Phase B: faster G1 clear
-  GATE_2_KILL_TARGET: 26,          // Phase B: more accessible G2
-  GATE_3_KILL_TARGET: 34,          // Phase B: challenge but not extreme
+  GATE_1_KILL_TARGET: 14,          // Balance Overhaul: shorter gate
+  GATE_2_KILL_TARGET: 22,          // Balance Overhaul: reachable with upgrades
+  GATE_3_KILL_TARGET: 30,          // Balance Overhaul: reachable with more upgrades
   
   // Pick overlay
   PICK_CARDS_OFFERED: 3,
@@ -203,7 +203,7 @@ export const GAME_CONFIG = {
   ] as const,
   
   // Boss stats
-  BOSS_HP: 990,                    // High HP pool (Phase A tuning: -10% for faster kill @ run 11-12)
+  BOSS_HP: 750,                    // Balance Overhaul: proportional to lower player HP
   BOSS_SPEED_MULT: 0.6,            // 60% of normal speed
   BOSS_SIZE_MULT: 1.4,             // 40% larger than normal
   BOSS_TICK_DAMAGE_MULT: 3.0,      // 3x latched tick damage

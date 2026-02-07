@@ -208,7 +208,7 @@ export interface BossState {
 }
 
 export interface UpgradeInfo {
-  key: 'towerHpLevel' | 'espressoDamageLevel' | 'energyRegenLevel' | 'blockCountLevel';
+  key: 'espressoDamageLevel' | 'energyRegenLevel' | 'blockCountLevel';
   name: string;
   description: string;
   icon: string;
