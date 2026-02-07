@@ -22,7 +22,7 @@ export const GAME_CONFIG = {
   CART_X: 70,                  // pixels from left edge (Phase 2C.8.2: moved right for HP tiles)
   CART_WIDTH: 75,              // pixels (v3.3: slightly smaller)
   BLOCK_HEIGHT: 45,            // pixels per block (v3.3: proportional)
-  BLOCK_MAX_HP: 220,           // HP per block (Balance Overhaul: mid-range for Run 1 ~25-30s)
+  BLOCK_MAX_HP: 180,           // HP per block (Balance v2: shorten Run 1 to ~30-35s)
   BLOCK_COUNT: 1,              // number of stacked blocks (v3.1: start with 1)
   
   // ─────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ export const GAME_CONFIG = {
   AUTO_ATTACK_INTERVAL: 520,   // ms between espresso shots (v3: ~10% faster)
   PROJECTILE_SPEED: 420,       // pixels/second (+40% from 300)
   PROJECTILE_DAMAGE: 12,       // damage per hit
-  PROJECTILE_RADIUS: 8,        // pixels - hitbox radius
+  PROJECTILE_RADIUS: 12,       // pixels - hitbox radius (v2: wider for tall cart angles)
   
   // ─────────────────────────────────────────────────────────────
   // SKILL: Tonic Bomb + Power System (TDS-style)
@@ -203,7 +203,7 @@ export const GAME_CONFIG = {
   ] as const,
   
   // Boss stats
-  BOSS_HP: 750,                    // Balance Overhaul: proportional to lower player HP
+  BOSS_HP: 550,                    // Balance v2: defeatable in 3-4 attempts with upgrades
   BOSS_SPEED_MULT: 0.6,            // 60% of normal speed
   BOSS_SIZE_MULT: 1.4,             // 40% larger than normal
   BOSS_TICK_DAMAGE_MULT: 3.0,      // 3x latched tick damage
