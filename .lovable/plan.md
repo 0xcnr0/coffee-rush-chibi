@@ -1,203 +1,85 @@
 
-# Sprint 0: Beans to Coins Full Rename + Polish
 
-## Ozet
+# Chapter 1 Balance Overhaul + Independent Box HP
 
-Bu sprint, tum projedeki "beans" terminolojisini "coins" olarak degistirecek ve localStorage backward compatibility saglayacak. Ayrica config yorumlarindaki "beans" referanslarini guncelleyecek.
+## Two Changes
 
-## Etkilenen Dosyalar (9 dosya)
+1. Each cargo box gets its own HP upgrade button (max 3 cargo boxes)
+2. Rebalance Chapter 1 progression curve
 
-| Dosya | Degisiklik Tipi |
-|-------|-----------------|
-| `src/game/persistence.ts` | Interface, variable names, migration function |
-| `src/game/types.ts` | Interface field names |
-| `src/game/config.ts` | Constant name + comment strings |
-| `src/game/CoffeeRushGame.tsx` | Variable refs, telemetry fields |
-| `src/game/EndScreen.tsx` | UI labels |
-| `src/game/RunSummary.tsx` | UI labels, telemetry fields |
-| `src/game/GarageOverlay.tsx` | Variable name (beans -> coins) |
-| `src/game/DebugHUD.tsx` | Debug tool labels |
-| `src/game/ShopScreen.tsx` | UI labels (totalBeans -> totalCoins) |
+---
 
-## Detayli Degisiklikler
+## Part A: Independent Cargo Box HP
 
-### 1. persistence.ts (Ana dosya)
+**Data model (persistence.ts):**
+- Remove `upgradeLevels.towerHpLevel`
+- Add `cargoBoxHpLevels: [0, 0, 0]` (one level per possible cargo box)
+- Save version 8 -> 9
+- Migration: old `towerHpLevel` value applied to all existing boxes
+- New `purchaseCargoBoxHp(boxIndex, cost)` function
 
-**Interface degisiklikleri:**
-```text
-totalBeans → totalCoins
-```
+**Garage UI (GarageOverlay.tsx):**
+- Each cargo box gets its own SmallHPTile reading `cargoBoxHpLevels[i]`
+- Remove "HP" from bottom horizontal upgrade row (keep Power + Damage)
 
-**Fonksiyon return type degisiklikleri:**
-```text
-beansEarned → coinsEarned (updateBestRecords, updateChapterClear)
-```
+**Game init (CoffeeRushGame.tsx):**
+- Each block gets HP = `BLOCK_MAX_HP * (1 + 0.30 * cargoBoxHpLevels[i])`
+- Chassis (index 0) stays at base HP, no upgrade
 
-**Migration fonksiyonu ekleme:**
-```typescript
-// loadProgression icinde eski save'leri migrate et:
-// Eger parsed.totalBeans varsa ve parsed.totalCoins yoksa:
-// parsed.totalCoins = parsed.totalBeans
-// delete parsed.totalBeans
-```
+---
 
-**Tum fonksiyonlardaki variable name degisiklikleri:**
-- `current.totalBeans` → `current.totalCoins`
-- `beansEarned` → `coinsEarned`
+## Part B: Balance Tuning
 
-### 2. types.ts
+**Approach:** Two levers together (lower HP + earlier pressure), not one extreme.
 
-**GameStats interface:**
-```text
-beansEarned: number → coinsEarned: number
-```
+| Parameter | Current | New | Rationale |
+|-----------|---------|-----|-----------|
+| BLOCK_MAX_HP | 380 | 220 | Mid-range: not fragile, not tanky. Run 1 dies from combo of HP + rush |
+| EARLY_GAME_SECONDS | 22 | 15 | Rush arrives sooner |
+| LATCHED_TICK_DAMAGE | 4 | 5 | Slightly more pressure per latched enemy |
+| BLOCK_COUNT_MAX_LEVEL | 2 | 3 | Max 3 cargo boxes (1 chassis + 3 cargo = 4 blocks) |
+| BLOCK_COUNT_BASE_COST | 100 | 30 | Affordable after Run 1 |
+| UPGRADE_COST_SCALING | 1.50 | 1.65 | Requires grinding for later upgrades |
+| GATE_1_KILL_TARGET | 18 | 14 | Shorter gate |
+| GATE_2_KILL_TARGET | 26 | 22 | Reachable with upgrades |
+| GATE_3_KILL_TARGET | 34 | 30 | Reachable with more upgrades |
+| BOSS_HP | 990 | 750 | Proportional to lower player HP |
 
-**RunTelemetry interface:**
-```text
-beansStart → coinsStart
-beansEnd → coinsEnd
-beansEarnedActual → coinsEarnedActual
-bossRewardBeans → bossRewardCoins
-clearBonusBeans → clearBonusCoins
-normalKillBeans → normalKillCoins
-heavyKillBeans → heavyKillCoins
-bossKillBeans → bossKillCoins
-beansTotalBreakdown → coinsTotalBreakdown
-```
+**Not touching:** TIP_VALUE, spawn intervals, rush multipliers, enemy speed, power costs, boss damage.
 
-### 3. config.ts
+**Run 1 math (0 upgrades, 1 block, 220 HP):**
+- 0-15s: warmup, light spawns, 2-3 latched
+- 15s: rush starts, 5 latched within seconds
+- DPS at 5 latched: 5 x 5 / 0.5 = 50 DPS
+- 220 HP / 50 = ~4.4s at full latch
+- Total survival: ~25-30s
+- Kills ~12-15 enemies = 24-30 coins -> can buy cargo box (30 coins)
 
-**Constant rename:**
-```text
-CHAPTER_CLEAR_BONUS_BEANS → CHAPTER_CLEAR_BONUS_COINS
-```
+**Run 2 (1 cargo box, 2 blocks = 440 HP):**
+- Survives first rush, clears G1 (14 kills)
+- Dies during G2
 
-**Comment string degisiklikleri (8 satir):**
-- "beans per tip" → "coins per tip"
-- "50-80 beans" → "50-80 coins"
-- vb.
+**Later runs:** gradual progress through G2, G3, boss with upgrades.
 
-### 4. CoffeeRushGame.tsx
+---
 
-Bu dosyada telemetry objesi olusturuluyor. Tum field isimleri guncellenecek:
-- `beansStart` → `coinsStart`
-- `beansEnd` → `coinsEnd`
-- `beansEarnedActual` → `coinsEarnedActual`
-- `beansTotalBreakdown` → `coinsTotalBreakdown`
-- `bossRewardBeans` → `bossRewardCoins`
-- `clearBonusBeans` → `clearBonusCoins`
-- `normalKillBeans` → `normalKillCoins`
-- `heavyKillBeans` → `heavyKillCoins`
-- `bossKillBeans` → `bossKillCoins`
-- `beansEarned` → `coinsEarned` (stats objesi)
+## Files Changed
 
-### 5. EndScreen.tsx
-
-**UI label degisiklikleri:**
-- `+{stats.beansEarned}` → `+{stats.coinsEarned}`
-- "Beans" label → "Coins"
-- Bean emoji yerine coin emoji (zaten 🫘 var, 🪙 yapilabilir)
-
-### 6. RunSummary.tsx
-
-**Telemetry field degisiklikleri:**
-- `telemetry.beansStart` → `telemetry.coinsStart`
-- `telemetry.beansEnd` → `telemetry.coinsEnd`
-- vb.
-
-**UI string degisiklikleri:**
-- "beans" → "coins" (tum label'lar)
-- Compact summary string'de `Beans:` → `Coins:`
-
-### 7. GarageOverlay.tsx
-
-**Variable name:**
-- `beans` parameter name'leri `coins` olabilir ama component prop olarak gecirildigi icin internal variable ismi degistirmek opsiyonel. Progression'dan gelen `totalBeans` → `totalCoins` olacak.
-
-### 8. DebugHUD.tsx
-
-**Dev tool degisiklikleri:**
-- `handleAddBeans` → `handleAddCoins`
-- `prog.totalBeans` → `prog.totalCoins`
-- Alert message: "beans" → "coins"
-
-### 9. ShopScreen.tsx
-
-**Props interface:**
-- `totalBeans` → `totalCoins`
-
-## Migration Stratejisi
-
-```typescript
-// persistence.ts icinde loadProgression fonksiyonuna eklenecek:
-export const loadProgression = (): ProgressionData => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return { ...DEFAULT_PROGRESSION };
-    
-    const parsed = JSON.parse(stored);
-    
-    // MIGRATION: beans → coins (backward compatibility)
-    if (parsed.totalBeans !== undefined && parsed.totalCoins === undefined) {
-      parsed.totalCoins = parsed.totalBeans;
-      delete parsed.totalBeans;
-    }
-    
-    // Version check...
-    // ...rest of function
-  }
-}
-```
-
-Bu migration sayesinde:
-- Eski save'ler otomatik olarak coins'e donusur
-- Yeni save'ler direkt coins kullanir
-- Version bump gerekmez (soft migration)
-
-## Degistirilmeyecek Seyler
-
-- Travel badge zaten onceki sprint'te kaldirildi
-- Gate3 → PICK → BOSS flow zaten implement edilmis (currentGateIndex >= 3 kontrolu mevcut)
-- Storage key (`coffee-rush-progress`) degismeyecek
-- Save version (8) degismeyecek (soft migration)
-
-## Icon Tercihi
-
-| Eski | Yeni |
+| File | What |
 |------|------|
-| 🫘 (bean) | 🪙 (coin) |
+| persistence.ts | cargoBoxHpLevels, migration, purchaseCargoBoxHp(), version 9 |
+| config.ts | 10 parameter changes |
+| GarageOverlay.tsx | Per-box HP tiles, remove global HP from bottom row |
+| CoffeeRushGame.tsx | initGame per-box HP multiplier |
 
-Tum UI'da bean emoji yerine coin emoji kullanilacak.
+---
 
-## Acceptance Criteria
+## After Implementation
 
-1. Oyun icinde hicbir yerde "bean/beans" kelimesi gormeyeceksin (hem UI hem code yorumlari)
-2. Eski progression sifirlanmayacak - eski beans bakiyesi coins olarak tasiyacak
-3. Telemetry compact string'de "Coins:" yazacak
-4. EndScreen'de "+X Coins" yazacak
-5. Emoji 🫘 yerine 🪙 kullanilacak
-6. Gate3 → PICK → BOSS flow zaten calisiyor (dokunulmayacak)
-7. Travel badge zaten kaldirildi (dokunulmayacak)
+I will need 3 run summaries:
+- Run 1 (fresh reset): should die ~25-35s
+- Run 2 (after cargo box): should clear G1 but not G2
+- Run 3+: gradual progress
 
-## Dosya Bazli Degisiklik Sayisi
+If curve is off, we adjust 1-2 numbers only (BLOCK_MAX_HP or LATCHED_TICK_DAMAGE).
 
-| Dosya | Tahmini Satir Degisikligi |
-|-------|---------------------------|
-| persistence.ts | ~25 satir |
-| types.ts | ~15 satir |
-| config.ts | ~12 satir |
-| CoffeeRushGame.tsx | ~20 satir |
-| EndScreen.tsx | ~5 satir |
-| RunSummary.tsx | ~25 satir |
-| GarageOverlay.tsx | ~3 satir |
-| DebugHUD.tsx | ~5 satir |
-| ShopScreen.tsx | ~2 satir |
-| **Toplam** | **~112 satir** |
-
-## Test Sonrasi Beklenen Telemetry Format
-
-```text
-[CHAPTER] 1:23 CP4 | Gates:3/3@BOSS | Boss:defeated | Coins:180(B:180/D:0) | ...
-```
-
-(Beans yerine Coins yazacak)
