@@ -733,11 +733,16 @@ export const CoffeeRushGame: React.FC = () => {
     const speedMult = isHeavy ? GAME_CONFIG.HEAVY_SPEED_MULT : 1;
     const sizeMult = isHeavy ? GAME_CONFIG.HEAVY_SIZE_MULT : 1;
     
+    // Per-gate difficulty scaling (structural fix: each gate is harder)
+    const gateIdx = Math.min((gateStateRef.current.index || 1) - 1, 2);
+    const gateHpMult = GAME_CONFIG.GATE_ENEMY_HP_MULT[gateIdx];
+    const gateSpeedMult = GAME_CONFIG.GATE_ENEMY_SPEED_MULT[gateIdx];
+    
     enemy.x = GAME_CONFIG.CANVAS_WIDTH + 30;
     enemy.y = groundY;
-    enemy.maxHp = Math.floor(GAME_CONFIG.ENEMY_BASE_HP * difficulty.enemyHpMultiplier * hpMult);
+    enemy.maxHp = Math.floor(GAME_CONFIG.ENEMY_BASE_HP * difficulty.enemyHpMultiplier * hpMult * gateHpMult);
     enemy.hp = enemy.maxHp;
-    enemy.speed = GAME_CONFIG.ENEMY_BASE_SPEED * difficulty.enemySpeedMultiplier * speedMult;
+    enemy.speed = GAME_CONFIG.ENEMY_BASE_SPEED * difficulty.enemySpeedMultiplier * speedMult * gateSpeedMult;
     enemy.width = Math.floor(GAME_CONFIG.ENEMY_WIDTH * sizeMult);
     enemy.height = Math.floor(GAME_CONFIG.ENEMY_HEIGHT * sizeMult);
     enemy.isServed = false;
@@ -1239,7 +1244,11 @@ export const CoffeeRushGame: React.FC = () => {
       recoveryMultiplier = startMult + (endMult - startMult) * recoveryProgress;
     }
     
-    const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval / rushMultiplier / recoveryMultiplier);
+    // Per-gate spawn rate scaling (structural fix)
+    const gateIdxForSpawn = Math.min((gateStateRef.current.index || 1) - 1, 2);
+    const gateSpawnMult = GAME_CONFIG.GATE_SPAWN_RATE_MULT[gateIdxForSpawn];
+    
+    const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval / rushMultiplier / recoveryMultiplier / gateSpawnMult);
     
     if (canSpawn && currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
       spawnEnemy();

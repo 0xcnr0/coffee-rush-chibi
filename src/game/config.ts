@@ -189,6 +189,14 @@ export const GAME_CONFIG = {
   GATE_2_KILL_TARGET: 22,          // Balance Overhaul: reachable with upgrades
   GATE_3_KILL_TARGET: 30,          // Balance Overhaul: reachable with more upgrades
   
+  // ─────────────────────────────────────────────────────────────
+  // PER-GATE DIFFICULTY SCALING (Structural fix: gates get progressively harder)
+  // These multiply ON TOP of time-based difficulty ramp
+  // ─────────────────────────────────────────────────────────────
+  GATE_ENEMY_HP_MULT: [1.0, 1.5, 2.2],       // Gate 1/2/3: enemy HP multiplier
+  GATE_ENEMY_SPEED_MULT: [1.0, 1.12, 1.25],   // Gate 1/2/3: enemy speed multiplier
+  GATE_SPAWN_RATE_MULT: [1.0, 1.3, 1.6],      // Gate 1/2/3: spawn rate multiplier (higher = faster spawns)
+  
   // Pick overlay
   PICK_CARDS_OFFERED: 3,
   
