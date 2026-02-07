@@ -22,7 +22,7 @@ export const GAME_CONFIG = {
   CART_X: 70,                  // pixels from left edge (Phase 2C.8.2: moved right for HP tiles)
   CART_WIDTH: 75,              // pixels (v3.3: slightly smaller)
   BLOCK_HEIGHT: 45,            // pixels per block (v3.3: proportional)
-  BLOCK_MAX_HP: 180,           // HP per block (Balance v2: shorten Run 1 to ~30-35s)
+  BLOCK_MAX_HP: 300,           // HP per block (Balance v3: more buffer for Run 1 ~25-30s)
   BLOCK_COUNT: 1,              // number of stacked blocks (v3.1: start with 1)
   
   // ─────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export const GAME_CONFIG = {
   MIN_SPAWN_INTERVAL: 300,     // ms - floor to prevent overload (Phase A.2: +15%)
   
   // v3.2: Warmup period before first Rush
-  EARLY_GAME_SECONDS: 15,      // warmup duration in seconds (Balance Overhaul: rush arrives sooner)
+  EARLY_GAME_SECONDS: 18,      // warmup duration in seconds (Balance v3: more time before first rush)
   EARLY_BASE_SPAWN_INTERVAL: 1100, // ms - relaxed spawning during warmup (Phase A.2: +15%)
   
   // ─────────────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ export const GAME_CONFIG = {
   MAX_LATCHED_ENEMIES: 5,        // normal max attackers at cart
   RUSH_LATCHED_BONUS: 2,         // extra slots during Rush (total 7)
   LATCHED_TICK_INTERVAL: 0.5,    // seconds between damage ticks
-  LATCHED_TICK_DAMAGE: 5,        // damage per tick (Balance Overhaul: slightly more pressure)
+  LATCHED_TICK_DAMAGE: 4,        // damage per tick (Balance v3: reverted from 5)
   LATCHED_QUEUE_SPACING: 12,     // pixels between queued enemies (v3.3: clearer queue)
   
   // ─────────────────────────────────────────────────────────────
