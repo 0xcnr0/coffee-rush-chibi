@@ -16,28 +16,20 @@ interface GarageOverlayProps {
 // Upgrade definitions
 const UPGRADES: UpgradeInfo[] = [
   {
-    key: 'espressoDamageLevel',
-    name: 'Espresso',
-    description: 'Shot damage',
-    icon: 'coffee',
-    bonusPerLevel: GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL,
-    baseCost: GAME_CONFIG.ESPRESSO_BASE_COST,
-  },
-  {
-    key: 'espressoDamageLevel',
-    name: 'Espresso',
-    description: 'Shot damage',
-    icon: 'coffee',
-    bonusPerLevel: GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL,
-    baseCost: GAME_CONFIG.ESPRESSO_BASE_COST,
-  },
-  {
     key: 'energyRegenLevel',
     name: 'Power',
     description: 'Power regen speed',
     icon: 'zap',
     bonusPerLevel: GAME_CONFIG.POWER_BONUS_PER_LEVEL,
     baseCost: GAME_CONFIG.POWER_BASE_COST,
+  },
+  {
+    key: 'espressoDamageLevel',
+    name: 'Espresso',
+    description: 'Shot damage',
+    icon: 'coffee',
+    bonusPerLevel: GAME_CONFIG.ESPRESSO_BONUS_PER_LEVEL,
+    baseCost: GAME_CONFIG.ESPRESSO_BASE_COST,
   },
 ];
 
@@ -781,16 +773,16 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         {/* Row 3: Power + Damage (horizontal tiles) */}
         <div className="flex gap-2">
           <HorizontalUpgradeTile
-            upgrade={UPGRADES[1]} // Power
+            upgrade={UPGRADES[0]} // Power
             currentLevel={progression.upgradeLevels.energyRegenLevel ?? 0}
             beans={progression.totalCoins}
-            onPurchase={() => handlePurchase(UPGRADES[1])}
+            onPurchase={() => handlePurchase(UPGRADES[0])}
           />
           <HorizontalUpgradeTile
-            upgrade={UPGRADES[0]} // Espresso/Damage
+            upgrade={UPGRADES[1]} // Espresso/Damage
             currentLevel={progression.upgradeLevels.espressoDamageLevel ?? 0}
             beans={progression.totalCoins}
-            onPurchase={() => handlePurchase(UPGRADES[0])}
+            onPurchase={() => handlePurchase(UPGRADES[1])}
           />
         </div>
         
