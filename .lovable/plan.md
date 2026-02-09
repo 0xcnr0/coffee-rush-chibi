@@ -1,176 +1,76 @@
 
 
-# Run Summary Overlay -- Implementation Plan
+# Fix Stale Telemetry & Improve Run Summary Accuracy
 
-## Overview
+## Problem
 
-Create a full-screen, monospace, scrollable `RunSummaryOverlay` that intercepts the END state flow. It displays 7 sections of tuning data and is fully copy-paste friendly. This also requires a purchase event log system in `persistence.ts` and bomb-gate damage tracking per gate.
+Three consecutive runs produced nearly identical telemetry output (duration ~19.4s, gate dealt 40, shots 34/33, bomb 1, bombGateDamage 28, maxLatched 5). While the refs ARE being reset in `initGame()` (lines 286-295), the deterministic similarity still needs investigation, and several telemetry/overlay improvements are needed for reliable debugging.
 
----
+## Changes
 
-## Flow
+### 1. Run ID + telemetryBuiltAt (types.ts + CoffeeRushGame.tsx + RunSummaryOverlay.tsx)
 
-```text
-Garage (purchases logged) -> PLAY -> Run ends -> gameState='END' + showRunSummary=true
-  -> RunSummaryOverlay (Continue button)
-  -> clearPurchaseLog() + setShowRunSummary(false)
-  -> EndScreen (Play Again / Home)
+**Problem:** Overlay uses `Date.now()` at render time, producing a new "Run ID" on each re-render.
+
+- Add `runId: number` and `telemetryBuiltAt: number` fields to `RunTelemetry` in `types.ts`
+- In `initGame()`: create `runIdRef = useRef(0)` and set `runIdRef.current = Date.now()`
+- In `buildTelemetry()`: set `runId: runIdRef.current` and `telemetryBuiltAt: Date.now()`
+- In `RunSummaryOverlay.tsx`: replace `Date.now()` with `t.runId`, and add two DEBUG lines showing `telemetryRunId` and `telemetryBuiltAt`
+
+### 2. Verify Telemetry Ref Resets (CoffeeRushGame.tsx)
+
+The refs are already reset in `initGame()` (lines 286-295), but two are missing from the explicit reset block:
+
+- `maxLatchedPeak` and `timeAtMaxLatched` are reset inside `telemetryRef.current` (line 301) but NOT as standalone refs -- they live inside `telemetryRef`. This is actually correct for the current architecture.
+- `blocksLost` and `timeToFirstBlockLost` same -- inside `telemetryRef` (lines 302-303). Correct.
+- `tonicBombUses` -- inside `telemetryRef` (line 303). Correct.
+
+No missing resets found. The identical runs are likely due to deterministic game balance (same spawn timing, same player behavior pattern). The DEBUG lines from fix #1 will confirm whether stale objects are being displayed.
+
+### 3. Gate Destroyed Tracking (types.ts + CoffeeRushGame.tsx + RunSummaryOverlay.tsx)
+
+**Problem:** Current overlay logic `destroyed = dealt >= maxHp && stageReached > i + 1` is fragile.
+
+- Add `gateDestroyedByGate: boolean[]` to `RunTelemetry` (5 entries)
+- Add `gateDestroyedRef = useRef<boolean[]>([false, false, false, false, false])` in CoffeeRushGame
+- Reset in `initGame()`: `gateDestroyedRef.current = [false, false, false, false, false]`
+- At gate destruction (line 938-939 where `gate.hp <= 0`): set `gateDestroyedRef.current[si] = true`
+- In `buildTelemetry()`: include `gateDestroyedByGate: [...gateDestroyedRef.current]`
+- In overlay: use `t.gateDestroyedByGate[i]` for YES/NO/[unreached] display
+
+### 4. Damage Breakdown Clarity (RunSummaryOverlay.tsx)
+
+**Problem:** Stage lines show total `dealt` but don't separate bomb vs bullet damage.
+
+- In the Stage Breakdown section, for each gate line, compute:
+  - `bombDmg = t.bombGateDamageByGate[i]`
+  - `bulletDmg = dealt - bombDmg`
+- Display format: `G1: HP 1000/1000 | Dealt: 312 (31.2%) [bullets: 284, bomb: 28] | Time: 28.4s | Destroyed: NO`
+
+### 5. Economy Delta Explanation (RunSummaryOverlay.tsx)
+
+Add clarity lines to the Economy section:
+
+```
+Wallet delta = coinsEnd - coinsStart
+Run earned = coinsFromKills + coinsFromGateLumps + clearBonusCoins
 ```
 
 ---
 
-## File Changes
+## Technical Details
 
-### 1. `src/game/types.ts` -- Add PurchaseEvent + bomb gate damage fields
+### Files Modified
 
-Add `PurchaseEvent` interface:
+| File | Change |
+|------|--------|
+| `types.ts` | Add `runId`, `telemetryBuiltAt`, `gateDestroyedByGate` to `RunTelemetry` |
+| `CoffeeRushGame.tsx` | Add `runIdRef` + `gateDestroyedRef`, set in `initGame`/`buildTelemetry`/gate destruction |
+| `RunSummaryOverlay.tsx` | Use `t.runId`, add DEBUG lines, damage breakdown, gate destroyed from telemetry, economy clarity |
 
-```typescript
-export interface PurchaseEvent {
-  ts: number;
-  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice';
-  target: string;           // e.g. "block_0", "weapon_1", "power", "damage"
-  before: string;           // human-readable
-  after: string;            // human-readable
-  beforeValue: number;      // numeric for analysis
-  afterValue: number;       // numeric for analysis
-  coinCost: number;
-  coinsBefore: number;
-  coinsAfter: number;
-}
-```
+### Implementation Order
 
-Add to `RunTelemetry`:
-- `bombGateDamageTotal: number`
-- `bombGateDamageByGate: number[]` (5 entries for G1-G5)
+1. Update `RunTelemetry` type with 3 new fields
+2. Add refs and wiring in CoffeeRushGame (runId, gateDestroyed)
+3. Update RunSummaryOverlay output format
 
-### 2. `src/game/persistence.ts` -- Purchase log system
-
-Uses a **separate localStorage key** (`coffee-rush-purchase-log`) to avoid bloating ProgressionData.
-
-Add 3 helper functions:
-- `logPurchase(event: PurchaseEvent)` -- appends to localStorage array
-- `getPurchaseLog(): PurchaseEvent[]` -- reads the log
-- `clearPurchaseLog(): void` -- empties the log
-
-Modify each purchase function to call `logPurchase()` with before/after state:
-- `purchasePowerPip` -- type `power_pip`, target `power`, beforeValue = old powerPips, afterValue = new powerPips
-- `purchaseDamagePip` -- type `damage_pip`, target `damage`
-- `purchaseBlockPip` -- type `block_pip`, target `block_{slotIndex}`
-- `purchaseWeaponPip` -- type `weapon_pip`, target `weapon_{slotIndex}`
-- `purchaseCargoBox` -- type `cargo_box`, target `blockCount`
-- `saveEvoChoice` -- type `evo_choice`, target `{category}_{slotIndex}`, coinCost=0
-
-### 3. `src/game/CoffeeRushGame.tsx` -- Bomb tracking + END flow gate
-
-**New refs:**
-- `bombGateDamageByGateRef = useRef<number[]>([0,0,0,0,0])`
-
-**New state:**
-- `showRunSummary` state (`useState(false)`)
-
-**Changes:**
-- `initGame()`: reset `bombGateDamageByGateRef` to `[0,0,0,0,0]`, call `clearPurchaseLog()` (safety: clears stale logs from previous run), set `showRunSummary = false`
-- Bomb logic (line 644-646): also increment `bombGateDamageByGateRef.current[si]`
-- `buildTelemetry()`: add `bombGateDamageTotal` (sum of array) and `bombGateDamageByGate` (copy of array)
-- `handleGameOver` and `handleChapterClear`: set `showRunSummary = true` alongside `setGameState('END')`
-- JSX (lines 1315-1322): when `gameState === 'END'`:
-  - If `showRunSummary === true`: render `RunSummaryOverlay`
-  - Else: render `EndScreen`
-- RunSummaryOverlay "Continue" callback: `clearPurchaseLog()` then `setShowRunSummary(false)`
-
-**Index mapping note:** `stageIndexRef.current` is 1-based (1-6). Bomb damage uses `si = stageIndexRef.current - 1`, already correct in existing code (line 645). The same pattern is used consistently for `gateDamageDealtRef` (line 1038). No change needed.
-
-### 4. New: `src/game/RunSummaryOverlay.tsx`
-
-Full-screen scrollable overlay with dark background, monospace font, 7 sections:
-
-**Props:**
-- `stats: GameStats` (includes telemetry)
-- `purchaseLog: PurchaseEvent[]` (from `getPurchaseLog()`)
-- `onContinue: () => void`
-
-**Sections:**
-
-**1. CORE RUN INFO**
-```
-Run ID: 1738956000000
-Duration: 45.2s
-Stage Reached: 2/6
-Boss: not_spawned
-```
-
-**2. STAGE & GATE BREAKDOWN** (always show all 5 gates)
-```
-G1: HP 1000/1000 | Dealt: 312 (31.2%) | Time: 28.4s | Destroyed: NO
-G2: HP 2000/2000 | Dealt: 0 (0.0%)    | Time: 0.0s  | [unreached]
-G3: HP 3500/3500 | Dealt: 0 (0.0%)    | Time: 0.0s  | [unreached]
-G4: HP 5000/5000 | Dealt: 0 (0.0%)    | Time: 0.0s  | [unreached]
-G5: HP 7000/7000 | Dealt: 0 (0.0%)    | Time: 0.0s  | [unreached]
-```
-
-**3. LINE-OF-SIGHT & DAMAGE FLOW**
-```
-Shots: 87 fired, 61 hit (70.1%)
-To Enemies: 55 | To Gate: 6
-Bomb Gate Damage Total: 84
-  G1: 84 | G2: 0 | G3: 0 | G4: 0 | G5: 0
-```
-
-**4. PRESSURE / SURVIVAL**
-```
-Max Latched: 4 peak | Time at max: 3.2s
-Blocks Lost: 1 | First block lost: 18.3s
-Bomb Uses: 2
-```
-
-**5. ECONOMY TRACE**
-```
-Coins Start (wallet): 0
-+ Kills: 22
-+ Gate Lumps: 0
-+ Clear Bonus: 0
-= Earned this run: 22
-Coins End (wallet): 22
-Delta: 0
-```
-
-**6. GARAGE / UPGRADE TRACE**
-Shows all entries from `purchaseLog`. If empty: `[No upgrades purchased before this run]`
-```
-power_pip | power | pips: 0->1 | cost: 35 | wallet: 100->65
-block_pip | block_0 | pips: 0->1 | cost: 30 | wallet: 65->35
-Total Spent: 65
-Remaining: 35
-```
-
-**7. CONFIG SNAPSHOT** (all stages up to stageReached, plus always Stage 1)
-```
-AUTO_ATTACK_INTERVAL: 520
-PROJECTILE_DAMAGE: 12
-POWER_START_REGEN: 0.20
-BLOCK_MAX_HP: 300
-LATCHED_TICK_DAMAGE: 4
-LATCHED_TICK_INTERVAL: 0.5
-
-Stage 1: gateHP=1000 spawn=900 hpMult=1.0 spdMult=1.0 drop=1 lump=40
-Stage 2: gateHP=2000 spawn=800 hpMult=1.3 spdMult=1.05 drop=2 lump=80
-```
-
-**UI elements:**
-- "Copy All" button at top -- copies entire summary as plain text
-- "Continue" button at bottom -- fixed position, always visible
-- No X button, no other close mechanism
-- Dark semi-transparent background, white monospace text
-- Scrollable content area
-
----
-
-## Risk Mitigations
-
-1. **Stale log prevention:** `clearPurchaseLog()` is called both in `initGame()` (safety) and on Continue click (primary). This ensures no log carryover even if the overlay is somehow bypassed.
-2. **Gate index consistency:** All gate indexing uses the existing `stageIndexRef.current - 1` pattern already proven in the codebase (lines 645, 901, 1038).
-3. **All 5 gates always shown:** Unreached gates display `[unreached]` marker rather than being hidden, providing full visibility for tuning.
-4. **Numeric before/after values:** `PurchaseEvent` includes both `before`/`after` strings and `beforeValue`/`afterValue` numbers for future analysis.
-5. **Economy separation:** The overlay clearly labels "wallet" coins (progression.totalCoins) vs "run" earnings to avoid confusion.
-6. **Purchase log isolation:** Only `persistence.ts` purchase functions write to the log. Debug coin/energy functions do NOT log purchases, keeping the data clean.
