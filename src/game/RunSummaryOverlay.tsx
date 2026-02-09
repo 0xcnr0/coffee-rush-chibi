@@ -22,7 +22,8 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(hr);
     lines.push('1. CORE RUN INFO');
     lines.push(hr);
-    lines.push(`Run ID: ${Date.now()}`);
+    lines.push(`Run ID: ${t?.runId ?? 'N/A'}`);
+    lines.push(`DEBUG telemetryBuiltAt: ${t?.telemetryBuiltAt ?? 'N/A'}`);
     lines.push(`Duration: ${fmt(stats.timeSurvived)}s`);
     lines.push(`Stage Reached: ${stats.stageReached ?? t?.stageReached ?? '?'}/6`);
     lines.push(`Boss: ${t?.bossOutcome ?? 'not_spawned'}`);
@@ -37,12 +38,14 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
       const stage = STAGES[i];
       const maxHp = stage.gateHP ?? 0;
       const dealt = t?.gateDamageDealt?.[i] ?? 0;
+      const bombDmg = t?.bombGateDamageByGate?.[i] ?? 0;
+      const bulletDmg = dealt - bombDmg;
       const pct = maxHp > 0 ? fmt((dealt / maxHp) * 100, 1) : '0.0';
       const time = fmt(t?.gateTimeSpent?.[i] ?? 0, 1);
       const stageReached = t?.stageReached ?? 1;
-      const destroyed = dealt >= maxHp && stageReached > i + 1;
+      const destroyed = t?.gateDestroyedByGate?.[i] ?? false;
       const status = stageReached <= i ? '[unreached]' : destroyed ? 'YES' : 'NO';
-      lines.push(`G${i + 1}: HP ${maxHp}/${maxHp} | Dealt: ${dealt} (${pct}%) | Time: ${time}s | Destroyed: ${status}`);
+      lines.push(`G${i + 1}: HP ${maxHp}/${maxHp} | Dealt: ${dealt} (${pct}%) [bullets: ${bulletDmg}, bomb: ${bombDmg}] | Time: ${time}s | Destroyed: ${status}`);
     }
     lines.push('');
 
@@ -79,6 +82,10 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     const delta = t?.economyDelta ?? 0;
     lines.push(`Delta: ${delta}${Math.abs(delta) > 1 ? ' ⚠️' : ''}`);
     if (t?.deltaExplanation) lines.push(`  ${t.deltaExplanation}`);
+    const walletDelta = (t?.coinsEnd ?? 0) - (t?.coinsStart ?? 0);
+    const runEarned = (t?.coinsFromKills ?? 0) + (t?.coinsFromGateLumps ?? 0) + (t?.clearBonusCoins ?? 0);
+    lines.push(`Wallet delta = ${walletDelta}`);
+    lines.push(`Run earned = ${t?.coinsFromKills ?? 0} + ${t?.coinsFromGateLumps ?? 0} + ${t?.clearBonusCoins ?? 0} = ${runEarned}`);
     lines.push('');
 
     // 6. GARAGE / UPGRADE TRACE

@@ -155,6 +155,8 @@ export const CoffeeRushGame: React.FC = () => {
   
   // Run summary overlay
   const [showRunSummary, setShowRunSummary] = useState(false);
+  const runIdRef = useRef(0);
+  const gateDestroyedRef = useRef<boolean[]>([false, false, false, false, false]);
   // Gate cleanup state (victory pulse before transition)
   const gateCleanupTimerRef = useRef(0);
   
@@ -294,6 +296,8 @@ export const CoffeeRushGame: React.FC = () => {
     shotsToEnemiesRef.current = 0;
     bombGateDamageByGateRef.current = [0, 0, 0, 0, 0];
     gateCleanupTimerRef.current = 0;
+    runIdRef.current = Date.now();
+    gateDestroyedRef.current = [false, false, false, false, false];
     clearPurchaseLog();
     setShowRunSummary(false);
     
@@ -379,6 +383,8 @@ export const CoffeeRushGame: React.FC = () => {
     const coinsFromGateLumps = coinsFromGateLumpsRef.current;
     
     return {
+      runId: runIdRef.current,
+      telemetryBuiltAt: Date.now(),
       gameMode,
       stageReached: stageIndexRef.current,
       reachedBoss: bossStateRef.current.isActive || bossEnemyRef.current !== null || bossOutcome === 'defeated',
@@ -404,6 +410,7 @@ export const CoffeeRushGame: React.FC = () => {
       shotsToEnemies: shotsToEnemiesRef.current,
       bombGateDamageTotal: bombGateDamageByGateRef.current.reduce((a, b) => a + b, 0),
       bombGateDamageByGate: [...bombGateDamageByGateRef.current],
+      gateDestroyedByGate: [...gateDestroyedRef.current],
       phaseAtDeath: playPhaseRef.current,
       timeInTravel: phaseTimersRef.current.travel,
       timeInSiege: phaseTimersRef.current.siege,
@@ -937,6 +944,7 @@ export const CoffeeRushGame: React.FC = () => {
       // Check gate destruction
       if (gate.hp <= 0) {
         gate.isDestroyed = true;
+        gateDestroyedRef.current[stageIndexRef.current - 1] = true;
         
         // Award lump sum
         const stage = getStage(stageIndexRef.current);
