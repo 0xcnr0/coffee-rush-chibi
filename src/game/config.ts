@@ -211,8 +211,8 @@ export const GAME_CONFIG = {
   WEAPON_MODE: 'shotgun' as 'single' | 'shotgun',
   SHOTGUN_PELLETS: 6,
   SHOTGUN_SPREAD_DEG: 22,           // total cone in degrees (TDS-wide)
-  SHOTGUN_SPREAD_DEG_MIN: 14,
-  SHOTGUN_SPREAD_DEG_MAX: 28,
+  SHOTGUN_SPREAD_DEG_MIN: 16,
+  SHOTGUN_SPREAD_DEG_MAX: 32,
   SHOTGUN_SPREAD_DISTANCE_SCALE: 0.35, // spread widens with distance
   MUZZLE_Y_OFFSET: 50,                // px down from topBlock.y → flatter TDS-style shots
   SHOTGUN_DAMAGE_SPLIT: 'weighted_center' as 'equal' | 'weighted_center',
@@ -226,7 +226,7 @@ export const GAME_CONFIG = {
   CROWDING_RANGE: 220,              // px from cart to count crowding
   // Target mode weights: [front, mid, back, gate]
   TARGET_WEIGHTS_CROWDED: [0.70, 0.20, 0.05, 0.05] as readonly number[],
-  TARGET_WEIGHTS_NORMAL:  [0.45, 0.25, 0.15, 0.15] as readonly number[],
+  TARGET_WEIGHTS_NORMAL:  [0.50, 0.25, 0.17, 0.08] as readonly number[],
   
   // ─────────────────────────────────────────────────────────────
   // CHAPTER PERSISTENCE
