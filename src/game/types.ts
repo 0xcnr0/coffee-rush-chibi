@@ -227,6 +227,9 @@ export interface RunTelemetry {
   // Burst spread telemetry
   burstsTriggered: number;
   
+  // Target mode telemetry
+  targetModeCounts: { front: number; mid: number; back: number; gate: number };
+  
   // Phase timing
   phaseAtDeath: PlayPhase | null;
   timeInTravel: number;

@@ -82,7 +82,7 @@ export const GAME_CONFIG = {
   AUTO_ATTACK_INTERVAL: 520,
   PROJECTILE_SPEED: 420,
   PROJECTILE_DAMAGE: 12,
-  PROJECTILE_RADIUS: 3,
+  PROJECTILE_RADIUS: 2,
   
   // ─────────────────────────────────────────────────────────────
   // SKILL: Tonic Bomb + Power System (Uncapped)
@@ -209,9 +209,23 @@ export const GAME_CONFIG = {
   // WEAPON FIRING MODE (A/B: 'single' | 'shotgun')
   // ─────────────────────────────────────────────────────────────
   WEAPON_MODE: 'shotgun' as 'single' | 'shotgun',
-  SHOTGUN_PELLETS: 4,
-  SHOTGUN_SPREAD_DEG: 10,          // total cone in degrees
+  SHOTGUN_PELLETS: 6,
+  SHOTGUN_SPREAD_DEG: 22,           // total cone in degrees (TDS-wide)
+  SHOTGUN_SPREAD_DEG_MIN: 14,
+  SHOTGUN_SPREAD_DEG_MAX: 28,
+  SHOTGUN_SPREAD_DISTANCE_SCALE: 0.35, // spread widens with distance
   SHOTGUN_DAMAGE_SPLIT: 'weighted_center' as 'equal' | 'weighted_center',
+  
+  // ─────────────────────────────────────────────────────────────
+  // AIM VARIATION (TDS-style jitter + smart target selection)
+  // ─────────────────────────────────────────────────────────────
+  AIM_Y_JITTER: 10,                 // px random Y offset per burst
+  AIM_Y_TILT: -6,                   // slight upward tilt (negative = up)
+  CROWDING_THRESHOLD: 6,            // enemies near cart = "crowded"
+  CROWDING_RANGE: 220,              // px from cart to count crowding
+  // Target mode weights: [front, mid, back, gate]
+  TARGET_WEIGHTS_CROWDED: [0.70, 0.20, 0.05, 0.05] as readonly number[],
+  TARGET_WEIGHTS_NORMAL:  [0.45, 0.25, 0.15, 0.15] as readonly number[],
   
   // ─────────────────────────────────────────────────────────────
   // CHAPTER PERSISTENCE
