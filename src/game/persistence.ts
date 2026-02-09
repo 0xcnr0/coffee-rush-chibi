@@ -1,91 +1,92 @@
 // Persistence helper for Coffee Rush progression data
-// Safely handles localStorage read/write with defaults
+// TDS-Inspired Reboot: Phase 1 v1.1 — Schema v10 (Chapter-bound pips + EVO)
 
 import type { GameMode, WeaponType, WeaponSlot } from './types';
-
-const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 9; // Bump: Independent cargo box HP
-
 import { GAME_CONFIG } from './config';
 
+const STORAGE_KEY = 'coffee-rush-progress';
+const SAVE_VERSION = 10; // Reboot: Pip/EVO system, clean reset from v9
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROGRESSION DATA SCHEMA (v10)
+// ═══════════════════════════════════════════════════════════════════════════════
 export interface ProgressionData {
   version: number;
+  totalCoins: number;
+  blockPips: number[];
+  blockEvoChoices: string[][];
+  weaponSlots: WeaponSlot[];
+  weaponPips: number[];
+  weaponEvoChoices: string[][];
+  powerPips: number;
+  powerEvoChoices: string[];
+  damagePips: number;
+  damageEvoChoices: string[];
+  blockCountLevel: number;
   bestTimeSurvivedSeconds: number;
   bestCustomersServed: number;
-  totalCoins: number;
-  upgradeLevels: {
-    espressoDamageLevel: number;
-    energyRegenLevel: number;
-    blockCountLevel: number;
-  };
-  // Independent cargo box HP levels (one per possible cargo box, max 3)
-  cargoBoxHpLevels: number[];
-  // Chapter mode tracking
   chapter1Cleared: boolean;
   bestChapter1Time: number;
+  bestStageReached: number;
   lastGameMode: GameMode;
-  // Phase 3: Weapon slots for each cargo box (max 2 weapons)
-  weaponSlots: WeaponSlot[];
-  // Phase 4: Energy (stamina) system
   energy: number;
   regenAnchorTs: number | null;
+  chapterResetEnabled: boolean;
+  meta: {
+    diamonds: number;
+    backpackGold: number;
+    heroCards: string[];
+  };
+  // Deprecated fields needed for backward compat if any old code references them
+  upgradeLevels: {
+    blockCountLevel: number;
+    espressoDamageLevel: number;
+    energyRegenLevel: number;
+  };
+  cargoBoxHpLevels: number[];
 }
 
 const DEFAULT_PROGRESSION: ProgressionData = {
   version: SAVE_VERSION,
+  totalCoins: 0,
+  blockPips: [0, 0, 0],
+  blockEvoChoices: [[], [], []],
+  weaponSlots: [{ weaponType: null, level: 0 }, { weaponType: null, level: 0 }],
+  weaponPips: [0, 0],
+  weaponEvoChoices: [[], []],
+  powerPips: 0,
+  powerEvoChoices: [],
+  damagePips: 0,
+  damageEvoChoices: [],
+  blockCountLevel: 0,
   bestTimeSurvivedSeconds: 0,
   bestCustomersServed: 0,
-  totalCoins: 0,
-  upgradeLevels: {
-    espressoDamageLevel: 0,
-    energyRegenLevel: 0,
-    blockCountLevel: 0,
-  },
-  cargoBoxHpLevels: [0, 0, 0],
   chapter1Cleared: false,
   bestChapter1Time: 0,
+  bestStageReached: 0,
   lastGameMode: 'CHAPTER',
-  weaponSlots: [
-    { weaponType: null, level: 0 },
-    { weaponType: null, level: 0 },
-  ],
   energy: GAME_CONFIG.ENERGY_MAX,
   regenAnchorTs: null,
+  chapterResetEnabled: false,
+  meta: { diamonds: 0, backpackGold: 0, heroCards: [] },
+  upgradeLevels: { blockCountLevel: 0, espressoDamageLevel: 0, energyRegenLevel: 0 },
+  cargoBoxHpLevels: [0, 0, 0],
 };
 
 export const loadProgression = (): ProgressionData => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return { ...DEFAULT_PROGRESSION };
-    
     const parsed = JSON.parse(stored);
-    
-    // MIGRATION: beans → coins (backward compatibility for Sprint 0)
-    if (parsed.totalBeans !== undefined && parsed.totalCoins === undefined) {
-      console.info('[MIGRATION] Converting totalBeans → totalCoins');
-      parsed.totalCoins = parsed.totalBeans;
-      delete parsed.totalBeans;
-    }
-    
-    // Version check - reset if version mismatch (hard reset all players)
     if (!parsed.version || parsed.version !== SAVE_VERSION) {
-      console.info(`Save version mismatch (${parsed.version} !== ${SAVE_VERSION}), resetting progression`);
+      console.info(`Save version mismatch (${parsed.version} !== ${SAVE_VERSION}), resetting progression for TDS reboot`);
       saveProgression({ ...DEFAULT_PROGRESSION });
       return { ...DEFAULT_PROGRESSION };
     }
-    
-    // Merge with defaults to handle missing fields in old saves
     return {
       ...DEFAULT_PROGRESSION,
       ...parsed,
-      upgradeLevels: {
-        ...DEFAULT_PROGRESSION.upgradeLevels,
-        ...parsed.upgradeLevels,
-      },
-      weaponSlots: parsed.weaponSlots ?? DEFAULT_PROGRESSION.weaponSlots,
-      cargoBoxHpLevels: parsed.cargoBoxHpLevels ?? DEFAULT_PROGRESSION.cargoBoxHpLevels,
-      energy: parsed.energy ?? DEFAULT_PROGRESSION.energy,
-      regenAnchorTs: parsed.regenAnchorTs ?? DEFAULT_PROGRESSION.regenAnchorTs,
+      meta: { ...DEFAULT_PROGRESSION.meta, ...parsed.meta },
     };
   } catch {
     console.warn('Failed to load progression, using defaults');
@@ -95,247 +96,182 @@ export const loadProgression = (): ProgressionData => {
 
 export const saveProgression = (data: ProgressionData): void => {
   try {
+    // Sync legacy fields for safety
+    data.upgradeLevels = {
+      blockCountLevel: data.blockCountLevel,
+      espressoDamageLevel: data.damagePips,
+      energyRegenLevel: data.powerPips,
+    };
+    data.cargoBoxHpLevels = data.blockPips; // approx mapping
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     console.warn('Failed to save progression');
   }
 };
 
-export const updateBestRecords = (
-  timeSurvived: number,
-  customersServed: number,
-  tipsEarned: number
-): { isNewTimeRecord: boolean; coinsEarned: number } => {
-  const current = loadProgression();
-  
-  const isNewTimeRecord = timeSurvived > current.bestTimeSurvivedSeconds;
-  const coinsEarned = tipsEarned; // 1 tip = 1 coin
-  
-  const updated: ProgressionData = {
-    ...current,
-    version: SAVE_VERSION,
-    bestTimeSurvivedSeconds: Math.max(current.bestTimeSurvivedSeconds, timeSurvived),
-    bestCustomersServed: Math.max(current.bestCustomersServed, customersServed),
-    totalCoins: current.totalCoins + coinsEarned,
-  };
-  
-  saveProgression(updated);
-  
-  return { isNewTimeRecord, coinsEarned };
+export const getPipCost = (currentPips: number, baseCost: number, costScaling: number): number => {
+  return Math.floor(baseCost * Math.pow(costScaling, currentPips));
 };
 
-export const purchaseUpgrade = (
-  upgradeKey: keyof ProgressionData['upgradeLevels'],
-  cost: number
-): boolean => {
+export const purchasePowerPip = (cost: number): boolean => {
   const current = loadProgression();
-  
   if (current.totalCoins < cost) return false;
-  if (current.upgradeLevels[upgradeKey] >= 20) return false;
-  
   current.totalCoins -= cost;
-  current.upgradeLevels[upgradeKey] += 1;
-  
+  current.powerPips += 1;
   saveProgression(current);
   return true;
 };
 
-// Purchase HP upgrade for a specific cargo box
-export const purchaseCargoBoxHp = (boxIndex: number, cost: number): boolean => {
+export const purchaseDamagePip = (cost: number): boolean => {
   const current = loadProgression();
-  
   if (current.totalCoins < cost) return false;
-  if (boxIndex < 0 || boxIndex >= current.cargoBoxHpLevels.length) return false;
-  if (current.cargoBoxHpLevels[boxIndex] >= GAME_CONFIG.UPGRADE_MAX_LEVEL) return false;
-  
   current.totalCoins -= cost;
-  current.cargoBoxHpLevels[boxIndex] += 1;
-  
+  current.damagePips += 1;
   saveProgression(current);
   return true;
 };
 
-export const getUpgradeCost = (level: number, baseCost: number): number => {
-  return Math.floor(baseCost * Math.pow(GAME_CONFIG.UPGRADE_COST_SCALING, level));
-};
-
-// Calculate effective multiplier for an upgrade
-export const getUpgradeMultiplier = (level: number, bonusPerLevel: number): number => {
-  return 1 + bonusPerLevel * level;
-};
-
-// Phase 2B-2: Update chapter clear records
-export const updateChapterClear = (
-  timeSurvived: number,
-  tipsEarned: number
-): { coinsEarned: number; isNewChapterRecord: boolean } => {
+export const purchaseBlockPip = (slotIndex: number, cost: number): boolean => {
   const current = loadProgression();
-  
-  const isNewChapterRecord = !current.chapter1Cleared || timeSurvived < current.bestChapter1Time;
-  const coinsEarned = tipsEarned; // Base coins from tips (bonus added separately)
-  
-  const updated: ProgressionData = {
-    ...current,
-    version: SAVE_VERSION,
-    chapter1Cleared: true,
-    bestChapter1Time: current.bestChapter1Time > 0 
-      ? Math.min(current.bestChapter1Time, timeSurvived) 
-      : timeSurvived,
-    totalCoins: current.totalCoins + coinsEarned,
-  };
-  
-  saveProgression(updated);
-  
-  return { coinsEarned, isNewChapterRecord };
+  if (current.totalCoins < cost) return false;
+  if (slotIndex < 0 || slotIndex >= current.blockPips.length) return false;
+  current.totalCoins -= cost;
+  current.blockPips[slotIndex] += 1;
+  saveProgression(current);
+  return true;
 };
 
-// Phase 2B-2: Save last game mode preference
+export const purchaseWeaponPip = (slotIndex: number, cost: number): boolean => {
+  const current = loadProgression();
+  if (current.totalCoins < cost) return false;
+  if (slotIndex < 0 || slotIndex >= current.weaponPips.length) return false;
+  current.totalCoins -= cost;
+  current.weaponPips[slotIndex] += 1;
+  saveProgression(current);
+  return true;
+};
+
+export const saveEvoChoice = (category: string, slotIndex: number, traitId: string): void => {
+  const current = loadProgression();
+  if (category === 'block') {
+    if (!current.blockEvoChoices[slotIndex]) current.blockEvoChoices[slotIndex] = [];
+    current.blockEvoChoices[slotIndex].push(traitId);
+  } else if (category === 'weapon') {
+    if (!current.weaponEvoChoices[slotIndex]) current.weaponEvoChoices[slotIndex] = [];
+    current.weaponEvoChoices[slotIndex].push(traitId);
+  } else if (category === 'power') {
+    current.powerEvoChoices.push(traitId);
+  } else if (category === 'damage') {
+    current.damageEvoChoices.push(traitId);
+  }
+  saveProgression(current);
+};
+
+export const purchaseCargoBox = (cost: number): boolean => {
+  const current = loadProgression();
+  if (current.totalCoins < cost) return false;
+  if (current.blockCountLevel >= GAME_CONFIG.BLOCK_COUNT_MAX_LEVEL) return false;
+  current.totalCoins -= cost;
+  current.blockCountLevel += 1;
+  saveProgression(current);
+  return true;
+};
+
+export const getCargoBoxCost = (level: number): number => {
+  return Math.floor(GAME_CONFIG.BLOCK_COUNT_BASE_COST * Math.pow(1.5, level));
+};
+
 export const setLastGameMode = (mode: GameMode): void => {
   const current = loadProgression();
   saveProgression({ ...current, lastGameMode: mode });
 };
 
-// Reset all progression to defaults (DEV tool)
+export const updateRecords = (
+  timeSurvived: number,
+  customersServed: number,
+  stageReached: number,
+  coinsEarned: number,
+): { isNewTimeRecord: boolean } => {
+  const current = loadProgression();
+  const isNewTimeRecord = timeSurvived > current.bestTimeSurvivedSeconds;
+  saveProgression({
+    ...current,
+    bestTimeSurvivedSeconds: Math.max(current.bestTimeSurvivedSeconds, timeSurvived),
+    bestCustomersServed: Math.max(current.bestCustomersServed, customersServed),
+    bestStageReached: Math.max(current.bestStageReached, stageReached),
+    totalCoins: current.totalCoins + coinsEarned,
+  });
+  return { isNewTimeRecord };
+};
+
+export const updateChapterClear = (timeSurvived: number, coinsEarned: number): { isNewChapterRecord: boolean } => {
+  const current = loadProgression();
+  const isNewChapterRecord = !current.chapter1Cleared || timeSurvived < current.bestChapter1Time;
+  saveProgression({
+    ...current,
+    chapter1Cleared: true,
+    bestChapter1Time: current.bestChapter1Time > 0 ? Math.min(current.bestChapter1Time, timeSurvived) : timeSurvived,
+    totalCoins: current.totalCoins + coinsEarned,
+  });
+  return { isNewChapterRecord };
+};
+
 export const resetProgression = (): void => {
   saveProgression({ ...DEFAULT_PROGRESSION });
 };
 
-// Phase 3: Select weapon for a cargo box slot
-export const selectWeapon = (slotIndex: number, weaponType: WeaponType, cost: number): boolean => {
-  const current = loadProgression();
-  
-  if (current.totalCoins < cost) return false;
-  if (slotIndex < 0 || slotIndex >= current.weaponSlots.length) return false;
-  if (current.weaponSlots[slotIndex].weaponType !== null) return false; // Already has weapon
-  
-  current.totalCoins -= cost;
-  current.weaponSlots[slotIndex] = { weaponType, level: 1 };
-  
-  saveProgression(current);
-  return true;
-};
-
-// Phase 3: Upgrade weapon in a slot
-export const upgradeWeapon = (slotIndex: number, cost: number): boolean => {
-  const current = loadProgression();
-  
-  if (current.totalCoins < cost) return false;
-  if (slotIndex < 0 || slotIndex >= current.weaponSlots.length) return false;
-  if (current.weaponSlots[slotIndex].weaponType === null) return false; // No weapon
-  if (current.weaponSlots[slotIndex].level >= 5) return false; // Max level
-  
-  current.totalCoins -= cost;
-  current.weaponSlots[slotIndex].level += 1;
-  
-  saveProgression(current);
-  return true;
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ENERGY (STAMINA) SYSTEM - Phase 4
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Apply pending energy regeneration based on elapsed time since anchor.
- * Should be called on app load, garage open, and before consuming energy.
- * Does NOT save automatically - returns the updated progression data.
- */
 export const applyRegenNow = (): ProgressionData => {
   const prog = loadProgression();
   const now = Date.now();
-  
-  // If energy is full, clear anchor and return
   if (prog.energy >= GAME_CONFIG.ENERGY_MAX) {
     prog.energy = GAME_CONFIG.ENERGY_MAX;
     prog.regenAnchorTs = null;
     saveProgression(prog);
     return prog;
   }
-  
-  // If no anchor exists (safety), set it now
   if (prog.regenAnchorTs === null) {
     prog.regenAnchorTs = now;
     saveProgression(prog);
     return prog;
   }
-  
-  // Calculate how many full regen intervals have passed
   const elapsed = now - prog.regenAnchorTs;
   const gains = Math.floor(elapsed / GAME_CONFIG.ENERGY_REGEN_MS);
-  
   if (gains > 0) {
     prog.energy = Math.min(GAME_CONFIG.ENERGY_MAX, prog.energy + gains);
-    
     if (prog.energy >= GAME_CONFIG.ENERGY_MAX) {
-      // Energy is full, clear anchor
       prog.energy = GAME_CONFIG.ENERGY_MAX;
       prog.regenAnchorTs = null;
     } else {
-      // Advance anchor by gains (preserve remaining time)
       prog.regenAnchorTs = prog.regenAnchorTs + (gains * GAME_CONFIG.ENERGY_REGEN_MS);
     }
-    
     saveProgression(prog);
   }
-  
   return prog;
 };
 
-/**
- * Consume 1 energy for a play session.
- * Returns true if successful, false if no energy available.
- * Starts the regen timer if this is the first spend.
- */
 export const consumeEnergy = (): { success: boolean; newEnergy: number } => {
-  const prog = applyRegenNow(); // Always apply pending regen first
-  
-  if (prog.energy <= 0) {
-    return { success: false, newEnergy: 0 };
-  }
-  
+  const prog = applyRegenNow();
+  if (prog.energy <= 0) return { success: false, newEnergy: 0 };
   prog.energy -= 1;
-  
-  // If energy just dropped below max and no anchor exists, start timer
   if (prog.energy < GAME_CONFIG.ENERGY_MAX && prog.regenAnchorTs === null) {
     prog.regenAnchorTs = Date.now();
   }
-  
   saveProgression(prog);
   return { success: true, newEnergy: prog.energy };
 };
 
-/**
- * Get current energy state including countdown info.
- * Does NOT consume energy, just reads current state.
- */
-export const getEnergyState = (): {
-  energy: number;
-  maxEnergy: number;
-  isRegenerating: boolean;
-  remainingMs: number; // Time until next +1 energy
-} => {
+export const getEnergyState = (): { energy: number; maxEnergy: number; isRegenerating: boolean; remainingMs: number } => {
   const prog = applyRegenNow();
   const now = Date.now();
-  
   let remainingMs = 0;
   const isRegenerating = prog.energy < GAME_CONFIG.ENERGY_MAX && prog.regenAnchorTs !== null;
-  
   if (isRegenerating && prog.regenAnchorTs !== null) {
     const elapsed = now - prog.regenAnchorTs;
     remainingMs = GAME_CONFIG.ENERGY_REGEN_MS - (elapsed % GAME_CONFIG.ENERGY_REGEN_MS);
   }
-  
-  return {
-    energy: prog.energy,
-    maxEnergy: GAME_CONFIG.ENERGY_MAX,
-    isRegenerating,
-    remainingMs,
-  };
+  return { energy: prog.energy, maxEnergy: GAME_CONFIG.ENERGY_MAX, isRegenerating, remainingMs };
 };
 
-/**
- * Format milliseconds to MM:SS display string.
- */
 export const formatTimeRemaining = (ms: number): string => {
   const totalSeconds = Math.ceil(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -343,10 +279,6 @@ export const formatTimeRemaining = (ms: number): string => {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 };
 
-/**
- * DEBUG ONLY: Add 10 energy (temporary testing tool).
- * Bypasses max cap for testing purposes.
- */
 export const addDebugEnergy = (amount: number = 10): number => {
   const prog = loadProgression();
   prog.energy += amount;
@@ -354,10 +286,6 @@ export const addDebugEnergy = (amount: number = 10): number => {
   return prog.energy;
 };
 
-/**
- * DEBUG ONLY: Add coins to the player's balance.
- * For testing purposes.
- */
 export const addDebugCoins = (amount: number = 200): number => {
   const prog = loadProgression();
   prog.totalCoins += amount;
