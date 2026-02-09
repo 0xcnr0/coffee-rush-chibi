@@ -1,30 +1,80 @@
 // Game Types for Coffee Rush
+// TDS-Inspired Reboot: Phase 1 v1.1
 
-export type GameState = 'MENU' | 'PLAY' | 'END' | 'CHAPTER_CLEAR'; // Phase 2B-2: Added CHAPTER_CLEAR
-export type GameMode = 'ENDLESS' | 'CHAPTER'; // Phase 2B-2: Game mode selection
+export type GameState = 'MENU' | 'PLAY' | 'END';
+export type GameMode = 'ENDLESS' | 'CHAPTER';
 
-// Phase 3A: PlayPhase for segmented chapter flow
-export type PlayPhase = 'TRAVEL' | 'FIGHT' | 'PICK' | 'BOSS';
+// Phase 1 v1.1: Renamed phases for TDS-style gate flow
+// SIEGE replaces FIGHT, EVO_PICK replaces PICK (PickOverlay disabled)
+export type PlayPhase = 'TRAVEL' | 'SIEGE' | 'EVO_PICK' | 'BOSS';
 
-// Phase 3A: Gate progress tracking
-export interface GateState {
-  index: number;           // 1, 2, 3
-  targetKills: number;     // enemies to serve for this gate
-  currentKills: number;    // enemies served this gate
-  isCleared: boolean;
+// ═══════════════════════════════════════════════════════════════════════════════
+// GATE BUILDING (HP-based objective)
+// ═══════════════════════════════════════════════════════════════════════════════
+export interface GateBuilding {
+  hp: number;
+  maxHp: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  isDestroyed: boolean;
+  stageIndex: number;        // 1-5 (no gate for boss stage 6)
+  breathingActive: boolean;
+  breathingTimer: number;
+  crossedThresholds: number[];  // track which HP% thresholds triggered breathing
+  crumbleTimer: number;         // cleanup animation timer after destruction
 }
 
-// Phase 3A: Run-only buff system (temporary, reset after run)
-export type RunBuffType = 'damage' | 'block_hp' | 'power_regen' | 'attack_speed' | 'repair' | 'bomb_charge';
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEAPON SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+export type WeaponType = 'saw' | 'flame' | 'minigun' | null;
+export type WeaponAbilityType = 'saw_line' | 'flame_burst' | 'bullet_storm';
 
-export interface RunBuff {
-  type: RunBuffType;
+export interface WeaponSlot {
+  weaponType: WeaponType;
+  level: number;
+}
+
+export interface WeaponInfo {
+  type: WeaponType;
   name: string;
   icon: string;
   description: string;
-  value: number;  // multiplier (1.15 = +15%) or flat value for repair/bomb
+  baseCost: number;
+  upgradeCost: number;
+  maxLevel: number;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PIP / EVO UPGRADE SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+export interface PipProgress {
+  currentPips: number;
+  maxPips: number;       // pips per EVO tier
+  evoTier: number;       // current EVO tier (0 = no EVO yet)
+  evoChoices: string[];  // IDs of chosen traits
+}
+
+export interface EvoTrait {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  category: 'block' | 'weapon' | 'power' | 'damage';
+  effects: EvoEffect[];
+}
+
+export interface EvoEffect {
+  type: 'hp_mult' | 'atk_mult' | 'regen_mult' | 'heal_percent' | 'weapon_atk_mult' | 
+        'projectile_count' | 'ability_cost_mult' | 'power_regen_mult' | 'damage_mult';
+  value: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CORE ENTITIES
+// ═══════════════════════════════════════════════════════════════════════════════
 export interface Vector2 {
   x: number;
   y: number;
@@ -40,7 +90,7 @@ export interface CartBlock {
 }
 
 export type EnemyState = 'WALKING' | 'LATCHED' | 'QUEUED' | 'SERVED';
-export type EnemyKind = 'NORMAL' | 'HEAVY' | 'BOSS'; // Phase 2B-2: Added BOSS
+export type EnemyKind = 'NORMAL' | 'HEAVY' | 'BOSS';
 
 export interface Enemy {
   id: number;
@@ -52,13 +102,13 @@ export interface Enemy {
   width: number;
   height: number;
   active: boolean;
-  isServed: boolean; // true when HP reaches 0, triggers happy animation
-  servedTimer: number; // countdown for exit animation
+  isServed: boolean;
+  servedTimer: number;
   animationFrame: number;
-  state: EnemyState; // TDS-style state machine
-  latchedTimer: number; // time until next tick damage
-  queuePosition: number; // X position when queued (behind latched enemies)
-  kind: EnemyKind; // Phase 2B-1: NORMAL or HEAVY, Phase 2B-2: BOSS
+  state: EnemyState;
+  latchedTimer: number;
+  queuePosition: number;
+  kind: EnemyKind;
 }
 
 export interface Projectile {
@@ -71,6 +121,8 @@ export interface Projectile {
   damage: number;
   active: boolean;
   radius: number;
+  pierce: boolean;          // Pierce projectiles pass through enemies
+  isSaw: boolean;           // Visual: render as saw blade
 }
 
 export interface TipDrop {
@@ -93,145 +145,105 @@ export interface Particle {
   maxLife: number;
   color: string;
   size: number;
-  type: 'sparkle' | 'heart' | 'steam' | 'confetti';
+  type: 'sparkle' | 'heart' | 'steam' | 'confetti' | 'crumble';
   active: boolean;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAME STATS & TELEMETRY
+// ═══════════════════════════════════════════════════════════════════════════════
 export interface GameStats {
-  timeSurvived: number; // in seconds
+  timeSurvived: number;
   customersServed: number;
   totalTips: number;
   coinsEarned: number;
   isNewRecord: boolean;
-  isChapterClear?: boolean; // Phase 2B-2: Chapter clear flag
-  checkpointsCleared?: number; // Phase 2B-2
-  
-  // Phase 2C: Run Telemetry
+  isChapterClear?: boolean;
+  stageReached?: number;
   telemetry?: RunTelemetry;
 }
 
-// Phase 2C: Full run telemetry for balance tuning
 export interface RunTelemetry {
   // Run result
   gameMode: GameMode;
-  checkpointsReached: number;
+  stageReached: number;
   reachedBoss: boolean;
   bossOutcome: 'not_spawned' | 'spawned' | 'defeated' | 'died_during_boss';
-  bossHpPercent: number; // 0-100, HP% at death/clear
+  bossHpPercent: number;
   
   // Upgrade snapshot
-  upgradeLevels: {
-    blockCountLevel: number;
-    towerHpLevel: number;
-    espressoDamageLevel: number;
-    energyRegenLevel: number;
-  };
-  effectiveMultipliers: {
-    damage: number;
-    blockHp: number;
-    energy: number;
+  pipLevels: {
+    blockPips: number[];
+    weaponPips: number[];
+    powerPips: number;
+    damagePips: number;
+    blockCount: number;
   };
   
   // Combat data
   shotsFired: number;
   shotsHit: number;
-  hitRate: number; // 0-100%
+  hitRate: number;
   
-  // Pressure / Panic
+  // Pressure
   maxLatchedPeak: number;
-  timeAtMaxLatched: number; // seconds
-  rushCount: number;
-  totalRushDuration: number; // seconds
+  timeAtMaxLatched: number;
   
   // Survivability
   blocksLost: number;
-  timeToFirstBlockLost: number; // seconds, -1 if none lost
+  timeToFirstBlockLost: number;
   tonicBombUses: number;
   
-  // Pacing telemetry (Phase 2D)
-  recoveryTimeTotal: number; // total seconds in post-rush recovery
-  bossAddsSpawned: number; // should be 0 in Chapter 1
+  // Gate telemetry (new for TDS reboot)
+  gateDamageDealt: number[];      // damage dealt to each gate [gate1, gate2, ...]
+  gateTimeSpent: number[];        // seconds at each gate
+  shotsToGate: number;
+  shotsToEnemies: number;
   
-  // Phase 3A: Segment telemetry
+  // Phase timing
   phaseAtDeath: PlayPhase | null;
-  gatesCleared: number;
-  gateIndexReached: number;
-  runBuffsPicked: string[];
   timeInTravel: number;
-  timeInFight: number;
-  timeInPick: number;
+  timeInSiege: number;
+  timeInEvoPick: number;
   timeInBoss: number;
   
   // Spawn distribution
   enemiesSpawned: { normal: number; heavy: number; boss: number };
   enemiesKilled: { normal: number; heavy: number; boss: number };
   
-  // Economy telemetry (Phase 2E: Anti-bug delta control)
-  coinsStart: number;          // totalCoins at run start
-  coinsEnd: number;            // totalCoins after save
-  coinsEarnedActual: number;   // coinsEnd - coinsStart
-  
-  // Breakdown components (all in coins)
-  tipsFromServed: number;      // tipsRef.current (includes normal + heavy + boss tips) - already in coins
-  bossRewardCoins: number;     // DISPLAY ONLY: BOSS_TIP_MULTIPLIER × TIP_VALUE (already in tipsFromServed!)
-  clearBonusCoins: number;     // CHAPTER_CLEAR_BONUS_COINS (0 if failed)
-  
-  // Debug: detailed breakdown
-  servedCount: number;         // customersServedRef.current for validation
-  normalKillCoins: number;     // enemiesKilled.normal × TIP_VALUE
-  heavyKillCoins: number;      // enemiesKilled.heavy × TIP_VALUE
-  bossKillCoins: number;       // enemiesKilled.boss × TIP_VALUE × BOSS_TIP_MULTIPLIER
-  
-  // Reconciliation
-  coinsTotalBreakdown: number; // tipsFromServed + clearBonusCoins (boss already in tips)
-  economyDelta: number;        // actual - breakdown (MUST be 0, any deviation is a bug)
-  deltaExplanation: string;    // Human-readable explanation of delta source
+  // Economy
+  coinsStart: number;
+  coinsEnd: number;
+  coinsEarnedActual: number;
+  coinsFromKills: number;
+  coinsFromGateLumps: number;
+  clearBonusCoins: number;
+  coinsTotalBreakdown: number;
+  economyDelta: number;
+  deltaExplanation: string;
 }
 
-export interface DifficultyState {
-  level: number;
-  spawnRateMultiplier: number;
-  enemyHpMultiplier: number;
-  enemySpeedMultiplier: number;
-  isMorningRush: boolean;
-  rushTimer: number;
-  breatherTimer: number; // post-rush spawn pause
-}
-
-// Phase 2B-2: Boss state tracking
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOSS STATE
+// ═══════════════════════════════════════════════════════════════════════════════
 export interface BossState {
   isActive: boolean;
   hp: number;
   maxHp: number;
-  spawnedAt: number; // time when boss spawned
-  addSpawnTimer: number; // timer for spawning adds during boss fight
+  spawnedAt: number;
+  addSpawnTimer: number;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// UPGRADE INFO (for UI display)
+// ═══════════════════════════════════════════════════════════════════════════════
 export interface UpgradeInfo {
-  key: 'espressoDamageLevel' | 'energyRegenLevel' | 'blockCountLevel';
+  key: string;
   name: string;
   description: string;
   icon: string;
-  bonusPerLevel: number;
+  pipsPerEvo: number;
   baseCost: number;
-  maxLevel?: number; // Optional override (defaults to UPGRADE_MAX_LEVEL)
-  isCount?: boolean; // For block count - shows "+1" instead of percentage
-}
-
-// Phase 3: Weapon system types
-export type WeaponType = 'steam_blaster' | 'coffee_grinder' | 'syrup_cannon' | null;
-
-export interface WeaponSlot {
-  weaponType: WeaponType;
-  level: number; // 0-5
-}
-
-export interface WeaponInfo {
-  type: WeaponType;
-  name: string;
-  icon: string; // emoji
-  description: string;
-  baseCost: number;
-  upgradeCost: number;
-  maxLevel: number;
+  costScaling: number;
+  maxEvos?: number;
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { GAME_CONFIG } from './config';
+import { GAME_CONFIG, STAGES } from './config';
 import type { RunTelemetry } from './types';
 
 interface RunSummaryProps {
@@ -20,75 +20,12 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
   };
   
   const getSummaryJSON = () => {
-    return JSON.stringify({
-      // Run result
-      gameMode: telemetry.gameMode,
-      timeSurvived: Math.round(timeSurvived * 10) / 10,
-      checkpointsReached: telemetry.checkpointsReached,
-      reachedBoss: telemetry.reachedBoss,
-      bossOutcome: telemetry.bossOutcome,
-      bossHpPercent: telemetry.bossHpPercent,
-      
-      // Economy
-      coinsStart: telemetry.coinsStart,
-      coinsEnd: telemetry.coinsEnd,
-      coinsActual: telemetry.coinsEarnedActual,
-      coinsBreakdown: telemetry.coinsTotalBreakdown,
-      economyDelta: telemetry.economyDelta,
-      tipsFromServed: telemetry.tipsFromServed,
-      bossReward: telemetry.bossRewardCoins,
-      clearBonus: telemetry.clearBonusCoins,
-      
-      // Upgrades
-      upgrades: telemetry.upgradeLevels,
-      multipliers: {
-        dmg: Math.round(telemetry.effectiveMultipliers.damage * 100) / 100,
-        hp: Math.round(telemetry.effectiveMultipliers.blockHp * 100) / 100,
-        energy: Math.round(telemetry.effectiveMultipliers.energy * 100) / 100,
-      },
-      
-      // Combat
-      shots: `${telemetry.shotsHit}/${telemetry.shotsFired}`,
-      hitRate: `${telemetry.hitRate}%`,
-      
-      // Pressure
-      maxLatched: telemetry.maxLatchedPeak,
-      timeAtMaxLatched: Math.round(telemetry.timeAtMaxLatched * 10) / 10,
-      rushCount: telemetry.rushCount,
-      rushDuration: Math.round(telemetry.totalRushDuration * 10) / 10,
-      
-      // Survivability
-      blocksLost: telemetry.blocksLost,
-      firstBlockLostAt: telemetry.timeToFirstBlockLost >= 0 
-        ? Math.round(telemetry.timeToFirstBlockLost * 10) / 10 
-        : 'never',
-      bombUses: telemetry.tonicBombUses,
-      
-      // Pacing telemetry
-      recoveryTime: Math.round(telemetry.recoveryTimeTotal * 10) / 10,
-      bossAdds: telemetry.bossAddsSpawned,
-      
-      // Phase 3A: Segment telemetry
-      phaseAtDeath: telemetry.phaseAtDeath,
-      gatesCleared: telemetry.gatesCleared,
-      gateIndexReached: telemetry.gateIndexReached,
-      buffsPicked: telemetry.runBuffsPicked,
-      timeInTravel: Math.round(telemetry.timeInTravel * 10) / 10,
-      timeInFight: Math.round(telemetry.timeInFight * 10) / 10,
-      timeInPick: Math.round(telemetry.timeInPick * 10) / 10,
-      timeInBoss: Math.round(telemetry.timeInBoss * 10) / 10,
-      
-      // Spawns
-      spawned: telemetry.enemiesSpawned,
-      killed: telemetry.enemiesKilled,
-    }, null, 2);
+    return JSON.stringify(telemetry, null, 2);
   };
   
   const getCompactSummary = () => {
-    const { upgradeLevels: u, effectiveMultipliers: m } = telemetry;
-    const gateInfo = telemetry.gatesCleared !== undefined ? ` | Gates:${telemetry.gatesCleared}/3@${telemetry.phaseAtDeath || 'N/A'}` : '';
-    const buffInfo = telemetry.runBuffsPicked?.length ? ` | Buffs:${telemetry.runBuffsPicked.join(',')}` : '';
-    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} CP${telemetry.checkpointsReached}${gateInfo} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Coins:${telemetry.coinsEarnedActual}(B:${telemetry.coinsTotalBreakdown}/D:${telemetry.economyDelta}) | Upgrades:B${u.blockCountLevel}/H${u.towerHpLevel}/D${u.espressoDamageLevel}/E${u.energyRegenLevel} | Mult:${m.damage.toFixed(2)}x/${m.blockHp.toFixed(2)}x/${m.energy.toFixed(2)}x | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak/${telemetry.timeAtMaxLatched.toFixed(1)}s | Rush:${telemetry.rushCount}x/${telemetry.totalRushDuration.toFixed(1)}s | Recovery:${telemetry.recoveryTimeTotal.toFixed(1)}s | BossAdds:${telemetry.bossAddsSpawned} | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}${buffInfo}`;
+    const { pipLevels: p } = telemetry;
+    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} Stage${telemetry.stageReached} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Coins:${telemetry.coinsEarnedActual}(B:${telemetry.coinsTotalBreakdown}/D:${telemetry.economyDelta}) | Pips:B${p.blockCount}/P${p.powerPips}/D${p.damagePips} | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}`;
   };
   
   const handleCopy = async (format: 'json' | 'compact') => {
@@ -102,180 +39,91 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
     }
   };
   
+  const bossStage = STAGES.find(s => s.isBoss);
+  const bossHP = bossStage?.bossHP ?? 10000;
+  
   return (
     <div className="bg-coffee-dark/70 border border-coffee-medium/30 rounded-xl overflow-hidden w-full max-w-xs">
-      {/* Header - Always visible */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-coffee-medium/20 transition-colors"
       >
         <span className="text-coffee-cream text-sm font-medium">📊 Run Summary</span>
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-coffee-light" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-coffee-light" />
-        )}
+        {isExpanded ? <ChevronUp className="w-4 h-4 text-coffee-light" /> : <ChevronDown className="w-4 h-4 text-coffee-light" />}
       </button>
       
-      {/* Expanded Content */}
       {isExpanded && (
         <div className="px-3 pb-3 max-h-[40vh] overflow-y-auto">
-          {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] leading-4 text-coffee-cream/90 mb-3">
-            {/* Run Result */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-1">Run Result</div>
             <div>Mode: <span className="text-gold">{telemetry.gameMode}</span></div>
-            <div>CP: <span className="text-warm-orange">{telemetry.checkpointsReached}</span></div>
-            
-            {/* Phase 3A: Gate/Phase info */}
-            {telemetry.gatesCleared !== undefined && (
-              <>
-                <div>Gates: <span className="text-gold">{telemetry.gatesCleared}/3</span></div>
-                <div>Phase: <span className="text-warm-orange">{telemetry.phaseAtDeath || 'N/A'}</span></div>
-              </>
-            )}
-            {telemetry.runBuffsPicked && telemetry.runBuffsPicked.length > 0 && (
-              <div className="col-span-2">Buffs: <span className="text-energy">{telemetry.runBuffsPicked.join(', ')}</span></div>
-            )}
+            <div>Stage: <span className="text-warm-orange">{telemetry.stageReached}</span></div>
             
             <div>Boss: <span className={telemetry.bossOutcome === 'defeated' ? 'text-energy' : 'text-coffee-light'}>{telemetry.bossOutcome}</span></div>
             {telemetry.bossHpPercent > 0 && (
               <div>Boss HP: <span className="text-destructive">{telemetry.bossHpPercent}%</span></div>
             )}
             
-            {/* Economy Section */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Economy</div>
-            <div className="col-span-2">Tips: <span className="text-gold">{telemetry.tipsFromServed}</span> coins</div>
-            {/* Debug: Detailed breakdown */}
+            <div className="col-span-2">Coins: <span className="text-gold">{telemetry.coinsEarnedActual}</span></div>
             <div className="col-span-2 text-[9px] text-coffee-light/50 pl-2 border-l border-coffee-light/20">
-              <div>Served: {telemetry.servedCount} | N:{telemetry.normalKillCoins} H:{telemetry.heavyKillCoins} B:{telemetry.bossKillCoins}</div>
-              <div>BossBonus(in tips): {telemetry.bossRewardCoins} | ClearBonus: {telemetry.clearBonusCoins}</div>
+              <div>Kills: {telemetry.coinsFromKills} | Gates: {telemetry.coinsFromGateLumps}</div>
+              <div>ClearBonus: {telemetry.clearBonusCoins}</div>
             </div>
-            {telemetry.bossRewardCoins > 0 && (
-              <div className="col-span-2 text-coffee-light/50 text-[10px]">
-                └ Boss reward: {telemetry.bossRewardCoins} <span className="text-coffee-light/40">(included)</span>
-              </div>
-            )}
-            {telemetry.clearBonusCoins > 0 && (
-              <div className="col-span-2">Clear Bonus: <span className="text-green-400">+{telemetry.clearBonusCoins}</span></div>
-            )}
+            
             <div className="col-span-2 bg-coffee-medium/30 rounded px-2 py-1 mt-1">
-              <div className="flex justify-between">
-                <span>Breakdown:</span>
-                <span className="text-gold font-bold">{telemetry.coinsTotalBreakdown} coins</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Actual:</span>
-                <span className="text-gold font-bold">{telemetry.coinsEarnedActual} coins</span>
-              </div>
-              <div className="flex justify-between text-[9px] text-coffee-light/50">
-                <span>Start→End:</span>
-                <span>{telemetry.coinsStart}→{telemetry.coinsEnd}</span>
-              </div>
               <div className="flex justify-between">
                 <span>Delta:</span>
                 <span className={telemetry.economyDelta === 0 ? 'text-green-400' : 'text-red-400 font-bold'}>
                   {telemetry.economyDelta === 0 ? '0 ✓' : `⚠️ ${telemetry.economyDelta > 0 ? '+' : ''}${telemetry.economyDelta}`}
                 </span>
               </div>
-              {Math.abs(telemetry.economyDelta) > 1 && (
-                <div className="text-[9px] text-red-300 mt-1 border-t border-coffee-light/20 pt-1">
-                  <div className="font-bold">ECONOMY WARNING: delta too large</div>
-                  <div>
-                    Start→End: {telemetry.coinsStart}→{telemetry.coinsEnd} | Tips:{telemetry.tipsFromServed} | Boss:{telemetry.bossRewardCoins} | Clear:{telemetry.clearBonusCoins} | B:{telemetry.coinsTotalBreakdown} | A:{telemetry.coinsEarnedActual}
-                  </div>
-                </div>
-              )}
-              {telemetry.economyDelta !== 0 && telemetry.deltaExplanation && (
+              {telemetry.economyDelta !== 0 && (
                 <div className="text-[9px] text-red-300 mt-1 border-t border-coffee-light/20 pt-1">
                   ⚠️ {telemetry.deltaExplanation}
                 </div>
               )}
             </div>
             
-            {/* Upgrades with Multipliers */}
-            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Build (Upgrade Levels)</div>
+            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Build</div>
             <div className="col-span-2 bg-coffee-medium/30 rounded px-2 py-1">
-              <div className="grid grid-cols-4 gap-1 text-center">
+              <div className="grid grid-cols-3 gap-1 text-center">
                 <div>
                   <div className="text-coffee-light/50 text-[9px]">Box</div>
-                  <div className="text-gold font-bold">L{telemetry.upgradeLevels.blockCountLevel}</div>
+                  <div className="text-gold font-bold">{telemetry.pipLevels.blockCount}</div>
                 </div>
                 <div>
-                  <div className="text-coffee-light/50 text-[9px]">HP</div>
-                  <div className="text-gold font-bold">L{telemetry.upgradeLevels.towerHpLevel}</div>
-                  <div className="text-secondary text-[9px]">{telemetry.effectiveMultipliers.blockHp.toFixed(2)}×</div>
+                  <div className="text-coffee-light/50 text-[9px]">Pwr</div>
+                  <div className="text-gold font-bold">{telemetry.pipLevels.powerPips}</div>
                 </div>
                 <div>
-                  <div className="text-coffee-light/50 text-[9px]">DMG</div>
-                  <div className="text-gold font-bold">L{telemetry.upgradeLevels.espressoDamageLevel}</div>
-                  <div className="text-secondary text-[9px]">{telemetry.effectiveMultipliers.damage.toFixed(2)}×</div>
-                </div>
-                <div>
-                  <div className="text-coffee-light/50 text-[9px]">Energy</div>
-                  <div className="text-gold font-bold">L{telemetry.upgradeLevels.energyRegenLevel}</div>
-                  <div className="text-secondary text-[9px]">{telemetry.effectiveMultipliers.energy.toFixed(2)}×</div>
+                  <div className="text-coffee-light/50 text-[9px]">Dmg</div>
+                  <div className="text-gold font-bold">{telemetry.pipLevels.damagePips}</div>
                 </div>
               </div>
             </div>
             
-            {/* Combat */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Combat</div>
             <div>Shots: {telemetry.shotsHit}/{telemetry.shotsFired}</div>
             <div>Hit Rate: <span className={telemetry.hitRate >= 80 ? 'text-green-400' : telemetry.hitRate >= 50 ? 'text-warm-orange' : 'text-red-400'}>{telemetry.hitRate}%</span></div>
+            <div>Gate Hits: {telemetry.shotsToGate}</div>
             
-            {/* Pressure */}
-            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Pressure</div>
-            <div>Max Latched: <span className="text-warm-orange">{telemetry.maxLatchedPeak}</span></div>
-            <div>@MaxLatched: {telemetry.timeAtMaxLatched.toFixed(1)}s</div>
-            <div>Rush Count: {telemetry.rushCount}</div>
-            <div>Rush Total: {telemetry.totalRushDuration.toFixed(1)}s</div>
-            
-            {/* Pacing (Phase 2D telemetry) */}
-            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Pacing</div>
-            <div>Recovery: <span className="text-cyan-400">{telemetry.recoveryTimeTotal.toFixed(1)}s</span></div>
-            <div>Boss Adds: <span className={telemetry.bossAddsSpawned === 0 ? 'text-green-400' : 'text-red-400'}>{telemetry.bossAddsSpawned}</span></div>
-            
-            {/* Survivability */}
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Survivability</div>
             <div>Blocks Lost: <span className={telemetry.blocksLost > 0 ? 'text-red-400' : 'text-green-400'}>{telemetry.blocksLost}</span></div>
-            <div>1st Block @: {telemetry.timeToFirstBlockLost >= 0 ? `${telemetry.timeToFirstBlockLost.toFixed(1)}s` : '—'}</div>
+            <div>Latched: <span className="text-warm-orange">{telemetry.maxLatchedPeak}</span></div>
             <div className="col-span-2">Bombs Used: {telemetry.tonicBombUses}</div>
             
-            {/* Spawn Distribution */}
-            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Enemies</div>
-            <div>Spawned: N{telemetry.enemiesSpawned.normal}/H{telemetry.enemiesSpawned.heavy}/B{telemetry.enemiesSpawned.boss}</div>
-            <div>Killed: N{telemetry.enemiesKilled.normal}/H{telemetry.enemiesKilled.heavy}/B{telemetry.enemiesKilled.boss}</div>
-            
-            {/* Config Debug (small, muted) */}
-            <div className="col-span-2 text-coffee-light/40 text-[9px] mt-2 text-center">
-              TIP={GAME_CONFIG.TIP_VALUE} | BOSS={GAME_CONFIG.BOSS_TIP_MULTIPLIER}x | BONUS={GAME_CONFIG.CHAPTER_CLEAR_BONUS_COINS} | SCALE={GAME_CONFIG.UPGRADE_COST_SCALING}
-            </div>
-            {/* Phase A Tuning Debug */}
-            <div className="col-span-2 text-cyan-400/50 text-[9px] mt-1 text-center border-t border-coffee-light/10 pt-1">
-              🔧 BOSS_HP={GAME_CONFIG.BOSS_HP} | BOMB_COST={GAME_CONFIG.TONIC_BOMB_COST} | Gates={GAME_CONFIG.GATE_1_KILL_TARGET}/{GAME_CONFIG.GATE_2_KILL_TARGET}/{GAME_CONFIG.GATE_3_KILL_TARGET} | Repair={Math.round(GAME_CONFIG.RUN_BUFF_POOL.find(b => b.type === 'repair')?.value * 100 || 0)}%
+            <div className="col-span-2 text-coffee-light/40 text-[9px] mt-2 text-center border-t border-coffee-light/10 pt-1">
+              🔧 BOSS_HP={bossHP} | BOMB={GAME_CONFIG.TONIC_BOMB_COST}
             </div>
           </div>
           
-          {/* Copy Buttons */}
           <div className="flex gap-2 mt-2">
-            <Button
-              onClick={() => handleCopy('compact')}
-              size="sm"
-              variant="outline"
-              className="flex-1 text-[10px] h-7 border-coffee-medium/50 text-coffee-cream hover:bg-coffee-medium/30"
-            >
-              {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-              Copy Line
+            <Button onClick={() => handleCopy('compact')} size="sm" variant="outline" className="flex-1 text-[10px] h-7 border-coffee-medium/50 text-coffee-cream hover:bg-coffee-medium/30">
+              {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />} Line
             </Button>
-            <Button
-              onClick={() => handleCopy('json')}
-              size="sm"
-              variant="outline"
-              className="flex-1 text-[10px] h-7 border-coffee-medium/50 text-coffee-cream hover:bg-coffee-medium/30"
-            >
-              {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-              Copy JSON
+            <Button onClick={() => handleCopy('json')} size="sm" variant="outline" className="flex-1 text-[10px] h-7 border-coffee-medium/50 text-coffee-cream hover:bg-coffee-medium/30">
+              {copied ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />} JSON
             </Button>
           </div>
         </div>
