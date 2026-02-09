@@ -12,7 +12,15 @@ const fmt = (n: number, decimals = 1) => Number(n).toFixed(decimals);
 
 export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, purchaseLog, onContinue }) => {
   const contentRef = useRef<HTMLPreElement>(null);
+  const [copyLabel, setCopyLabel] = React.useState('📋 Copy All');
+  const [continueEnabled, setContinueEnabled] = React.useState(false);
   const t = stats.telemetry;
+
+  // Safety delay: disable Continue for 1200ms after mount
+  React.useEffect(() => {
+    const timer = setTimeout(() => setContinueEnabled(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const buildText = useCallback(() => {
     const lines: string[] = [];
@@ -142,8 +150,12 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
 
   const handleCopy = useCallback(() => {
     const text = buildText();
-    navigator.clipboard.writeText(text).catch(() => {
-      // Fallback: select all text
+    navigator.clipboard.writeText(text).then(() => {
+      setCopyLabel('Copied ✅');
+      setTimeout(() => setCopyLabel('📋 Copy All'), 1200);
+    }).catch(() => {
+      setCopyLabel('Copy failed ❌');
+      setTimeout(() => setCopyLabel('📋 Copy All'), 1200);
       if (contentRef.current) {
         const range = document.createRange();
         range.selectNodeContents(contentRef.current);
@@ -190,7 +202,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
             cursor: 'pointer',
           }}
         >
-          📋 Copy All
+          {copyLabel}
         </button>
       </div>
 
@@ -225,21 +237,22 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
         flexShrink: 0,
       }}>
         <button
-          onClick={onContinue}
+          onClick={continueEnabled ? onContinue : undefined}
+          disabled={!continueEnabled}
           style={{
-            width: '100%',
-            background: '#FFD700',
-            color: '#000',
+            width: 'auto',
+            background: continueEnabled ? '#FFD700' : 'rgba(255,215,0,0.3)',
+            color: continueEnabled ? '#000' : 'rgba(0,0,0,0.4)',
             border: 'none',
-            padding: '10px',
-            borderRadius: '6px',
+            padding: '6px 20px',
+            borderRadius: '4px',
             fontFamily: 'monospace',
-            fontSize: '14px',
+            fontSize: '12px',
             fontWeight: 'bold',
-            cursor: 'pointer',
+            cursor: continueEnabled ? 'pointer' : 'not-allowed',
           }}
         >
-          Continue →
+          {continueEnabled ? 'Continue →' : 'Wait...'}
         </button>
       </div>
     </div>
