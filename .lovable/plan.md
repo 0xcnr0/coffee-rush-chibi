@@ -1,76 +1,95 @@
 
 
-# Fix Stale Telemetry & Improve Run Summary Accuracy
+# Gate HP Remaining + Burst Spread A/B Test
 
-## Problem
+## Part A: Gate HP Remaining in Overlay
 
-Three consecutive runs produced nearly identical telemetry output (duration ~19.4s, gate dealt 40, shots 34/33, bomb 1, bombGateDamage 28, maxLatched 5). While the refs ARE being reset in `initGame()` (lines 286-295), the deterministic similarity still needs investigation, and several telemetry/overlay improvements are needed for reliable debugging.
+Add a `gateHpRemainingByGate: number[]` field to `RunTelemetry` so the Stage Breakdown line shows actual remaining HP at run end.
 
-## Changes
+### Changes
 
-### 1. Run ID + telemetryBuiltAt (types.ts + CoffeeRushGame.tsx + RunSummaryOverlay.tsx)
+**`src/game/types.ts`**
+- Add `gateHpRemainingByGate: number[]` to `RunTelemetry`
 
-**Problem:** Overlay uses `Date.now()` at render time, producing a new "Run ID" on each re-render.
+**`src/game/CoffeeRushGame.tsx`**
+- In `buildTelemetry()`: snapshot current gate HP into `gateHpRemainingByGate`. For the current stage gate, read `gateBuildingRef.current.hp`. For previous stages (destroyed), use 0. For unreached stages, use the full `gateHP` from config.
+- No new ref needed -- this is a point-in-time snapshot at telemetry build time.
 
-- Add `runId: number` and `telemetryBuiltAt: number` fields to `RunTelemetry` in `types.ts`
-- In `initGame()`: create `runIdRef = useRef(0)` and set `runIdRef.current = Date.now()`
-- In `buildTelemetry()`: set `runId: runIdRef.current` and `telemetryBuiltAt: Date.now()`
-- In `RunSummaryOverlay.tsx`: replace `Date.now()` with `t.runId`, and add two DEBUG lines showing `telemetryRunId` and `telemetryBuiltAt`
+**`src/game/RunSummaryOverlay.tsx`**
+- Change stage line from `HP 1000/1000` to `HP rem: 960/1000` using `t.gateHpRemainingByGate[i]`.
 
-### 2. Verify Telemetry Ref Resets (CoffeeRushGame.tsx)
+---
 
-The refs are already reset in `initGame()` (lines 286-295), but two are missing from the explicit reset block:
+## Part B: Controlled Spread Burst Firing Mode
 
-- `maxLatchedPeak` and `timeAtMaxLatched` are reset inside `telemetryRef.current` (line 301) but NOT as standalone refs -- they live inside `telemetryRef`. This is actually correct for the current architecture.
-- `blocksLost` and `timeToFirstBlockLost` same -- inside `telemetryRef` (lines 302-303). Correct.
-- `tonicBombUses` -- inside `telemetryRef` (line 303). Correct.
+The current auto-attack always targets the nearest enemy with a single projectile. With continuous spawning, enemies almost always block LoS to the gate, resulting in ~1 bullet reaching the gate per run. A configurable burst-spread mode lets us A/B test whether angular spread improves gate damage flow.
 
-No missing resets found. The identical runs are likely due to deterministic game balance (same spawn timing, same player behavior pattern). The DEBUG lines from fix #1 will confirm whether stale objects are being displayed.
+### How It Works
 
-### 3. Gate Destroyed Tracking (types.ts + CoffeeRushGame.tsx + RunSummaryOverlay.tsx)
+When `SPREAD_MODE = 'burst_spread'`, each auto-attack trigger fires `BURST_COUNT` (default 3) projectiles simultaneously with angular offsets of `[-WEAPON_SPREAD_DEG, 0, +WEAPON_SPREAD_DEG]` degrees from the line to the nearest enemy. The spread projectiles use the same damage and speed. Some will miss enemies and hit the gate behind them.
 
-**Problem:** Current overlay logic `destroyed = dealt >= maxHp && stageReached > i + 1` is fragile.
+### Changes
 
-- Add `gateDestroyedByGate: boolean[]` to `RunTelemetry` (5 entries)
-- Add `gateDestroyedRef = useRef<boolean[]>([false, false, false, false, false])` in CoffeeRushGame
-- Reset in `initGame()`: `gateDestroyedRef.current = [false, false, false, false, false]`
-- At gate destruction (line 938-939 where `gate.hp <= 0`): set `gateDestroyedRef.current[si] = true`
-- In `buildTelemetry()`: include `gateDestroyedByGate: [...gateDestroyedRef.current]`
-- In overlay: use `t.gateDestroyedByGate[i]` for YES/NO/[unreached] display
+**`src/game/config.ts`**
+- Add to `GAME_CONFIG`:
+  - `SPREAD_MODE: 'single' as 'single' | 'burst_spread'`
+  - `WEAPON_SPREAD_DEG: 6`
+  - `BURST_COUNT: 3`
+  - `BURST_INTERVAL_MS: 0` (all fired simultaneously for simplicity; can add stagger later)
 
-### 4. Damage Breakdown Clarity (RunSummaryOverlay.tsx)
+**`src/game/CoffeeRushGame.tsx`**
 
-**Problem:** Stage lines show total `dealt` but don't separate bomb vs bullet damage.
+Auto-attack section (~line 990-1004):
+- When `SPREAD_MODE === 'single'`: current behavior (unchanged)
+- When `SPREAD_MODE === 'burst_spread'`:
+  1. Find nearest enemy (same as now)
+  2. Compute base angle from cart to nearest enemy
+  3. For each of `BURST_COUNT` projectiles, compute spread angle offset (symmetric: e.g. -6, 0, +6 degrees)
+  4. For each offset, create a new target point at that angle at the same distance
+  5. Call a new `fireProjectileAtAngle(originX, originY, angle, distance)` helper (or modify `fireProjectile` to accept target coords directly)
+  6. Increment `shotsFiredRef` by `BURST_COUNT`
 
-- In the Stage Breakdown section, for each gate line, compute:
-  - `bombDmg = t.bombGateDamageByGate[i]`
-  - `bulletDmg = dealt - bombDmg`
-- Display format: `G1: HP 1000/1000 | Dealt: 312 (31.2%) [bullets: 284, bomb: 28] | Time: 28.4s | Destroyed: NO`
+New helper or modified `fireProjectile`:
+- Accept raw `targetX, targetY` instead of an Enemy object
+- The existing projectile collision logic already handles gate hits for any projectile trajectory, so no changes needed there
 
-### 5. Economy Delta Explanation (RunSummaryOverlay.tsx)
+Telemetry additions:
+- Add `burstsTriggered: number` to `RunTelemetry`
+- Add `burstsTriggeredRef` in CoffeeRushGame, reset in `initGame()`, increment per burst trigger
+- Include in `buildTelemetry()`
 
-Add clarity lines to the Economy section:
+**`src/game/RunSummaryOverlay.tsx`**
+- In LoS section, add: `Bursts: {burstsTriggered}` (only when spread mode active)
+- In Config Snapshot, add: `SPREAD_MODE`, `WEAPON_SPREAD_DEG`, `BURST_COUNT`
 
-```
-Wallet delta = coinsEnd - coinsStart
-Run earned = coinsFromKills + coinsFromGateLumps + clearBonusCoins
-```
+**`src/game/types.ts`**
+- Add `burstsTriggered: number` to `RunTelemetry`
 
 ---
 
 ## Technical Details
 
-### Files Modified
+### Spread Angle Math
 
-| File | Change |
-|------|--------|
-| `types.ts` | Add `runId`, `telemetryBuiltAt`, `gateDestroyedByGate` to `RunTelemetry` |
-| `CoffeeRushGame.tsx` | Add `runIdRef` + `gateDestroyedRef`, set in `initGame`/`buildTelemetry`/gate destruction |
-| `RunSummaryOverlay.tsx` | Use `t.runId`, add DEBUG lines, damage breakdown, gate destroyed from telemetry, economy clarity |
+```text
+baseAngle = atan2(targetY - originY, targetX - originX)
+for i in 0..BURST_COUNT-1:
+  offset = WEAPON_SPREAD_DEG * (i - (BURST_COUNT-1)/2) * (PI/180)
+  angle = baseAngle + offset
+  targetX = originX + cos(angle) * distance
+  targetY = originY + sin(angle) * distance
+```
 
 ### Implementation Order
 
-1. Update `RunTelemetry` type with 3 new fields
-2. Add refs and wiring in CoffeeRushGame (runId, gateDestroyed)
-3. Update RunSummaryOverlay output format
+1. Add `gateHpRemainingByGate` to telemetry type, buildTelemetry, and overlay
+2. Add spread config values to `GAME_CONFIG`
+3. Add `burstsTriggered` to telemetry type
+4. Modify auto-attack in game loop with spread mode branch
+5. Add a `fireProjectileAt(targetX, targetY, ...)` variant
+6. Update overlay to show burst stats and new config values
+
+### Default Behavior
+
+`SPREAD_MODE` defaults to `'single'` -- zero gameplay change until manually toggled to `'burst_spread'` in config. This is safe for testing.
 
