@@ -1067,6 +1067,14 @@ export const CoffeeRushGame: React.FC = () => {
             if (roll < cumulative) { targetMode = modes[m]; break; }
           }
           
+          // ── Gate pressure limiter (runtime safety valve) ──
+          if (targetMode !== 'front' && shotsFiredRef.current > 30) {
+            const gateRatio = shotsToGateRef.current / shotsFiredRef.current;
+            if (gateRatio > 0.08) {
+              targetMode = 'front';
+            }
+          }
+          
           // Determine aim target based on mode
           let aimTarget: { x: number; y: number };
           const sorted = [...enemies].sort((a, b) => a.x - b.x);
@@ -1084,7 +1092,7 @@ export const CoffeeRushGame: React.FC = () => {
             aimTarget = { x: pick.x, y: pick.y - pick.height / 2 };
           } else if (targetMode === 'gate' && gateBuildingRef.current && !gateBuildingRef.current.isDestroyed) {
             const g = gateBuildingRef.current;
-            aimTarget = { x: g.x - 40, y: originY + (Math.random() * 70 - 35) };
+            aimTarget = { x: g.x - 80, y: originY + (Math.random() * 70 - 35) };
           } else {
             // front (default / fallback)
             targetMode = 'front';
@@ -1094,7 +1102,10 @@ export const CoffeeRushGame: React.FC = () => {
           targetModeCountsRef.current[targetMode]++;
           
           // Apply Y jitter + tilt (TDS feel)
-          const jitteredY = aimTarget.y + GAME_CONFIG.AIM_Y_TILT + (Math.random() * 2 - 1) * GAME_CONFIG.AIM_Y_JITTER;
+          const roughDist = Math.abs(aimTarget.x - originX);
+          const jitterScale = Math.max(0.35, Math.min(1.0, roughDist / GAME_CONFIG.CROWDING_RANGE));
+          const scaledJitter = GAME_CONFIG.AIM_Y_JITTER * jitterScale;
+          const jitteredY = aimTarget.y + GAME_CONFIG.AIM_Y_TILT + (Math.random() * 2 - 1) * scaledJitter;
           
           const baseAngle = Math.atan2(jitteredY - originY, aimTarget.x - originX);
           const distance = Math.sqrt((aimTarget.x - originX) ** 2 + (jitteredY - originY) ** 2);
@@ -1125,7 +1136,9 @@ export const CoffeeRushGame: React.FC = () => {
           }
           
           for (let i = 0; i < count; i++) {
-            const offset = spreadRad * (i - (count - 1) / 2) / Math.max(count - 1, 1);
+            const t = (i - (count - 1) / 2) / Math.max((count - 1) / 2, 1);
+            const biasedT = Math.sign(t) * Math.pow(Math.abs(t), 0.8);
+            const offset = biasedT * spreadRad / 2;
             const angle = baseAngle + offset;
             const projTargetX = originX + Math.cos(angle) * distance;
             const projTargetY = originY + Math.sin(angle) * distance;
