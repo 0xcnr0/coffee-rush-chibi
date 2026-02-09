@@ -765,6 +765,7 @@ export const CoffeeRushGame: React.FC = () => {
       breathingTimer: 0,
       crossedThresholds: [],
       crumbleTimer: 0,
+      lastHitTime: 0,
     };
     return gate;
   }, []);
@@ -790,7 +791,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current);
+        deltaTime, gateBuildingRef.current, currentTime);
       return;
     }
     
@@ -907,7 +908,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current);
+        deltaTime, gateBuildingRef.current, currentTime);
       return;
     }
     
@@ -1067,8 +1068,14 @@ export const CoffeeRushGame: React.FC = () => {
             if (roll < cumulative) { targetMode = modes[m]; break; }
           }
           
-          // ── Gate pressure limiter (runtime safety valve) ──
-          if (targetMode !== 'front' && shotsFiredRef.current > 30) {
+          // ── Gate snap lock: when lane is clear, force gate targeting ──
+          const nearEnemies = enemies.filter(e => e.x < cartX + 150);
+          if (nearEnemies.length === 0 && gateBuildingRef.current && !gateBuildingRef.current.isDestroyed) {
+            targetMode = 'gate';
+          }
+          
+          // ── Gate pressure limiter (runtime safety valve, only when enemies present) ──
+          if (targetMode !== 'front' && nearEnemies.length > 0 && shotsFiredRef.current > 30) {
             const gateRatio = shotsToGateRef.current / shotsFiredRef.current;
             if (gateRatio > 0.08) {
               targetMode = 'front';
@@ -1092,7 +1099,7 @@ export const CoffeeRushGame: React.FC = () => {
             aimTarget = { x: pick.x, y: pick.y - pick.height / 2 };
           } else if (targetMode === 'gate' && gateBuildingRef.current && !gateBuildingRef.current.isDestroyed) {
             const g = gateBuildingRef.current;
-            aimTarget = { x: g.x - 80, y: originY + (Math.random() * 70 - 35) };
+            aimTarget = { x: g.x - 40, y: g.y + g.height / 2 + (Math.random() * 40 - 20) };
           } else {
             // front (default / fallback)
             targetMode = 'front';
@@ -1211,10 +1218,11 @@ export const CoffeeRushGame: React.FC = () => {
         if (g && !g.isDestroyed && proj.x >= g.x && proj.x <= g.x + g.width &&
             proj.y >= g.y && proj.y <= g.y + g.height) {
           g.hp -= proj.damage;
+          g.lastHitTime = timeRef.current;
           const si = stageIndexRef.current - 1;
           if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += proj.damage;
           shotsToGateRef.current++;
-          spawnParticles(proj.x, proj.y, 'sparkle', 2);
+          spawnParticles(proj.x, proj.y, 'sparkle', 3);
           projectilePool.release(proj);
           return;
         }
@@ -1383,7 +1391,7 @@ export const CoffeeRushGame: React.FC = () => {
     drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
       tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
       bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-      deltaTime, gateBuildingRef.current);
+      deltaTime, gateBuildingRef.current, currentTime);
   }, [
     enemyPool, projectilePool, tipPool, particlePool,
     spawnEnemy, fireProjectile, spawnParticles, spawnTip,
