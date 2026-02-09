@@ -158,6 +158,7 @@ export const CoffeeRushGame: React.FC = () => {
   const runIdRef = useRef(0);
   const gateDestroyedRef = useRef<boolean[]>([false, false, false, false, false]);
   const burstsTriggeredRef = useRef(0);
+  const targetModeCountsRef = useRef({ front: 0, mid: 0, back: 0, gate: 0 });
   // Gate cleanup state (victory pulse before transition)
   const gateCleanupTimerRef = useRef(0);
   
@@ -300,6 +301,7 @@ export const CoffeeRushGame: React.FC = () => {
     runIdRef.current = Date.now();
     gateDestroyedRef.current = [false, false, false, false, false];
     burstsTriggeredRef.current = 0;
+    targetModeCountsRef.current = { front: 0, mid: 0, back: 0, gate: 0 };
     clearPurchaseLog();
     setShowRunSummary(false);
     
@@ -432,6 +434,7 @@ export const CoffeeRushGame: React.FC = () => {
       bombGateDamageByGate: [...bombGateDamageByGateRef.current],
       gateDestroyedByGate: [...gateDestroyedRef.current],
       burstsTriggered: burstsTriggeredRef.current,
+      targetModeCounts: { ...targetModeCountsRef.current },
       phaseAtDeath: playPhaseRef.current,
       timeInTravel: phaseTimersRef.current.travel,
       timeInSiege: phaseTimersRef.current.siege,
@@ -1032,6 +1035,8 @@ export const CoffeeRushGame: React.FC = () => {
     
     if (enemies.length > 0 && currentTime - lastAttackRef.current > GAME_CONFIG.AUTO_ATTACK_INTERVAL / 1000) {
       const cartX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
+      
+      // Find nearest enemy (always needed as fallback)
       let nearest = enemies[0];
       let minDist = Math.abs(enemies[0].x - cartX);
       enemies.forEach(e => {
@@ -1040,25 +1045,75 @@ export const CoffeeRushGame: React.FC = () => {
       });
       
       if (GAME_CONFIG.WEAPON_MODE === 'shotgun') {
-        // Shotgun: fire SHOTGUN_PELLETS with angular spread
         const activeBlocks = blocksRef.current.filter(b => !b.destroyed);
         if (activeBlocks.length > 0) {
           const originX = cartX;
           const topBlock = activeBlocks[activeBlocks.length - 1];
           const originY = topBlock.y;
-          const tx = nearest.x;
-          const ty = nearest.y - nearest.height / 2;
-          const baseAngle = Math.atan2(ty - originY, tx - originX);
-          const distance = Math.sqrt((tx - originX) ** 2 + (ty - originY) ** 2);
-          const count = Math.min(GAME_CONFIG.SHOTGUN_PELLETS, 6); // cap at 6
-          const spreadRad = GAME_CONFIG.SHOTGUN_SPREAD_DEG * (Math.PI / 180);
           
-          // Compute per-pellet damage
+          // ── Smart target selection (TDS-style variety) ──
+          const crowding = enemies.filter(e => e.x < cartX + GAME_CONFIG.CROWDING_RANGE).length;
+          const weights = crowding >= GAME_CONFIG.CROWDING_THRESHOLD
+            ? GAME_CONFIG.TARGET_WEIGHTS_CROWDED
+            : GAME_CONFIG.TARGET_WEIGHTS_NORMAL;
+          
+          // Weighted random pick
+          const roll = Math.random();
+          let cumulative = 0;
+          let targetMode: 'front' | 'mid' | 'back' | 'gate' = 'front';
+          const modes: Array<'front' | 'mid' | 'back' | 'gate'> = ['front', 'mid', 'back', 'gate'];
+          for (let m = 0; m < 4; m++) {
+            cumulative += weights[m];
+            if (roll < cumulative) { targetMode = modes[m]; break; }
+          }
+          
+          // Determine aim target based on mode
+          let aimTarget: { x: number; y: number };
+          const sorted = [...enemies].sort((a, b) => a.x - b.x);
+          
+          if (targetMode === 'mid' && sorted.length >= 3) {
+            const midStart = Math.floor(sorted.length * 0.3);
+            const midEnd = Math.floor(sorted.length * 0.7);
+            const midEnemies = sorted.slice(midStart, Math.max(midEnd, midStart + 1));
+            const pick = midEnemies[Math.floor(Math.random() * midEnemies.length)];
+            aimTarget = { x: pick.x, y: pick.y - pick.height / 2 };
+          } else if (targetMode === 'back' && sorted.length >= 2) {
+            const backStart = Math.floor(sorted.length * 0.7);
+            const backEnemies = sorted.slice(backStart);
+            const pick = backEnemies[Math.floor(Math.random() * backEnemies.length)];
+            aimTarget = { x: pick.x, y: pick.y - pick.height / 2 };
+          } else if (targetMode === 'gate' && gateBuildingRef.current && !gateBuildingRef.current.isDestroyed) {
+            const g = gateBuildingRef.current;
+            aimTarget = { x: g.x - 40, y: originY + (Math.random() * 70 - 35) };
+          } else {
+            // front (default / fallback)
+            targetMode = 'front';
+            aimTarget = { x: nearest.x, y: nearest.y - nearest.height / 2 };
+          }
+          
+          targetModeCountsRef.current[targetMode]++;
+          
+          // Apply Y jitter + tilt (TDS feel)
+          const jitteredY = aimTarget.y + GAME_CONFIG.AIM_Y_TILT + (Math.random() * 2 - 1) * GAME_CONFIG.AIM_Y_JITTER;
+          
+          const baseAngle = Math.atan2(jitteredY - originY, aimTarget.x - originX);
+          const distance = Math.sqrt((aimTarget.x - originX) ** 2 + (jitteredY - originY) ** 2);
+          
+          // Dynamic spread: wider when target is further
+          const distanceFactor = 1 + (distance / 300) * GAME_CONFIG.SHOTGUN_SPREAD_DISTANCE_SCALE;
+          const effectiveSpreadDeg = Math.min(
+            Math.max(GAME_CONFIG.SHOTGUN_SPREAD_DEG * distanceFactor, GAME_CONFIG.SHOTGUN_SPREAD_DEG_MIN),
+            GAME_CONFIG.SHOTGUN_SPREAD_DEG_MAX
+          );
+          const spreadRad = effectiveSpreadDeg * (Math.PI / 180);
+          
+          const count = Math.min(GAME_CONFIG.SHOTGUN_PELLETS, 6);
+          
+          // Compute per-pellet damage (DPS preserved)
           const stressMultiplier = isStressTest ? 0.4 : 1;
           const baseDamage = Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current * stressMultiplier);
           let pelletDamages: number[];
           if (GAME_CONFIG.SHOTGUN_DAMAGE_SPLIT === 'weighted_center') {
-            // Weighted: center pellets deal more damage
             const rawWeights = Array.from({ length: count }, (_, i) => {
               const center = (count - 1) / 2;
               return 1 + (1 - Math.abs(i - center) / Math.max(center, 1));

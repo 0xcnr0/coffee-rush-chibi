@@ -66,6 +66,8 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(`To Enemies: ${t?.shotsToEnemies ?? 0} | To Gate: ${t?.shotsToGate ?? 0}`);
     if (GAME_CONFIG.WEAPON_MODE === 'shotgun') {
       lines.push(`Shotgun Bursts: ${t?.burstsTriggered ?? 0} (${GAME_CONFIG.SHOTGUN_PELLETS} pellets, ${GAME_CONFIG.SHOTGUN_SPREAD_DEG}° cone, ${GAME_CONFIG.SHOTGUN_DAMAGE_SPLIT})`);
+      const tmc = t?.targetModeCounts ?? { front: 0, mid: 0, back: 0, gate: 0 };
+      lines.push(`Target Modes: front=${tmc.front} mid=${tmc.mid} back=${tmc.back} gate=${tmc.gate}`);
     }
     lines.push(`Bomb Gate Damage Total: ${t?.bombGateDamageTotal ?? 0}`);
     const bgd = t?.bombGateDamageByGate ?? [0, 0, 0, 0, 0];
@@ -132,7 +134,8 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(`TONIC_BOMB_COST: ${GAME_CONFIG.TONIC_BOMB_COST}`);
     lines.push(`WEAPON_MODE: ${GAME_CONFIG.WEAPON_MODE}`);
     if (GAME_CONFIG.WEAPON_MODE === 'shotgun') {
-      lines.push(`SHOTGUN: ${GAME_CONFIG.SHOTGUN_PELLETS} pellets | ${GAME_CONFIG.SHOTGUN_SPREAD_DEG}° | split: ${GAME_CONFIG.SHOTGUN_DAMAGE_SPLIT} | radius: ${GAME_CONFIG.PROJECTILE_RADIUS}`);
+      lines.push(`SHOTGUN: ${GAME_CONFIG.SHOTGUN_PELLETS} pellets | ${GAME_CONFIG.SHOTGUN_SPREAD_DEG}° (${GAME_CONFIG.SHOTGUN_SPREAD_DEG_MIN}-${GAME_CONFIG.SHOTGUN_SPREAD_DEG_MAX}) | split: ${GAME_CONFIG.SHOTGUN_DAMAGE_SPLIT} | radius: ${GAME_CONFIG.PROJECTILE_RADIUS}`);
+      lines.push(`AIM: jitter=${GAME_CONFIG.AIM_Y_JITTER} tilt=${GAME_CONFIG.AIM_Y_TILT} | crowdThresh=${GAME_CONFIG.CROWDING_THRESHOLD} range=${GAME_CONFIG.CROWDING_RANGE}`);
     }
     lines.push('');
     const maxStage = t?.stageReached ?? 1;

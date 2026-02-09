@@ -107,6 +107,11 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             <div>Shots: {telemetry.shotsHit}/{telemetry.shotsFired}</div>
             <div>Hit Rate: <span className={telemetry.hitRate >= 80 ? 'text-green-400' : telemetry.hitRate >= 50 ? 'text-warm-orange' : 'text-red-400'}>{telemetry.hitRate}%</span></div>
             <div>Gate Hits: {telemetry.shotsToGate}</div>
+            {telemetry.targetModeCounts && (
+              <div className="col-span-2 text-[9px] text-coffee-light/50">
+                Aim: F{telemetry.targetModeCounts.front}/M{telemetry.targetModeCounts.mid}/B{telemetry.targetModeCounts.back}/G{telemetry.targetModeCounts.gate}
+              </div>
+            )}
             
             <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Survivability</div>
             <div>Blocks Lost: <span className={telemetry.blocksLost > 0 ? 'text-red-400' : 'text-green-400'}>{telemetry.blocksLost}</span></div>
