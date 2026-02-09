@@ -157,6 +157,7 @@ export const CoffeeRushGame: React.FC = () => {
   const [showRunSummary, setShowRunSummary] = useState(false);
   const runIdRef = useRef(0);
   const gateDestroyedRef = useRef<boolean[]>([false, false, false, false, false]);
+  const burstsTriggeredRef = useRef(0);
   // Gate cleanup state (victory pulse before transition)
   const gateCleanupTimerRef = useRef(0);
   
@@ -298,6 +299,7 @@ export const CoffeeRushGame: React.FC = () => {
     gateCleanupTimerRef.current = 0;
     runIdRef.current = Date.now();
     gateDestroyedRef.current = [false, false, false, false, false];
+    burstsTriggeredRef.current = 0;
     clearPurchaseLog();
     setShowRunSummary(false);
     
@@ -406,11 +408,30 @@ export const CoffeeRushGame: React.FC = () => {
       tonicBombUses: t.tonicBombUses,
       gateDamageDealt: [...gateDamageDealtRef.current],
       gateTimeSpent: [...gateTimeSpentRef.current],
+      gateHpRemainingByGate: (() => {
+        const result: number[] = [];
+        for (let i = 0; i < 5; i++) {
+          const stageReached = stageIndexRef.current;
+          if (i < stageReached - 1) {
+            // Previous stages: destroyed → 0, else shouldn't happen
+            result.push(0);
+          } else if (i === stageReached - 1) {
+            // Current stage: read live gate HP
+            const g = gateBuildingRef.current;
+            result.push(g ? Math.max(0, g.hp) : (STAGES[i].gateHP ?? 0));
+          } else {
+            // Unreached: full HP
+            result.push(STAGES[i].gateHP ?? 0);
+          }
+        }
+        return result;
+      })(),
       shotsToGate: shotsToGateRef.current,
       shotsToEnemies: shotsToEnemiesRef.current,
       bombGateDamageTotal: bombGateDamageByGateRef.current.reduce((a, b) => a + b, 0),
       bombGateDamageByGate: [...bombGateDamageByGateRef.current],
       gateDestroyedByGate: [...gateDestroyedRef.current],
+      burstsTriggered: burstsTriggeredRef.current,
       phaseAtDeath: playPhaseRef.current,
       timeInTravel: phaseTimersRef.current.travel,
       timeInSiege: phaseTimersRef.current.siege,
@@ -586,6 +607,25 @@ export const CoffeeRushGame: React.FC = () => {
     proj.targetY = targetEnemy.y - targetEnemy.height / 2;
     const stressMultiplier = isStressTest ? 0.4 : 1;
     proj.damage = Math.floor((isSaw ? GAME_CONFIG.SAW_DAMAGE : GAME_CONFIG.PROJECTILE_DAMAGE) * damageMultiplierRef.current * stressMultiplier);
+    proj.pierce = pierce;
+    proj.isSaw = isSaw;
+  }, [projectilePool, isStressTest]);
+  
+  // Fire projectile at raw coordinates (for burst spread)
+  const fireProjectileAt = useCallback((targetX: number, targetY: number, pierce = false, isSaw = false) => {
+    const proj = projectilePool.acquire();
+    if (!proj) return;
+    
+    const activeBlocks = blocksRef.current.filter(b => !b.destroyed);
+    if (activeBlocks.length === 0) return;
+    
+    const topBlock = activeBlocks[activeBlocks.length - 1];
+    proj.x = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
+    proj.y = topBlock.y;
+    proj.targetX = targetX;
+    proj.targetY = targetY;
+    const stressMultiplier = isStressTest ? 0.4 : 1;
+    proj.damage = Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current * stressMultiplier);
     proj.pierce = pierce;
     proj.isSaw = isSaw;
   }, [projectilePool, isStressTest]);
@@ -998,8 +1038,35 @@ export const CoffeeRushGame: React.FC = () => {
         if (dist < minDist) { minDist = dist; nearest = e; }
       });
       
-      fireProjectile(nearest);
-      shotsFiredRef.current++;
+      if (GAME_CONFIG.SPREAD_MODE === 'burst_spread') {
+        // Burst spread: fire BURST_COUNT projectiles with angular offsets
+        const activeBlocks = blocksRef.current.filter(b => !b.destroyed);
+        if (activeBlocks.length > 0) {
+          const originX = cartX;
+          const topBlock = activeBlocks[activeBlocks.length - 1];
+          const originY = topBlock.y;
+          const tx = nearest.x;
+          const ty = nearest.y - nearest.height / 2;
+          const baseAngle = Math.atan2(ty - originY, tx - originX);
+          const distance = Math.sqrt((tx - originX) ** 2 + (ty - originY) ** 2);
+          const count = GAME_CONFIG.BURST_COUNT;
+          const spreadRad = GAME_CONFIG.WEAPON_SPREAD_DEG * (Math.PI / 180);
+          
+          for (let i = 0; i < count; i++) {
+            const offset = spreadRad * (i - (count - 1) / 2);
+            const angle = baseAngle + offset;
+            const projTargetX = originX + Math.cos(angle) * distance;
+            const projTargetY = originY + Math.sin(angle) * distance;
+            fireProjectileAt(projTargetX, projTargetY);
+          }
+          shotsFiredRef.current += count;
+          burstsTriggeredRef.current++;
+        }
+      } else {
+        // Single mode: current behavior
+        fireProjectile(nearest);
+        shotsFiredRef.current++;
+      }
       lastAttackRef.current = currentTime;
     }
     
