@@ -394,16 +394,12 @@ function drawProjectile(ctx: CanvasRenderingContext2D, proj: Projectile) {
     ctx.fill();
     ctx.restore();
   } else {
-    // Coffee cup projectile
-    ctx.fillStyle = COLORS.foam;
-    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+    // Coffee pellet projectile (scales with radius)
     ctx.fillStyle = COLORS.mediumRoast;
-    ctx.beginPath(); ctx.arc(x, y, radius * 0.6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'hsla(0, 0%, 100%, 0.5)';
-    ctx.beginPath();
-    ctx.arc(x - 8, y - 3, 4, 0, Math.PI * 2);
-    ctx.arc(x - 14, y + 2, 3, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+    // Highlight dot
+    ctx.fillStyle = COLORS.foam;
+    ctx.beginPath(); ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2); ctx.fill();
   }
 }
 

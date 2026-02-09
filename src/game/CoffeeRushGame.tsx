@@ -236,7 +236,7 @@ export const CoffeeRushGame: React.FC = () => {
   
   // Object pools
   const enemyPool = useObjectPool(createEnemy, GAME_CONFIG.MAX_ENEMIES);
-  const projectilePool = useObjectPool(createProjectile, 50);
+  const projectilePool = useObjectPool(createProjectile, 80);
   const tipPool = useObjectPool(createTip, 30);
   const particlePool = useObjectPool(createParticle, GAME_CONFIG.MAX_PARTICLES);
   
@@ -611,8 +611,8 @@ export const CoffeeRushGame: React.FC = () => {
     proj.isSaw = isSaw;
   }, [projectilePool, isStressTest]);
   
-  // Fire projectile at raw coordinates (for burst spread)
-  const fireProjectileAt = useCallback((targetX: number, targetY: number, pierce = false, isSaw = false) => {
+  // Fire projectile at raw coordinates (for shotgun/burst spread)
+  const fireProjectileAt = useCallback((targetX: number, targetY: number, customDamage?: number, pierce = false, isSaw = false) => {
     const proj = projectilePool.acquire();
     if (!proj) return;
     
@@ -624,8 +624,9 @@ export const CoffeeRushGame: React.FC = () => {
     proj.y = topBlock.y;
     proj.targetX = targetX;
     proj.targetY = targetY;
+    proj.radius = GAME_CONFIG.PROJECTILE_RADIUS;
     const stressMultiplier = isStressTest ? 0.4 : 1;
-    proj.damage = Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current * stressMultiplier);
+    proj.damage = customDamage ?? Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current * stressMultiplier);
     proj.pierce = pierce;
     proj.isSaw = isSaw;
   }, [projectilePool, isStressTest]);
@@ -1038,8 +1039,8 @@ export const CoffeeRushGame: React.FC = () => {
         if (dist < minDist) { minDist = dist; nearest = e; }
       });
       
-      if (GAME_CONFIG.SPREAD_MODE === 'burst_spread') {
-        // Burst spread: fire BURST_COUNT projectiles with angular offsets
+      if (GAME_CONFIG.WEAPON_MODE === 'shotgun') {
+        // Shotgun: fire SHOTGUN_PELLETS with angular spread
         const activeBlocks = blocksRef.current.filter(b => !b.destroyed);
         if (activeBlocks.length > 0) {
           const originX = cartX;
@@ -1049,15 +1050,31 @@ export const CoffeeRushGame: React.FC = () => {
           const ty = nearest.y - nearest.height / 2;
           const baseAngle = Math.atan2(ty - originY, tx - originX);
           const distance = Math.sqrt((tx - originX) ** 2 + (ty - originY) ** 2);
-          const count = GAME_CONFIG.BURST_COUNT;
-          const spreadRad = GAME_CONFIG.WEAPON_SPREAD_DEG * (Math.PI / 180);
+          const count = Math.min(GAME_CONFIG.SHOTGUN_PELLETS, 6); // cap at 6
+          const spreadRad = GAME_CONFIG.SHOTGUN_SPREAD_DEG * (Math.PI / 180);
+          
+          // Compute per-pellet damage
+          const stressMultiplier = isStressTest ? 0.4 : 1;
+          const baseDamage = Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current * stressMultiplier);
+          let pelletDamages: number[];
+          if (GAME_CONFIG.SHOTGUN_DAMAGE_SPLIT === 'weighted_center') {
+            // Weighted: center pellets deal more damage
+            const rawWeights = Array.from({ length: count }, (_, i) => {
+              const center = (count - 1) / 2;
+              return 1 + (1 - Math.abs(i - center) / Math.max(center, 1));
+            });
+            const totalWeight = rawWeights.reduce((a, b) => a + b, 0);
+            pelletDamages = rawWeights.map(w => Math.max(1, Math.round((w / totalWeight) * baseDamage)));
+          } else {
+            pelletDamages = Array(count).fill(Math.max(1, Math.round(baseDamage / count)));
+          }
           
           for (let i = 0; i < count; i++) {
-            const offset = spreadRad * (i - (count - 1) / 2);
+            const offset = spreadRad * (i - (count - 1) / 2) / Math.max(count - 1, 1);
             const angle = baseAngle + offset;
             const projTargetX = originX + Math.cos(angle) * distance;
             const projTargetY = originY + Math.sin(angle) * distance;
-            fireProjectileAt(projTargetX, projTargetY);
+            fireProjectileAt(projTargetX, projTargetY, pelletDamages[i]);
           }
           shotsFiredRef.current += count;
           burstsTriggeredRef.current++;
