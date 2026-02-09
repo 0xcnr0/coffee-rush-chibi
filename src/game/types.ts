@@ -24,6 +24,7 @@ export interface GateBuilding {
   breathingTimer: number;
   crossedThresholds: number[];  // track which HP% thresholds triggered breathing
   crumbleTimer: number;         // cleanup animation timer after destruction
+  lastHitTime: number;          // timestamp of last bullet hit (for flash effect)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

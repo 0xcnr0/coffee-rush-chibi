@@ -25,7 +25,7 @@ export interface StageConfig {
 }
 
 export const STAGES: readonly StageConfig[] = [
-  { id: 1, gateHP: 1000,  spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
+  { id: 1, gateHP: 600,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
   { id: 2, gateHP: 2000,  spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
   { id: 3, gateHP: 3500,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
   { id: 4, gateHP: 5000,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
@@ -99,7 +99,7 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   GATE_BUILDING_X_OFFSET: 60,     // pixels from right edge of canvas
   GATE_BUILDING_WIDTH: 50,
-  GATE_BUILDING_HEIGHT: 80,
+  GATE_BUILDING_HEIGHT: 160,
   GATE_BREATHING_THRESHOLDS: [0.75, 0.50, 0.25] as readonly number[],
   GATE_BREATHING_SLOWDOWN_DURATION: 1.0,  // seconds
   GATE_BREATHING_SPAWN_MULT: 1.5,         // spawn interval multiplied during breathing
@@ -214,14 +214,14 @@ export const GAME_CONFIG = {
   SHOTGUN_SPREAD_DEG_MIN: 16,
   SHOTGUN_SPREAD_DEG_MAX: 32,
   SHOTGUN_SPREAD_DISTANCE_SCALE: 0.35, // spread widens with distance
-  MUZZLE_Y_OFFSET: 50,                // px down from topBlock.y → flatter TDS-style shots
+  MUZZLE_Y_OFFSET: 75,                // px down from topBlock.y → flatter TDS-style shots
   SHOTGUN_DAMAGE_SPLIT: 'weighted_center' as 'equal' | 'weighted_center',
   
   // ─────────────────────────────────────────────────────────────
   // AIM VARIATION (TDS-style jitter + smart target selection)
   // ─────────────────────────────────────────────────────────────
   AIM_Y_JITTER: 10,                 // px random Y offset per burst
-  AIM_Y_TILT: -6,                   // slight upward tilt (negative = up)
+  AIM_Y_TILT: -2,                   // slight upward tilt (negative = up)
   CROWDING_THRESHOLD: 6,            // enemies near cart = "crowded"
   CROWDING_RANGE: 220,              // px from cart to count crowding
   // Target mode weights: [front, mid, back, gate]

@@ -19,6 +19,7 @@ export function drawGame(
   playPhase?: PlayPhase,
   deltaTime?: number,
   gateBuilding?: GateBuilding | null,
+  currentTime?: number,
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
   const isTraveling = playPhase === 'TRAVEL';
@@ -37,7 +38,7 @@ export function drawGame(
   
   // Draw gate building (before enemies so enemies appear in front)
   if (gateBuilding && !gateBuilding.isDestroyed) {
-    drawGateBuilding(ctx, gateBuilding);
+    drawGateBuilding(ctx, gateBuilding, currentTime);
   }
   
   drawCart(ctx, blocks, isTraveling);
@@ -76,7 +77,7 @@ export function drawMenuScene(ctx: CanvasRenderingContext2D, blockCount: number)
 // ═══════════════════════════════════════════════════════════════════════
 // GATE BUILDING
 // ═══════════════════════════════════════════════════════════════════════
-function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding) {
+function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, currentTime?: number) {
   const hpPercent = gate.hp / gate.maxHp;
   
   // Building body (gets redder as HP drops)
@@ -87,6 +88,14 @@ function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding) {
   ctx.beginPath();
   roundRect(ctx, gate.x, gate.y, gate.width, gate.height, 6);
   ctx.fill();
+  
+  // Hit flash effect
+  if (currentTime !== undefined && gate.lastHitTime && (currentTime - gate.lastHitTime) < 0.15) {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.beginPath();
+    roundRect(ctx, gate.x, gate.y, gate.width, gate.height, 6);
+    ctx.fill();
+  }
   
   // Stage number
   ctx.fillStyle = 'hsla(0, 0%, 100%, 0.8)';
