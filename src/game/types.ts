@@ -217,11 +217,15 @@ export interface RunTelemetry {
   // Gate telemetry
   gateDamageDealt: number[];
   gateTimeSpent: number[];
+  gateHpRemainingByGate: number[];
   shotsToGate: number;
   shotsToEnemies: number;
   bombGateDamageTotal: number;
   bombGateDamageByGate: number[];
   gateDestroyedByGate: boolean[];
+  
+  // Burst spread telemetry
+  burstsTriggered: number;
   
   // Phase timing
   phaseAtDeath: PlayPhase | null;

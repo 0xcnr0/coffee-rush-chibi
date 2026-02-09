@@ -37,6 +37,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     for (let i = 0; i < 5; i++) {
       const stage = STAGES[i];
       const maxHp = stage.gateHP ?? 0;
+      const remaining = t?.gateHpRemainingByGate?.[i] ?? maxHp;
       const dealt = t?.gateDamageDealt?.[i] ?? 0;
       const bombDmg = t?.bombGateDamageByGate?.[i] ?? 0;
       const bulletDmg = dealt - bombDmg;
@@ -45,7 +46,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
       const stageReached = t?.stageReached ?? 1;
       const destroyed = t?.gateDestroyedByGate?.[i] ?? false;
       const status = stageReached <= i ? '[unreached]' : destroyed ? 'YES' : 'NO';
-      lines.push(`G${i + 1}: HP ${maxHp}/${maxHp} | Dealt: ${dealt} (${pct}%) [bullets: ${bulletDmg}, bomb: ${bombDmg}] | Time: ${time}s | Destroyed: ${status}`);
+      lines.push(`G${i + 1}: HP rem: ${remaining}/${maxHp} | Dealt: ${dealt} (${pct}%) [bullets: ${bulletDmg}, bomb: ${bombDmg}] | Time: ${time}s | Destroyed: ${status}`);
     }
     lines.push('');
 
@@ -55,6 +56,9 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(hr);
     lines.push(`Shots: ${t?.shotsFired ?? 0} fired, ${t?.shotsHit ?? 0} hit (${t?.hitRate ?? 0}%)`);
     lines.push(`To Enemies: ${t?.shotsToEnemies ?? 0} | To Gate: ${t?.shotsToGate ?? 0}`);
+    if (GAME_CONFIG.SPREAD_MODE === 'burst_spread') {
+      lines.push(`Bursts: ${t?.burstsTriggered ?? 0} (${GAME_CONFIG.BURST_COUNT}/burst, ${GAME_CONFIG.WEAPON_SPREAD_DEG}°)`);
+    }
     lines.push(`Bomb Gate Damage Total: ${t?.bombGateDamageTotal ?? 0}`);
     const bgd = t?.bombGateDamageByGate ?? [0, 0, 0, 0, 0];
     lines.push(`  G1: ${bgd[0]} | G2: ${bgd[1]} | G3: ${bgd[2]} | G4: ${bgd[3]} | G5: ${bgd[4]}`);
@@ -118,6 +122,10 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(`LATCHED_TICK_INTERVAL: ${GAME_CONFIG.LATCHED_TICK_INTERVAL}`);
     lines.push(`TONIC_BOMB_DAMAGE: ${GAME_CONFIG.TONIC_BOMB_DAMAGE}`);
     lines.push(`TONIC_BOMB_COST: ${GAME_CONFIG.TONIC_BOMB_COST}`);
+    lines.push(`SPREAD_MODE: ${GAME_CONFIG.SPREAD_MODE}`);
+    if (GAME_CONFIG.SPREAD_MODE === 'burst_spread') {
+      lines.push(`WEAPON_SPREAD_DEG: ${GAME_CONFIG.WEAPON_SPREAD_DEG} | BURST_COUNT: ${GAME_CONFIG.BURST_COUNT}`);
+    }
     lines.push('');
     const maxStage = t?.stageReached ?? 1;
     for (let i = 0; i < Math.max(maxStage, 1) && i < STAGES.length; i++) {

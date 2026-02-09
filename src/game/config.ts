@@ -206,6 +206,13 @@ export const GAME_CONFIG = {
   MINIGUN_BURST_DURATION: 2.0,    // seconds for full burst
   
   // ─────────────────────────────────────────────────────────────
+  // SPREAD / BURST FIRING (A/B test: 'single' = current, 'burst_spread' = TDS-like)
+  // ─────────────────────────────────────────────────────────────
+  SPREAD_MODE: 'single' as 'single' | 'burst_spread',
+  WEAPON_SPREAD_DEG: 6,
+  BURST_COUNT: 3,
+  
+  // ─────────────────────────────────────────────────────────────
   // CHAPTER PERSISTENCE
   // ─────────────────────────────────────────────────────────────
   CHAPTER_RESET_ENABLED: false,   // Feature flag for Chapter 2 reset (not active now)
