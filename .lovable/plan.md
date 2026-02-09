@@ -1,22 +1,28 @@
 
-# Gate HP Remaining + Burst Spread A/B Test — IMPLEMENTED
+# Shotgun Coffee Firing Mode — IMPLEMENTED
 
 ## Status: ✅ Complete
 
-### Part A: Gate HP Remaining — ✅ Done
-- `gateHpRemainingByGate: number[]` added to `RunTelemetry`
-- `buildTelemetry()` snapshots current/destroyed/unreached gate HP
-- Overlay shows `HP rem: 960/1000` format
+### Shotgun Mode
+- `WEAPON_MODE: 'shotgun'` (default active) in `GAME_CONFIG`
+- 4 pellets per shot, 10° cone spread, weighted_center damage split
+- `PROJECTILE_RADIUS` reduced from 12 → 3 (tiny coffee pellets)
+- Renderer simplified to scale-aware circle (no hardcoded offsets)
+- `fireProjectileAt()` accepts custom per-pellet damage
+- Pellet cap: 6 max for safety
+- Projectile pool expanded from 50 → 80
 
-### Part B: Burst Spread Firing — ✅ Done
-- `SPREAD_MODE`, `WEAPON_SPREAD_DEG`, `BURST_COUNT` in `GAME_CONFIG`
-- Default: `'single'` (zero gameplay change)
-- `burst_spread` mode fires N projectiles with symmetric angular offsets
-- `fireProjectileAt(targetX, targetY)` helper added
-- `burstsTriggered` telemetry field tracks burst activations
-- Overlay shows burst stats when spread mode active
-- Config snapshot includes spread settings
+### Damage Split (weighted_center)
+- Center pellets deal more damage, edge pellets less
+- Sum of pellet damages ≈ baseDamage (DPS preserved)
+- Min 1 damage per pellet
 
-### Testing
-- Toggle `SPREAD_MODE` to `'burst_spread'` in config.ts to test
-- Compare "To Gate" shots between single vs burst_spread runs
+### Telemetry
+- `shotsFired` counts individual pellets
+- `burstsTriggered` counts shotgun trigger pulls
+- Overlay shows shotgun config + burst stats
+- Config snapshot includes WEAPON_MODE, pellet count, spread, split mode, radius
+
+### Previous Features (still active)
+- `gateHpRemainingByGate` snapshots gate HP at run end
+- `gateDestroyedByGate` tracks which gates were destroyed

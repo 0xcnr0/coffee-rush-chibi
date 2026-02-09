@@ -82,7 +82,7 @@ export const GAME_CONFIG = {
   AUTO_ATTACK_INTERVAL: 520,
   PROJECTILE_SPEED: 420,
   PROJECTILE_DAMAGE: 12,
-  PROJECTILE_RADIUS: 12,
+  PROJECTILE_RADIUS: 3,
   
   // ─────────────────────────────────────────────────────────────
   // SKILL: Tonic Bomb + Power System (Uncapped)
@@ -206,11 +206,12 @@ export const GAME_CONFIG = {
   MINIGUN_BURST_DURATION: 2.0,    // seconds for full burst
   
   // ─────────────────────────────────────────────────────────────
-  // SPREAD / BURST FIRING (A/B test: 'single' = current, 'burst_spread' = TDS-like)
+  // WEAPON FIRING MODE (A/B: 'single' | 'shotgun')
   // ─────────────────────────────────────────────────────────────
-  SPREAD_MODE: 'single' as 'single' | 'burst_spread',
-  WEAPON_SPREAD_DEG: 6,
-  BURST_COUNT: 3,
+  WEAPON_MODE: 'shotgun' as 'single' | 'shotgun',
+  SHOTGUN_PELLETS: 4,
+  SHOTGUN_SPREAD_DEG: 10,          // total cone in degrees
+  SHOTGUN_DAMAGE_SPLIT: 'weighted_center' as 'equal' | 'weighted_center',
   
   // ─────────────────────────────────────────────────────────────
   // CHAPTER PERSISTENCE
