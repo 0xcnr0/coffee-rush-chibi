@@ -180,6 +180,10 @@ export interface PurchaseEvent {
 }
 
 export interface RunTelemetry {
+  // Debug identity
+  runId: number;
+  telemetryBuiltAt: number;
+  
   // Run result
   gameMode: GameMode;
   stageReached: number;
@@ -217,6 +221,7 @@ export interface RunTelemetry {
   shotsToEnemies: number;
   bombGateDamageTotal: number;
   bombGateDamageByGate: number[];
+  gateDestroyedByGate: boolean[];
   
   // Phase timing
   phaseAtDeath: PlayPhase | null;
