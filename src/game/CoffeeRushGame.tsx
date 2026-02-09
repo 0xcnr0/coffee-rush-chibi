@@ -5,6 +5,7 @@ import { useGameLoop } from './useGameLoop';
 import { useObjectPool } from './useObjectPool';
 import { GarageOverlay } from './GarageOverlay';
 import { EndScreen } from './EndScreen';
+import { RunSummaryOverlay } from './RunSummaryOverlay';
 import { GameHUD } from './GameHUD';
 import { DebugHUD } from './DebugHUD';
 import { PauseMenu } from './PauseMenu';
@@ -15,6 +16,8 @@ import {
   updateRecords,
   updateChapterClear,
   getPipCost,
+  getPurchaseLog,
+  clearPurchaseLog,
 } from './persistence';
 import type { 
   GameState, 
@@ -31,6 +34,7 @@ import type {
   BossState,
   RunTelemetry,
   EvoTrait,
+  PurchaseEvent,
 } from './types';
 
 const createEnemy = (id: number): Enemy => ({
@@ -147,7 +151,10 @@ export const CoffeeRushGame: React.FC = () => {
   const gateTimeSpentRef = useRef<number[]>([0, 0, 0, 0, 0]);
   const shotsToGateRef = useRef(0);
   const shotsToEnemiesRef = useRef(0);
+  const bombGateDamageByGateRef = useRef<number[]>([0, 0, 0, 0, 0]);
   
+  // Run summary overlay
+  const [showRunSummary, setShowRunSummary] = useState(false);
   // Gate cleanup state (victory pulse before transition)
   const gateCleanupTimerRef = useRef(0);
   
@@ -285,7 +292,10 @@ export const CoffeeRushGame: React.FC = () => {
     gateTimeSpentRef.current = [0, 0, 0, 0, 0];
     shotsToGateRef.current = 0;
     shotsToEnemiesRef.current = 0;
+    bombGateDamageByGateRef.current = [0, 0, 0, 0, 0];
     gateCleanupTimerRef.current = 0;
+    clearPurchaseLog();
+    setShowRunSummary(false);
     
     telemetryRef.current = {
       maxLatchedPeak: 0, timeAtMaxLatched: 0,
@@ -392,6 +402,8 @@ export const CoffeeRushGame: React.FC = () => {
       gateTimeSpent: [...gateTimeSpentRef.current],
       shotsToGate: shotsToGateRef.current,
       shotsToEnemies: shotsToEnemiesRef.current,
+      bombGateDamageTotal: bombGateDamageByGateRef.current.reduce((a, b) => a + b, 0),
+      bombGateDamageByGate: [...bombGateDamageByGateRef.current],
       phaseAtDeath: playPhaseRef.current,
       timeInTravel: phaseTimersRef.current.travel,
       timeInSiege: phaseTimersRef.current.siege,
@@ -461,6 +473,7 @@ export const CoffeeRushGame: React.FC = () => {
       telemetry,
     });
     setGameState('END');
+    setShowRunSummary(true);
   }, [buildTelemetry]);
   
   const handleGameOver = useCallback(() => {
@@ -507,6 +520,7 @@ export const CoffeeRushGame: React.FC = () => {
       telemetry,
     });
     setGameState('END');
+    setShowRunSummary(true);
   }, [buildTelemetry]);
   
   const handleHome = useCallback(() => setGameState('MENU'), []);
@@ -643,7 +657,10 @@ export const CoffeeRushGame: React.FC = () => {
       if (gDist < GAME_CONFIG.TONIC_BOMB_RADIUS + gate.width) {
         gate.hp -= GAME_CONFIG.TONIC_BOMB_DAMAGE;
         const si = stageIndexRef.current - 1;
-        if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += GAME_CONFIG.TONIC_BOMB_DAMAGE;
+        if (si >= 0 && si < 5) {
+          gateDamageDealtRef.current[si] += GAME_CONFIG.TONIC_BOMB_DAMAGE;
+          bombGateDamageByGateRef.current[si] += GAME_CONFIG.TONIC_BOMB_DAMAGE;
+        }
         spawnParticles(gate.x + gate.width / 2, gate.y, 'sparkle', 5);
       }
     }
@@ -1312,7 +1329,18 @@ export const CoffeeRushGame: React.FC = () => {
           />
         )}
         
-        {gameState === 'END' && (
+        {gameState === 'END' && showRunSummary && (
+          <RunSummaryOverlay
+            stats={stats}
+            purchaseLog={getPurchaseLog()}
+            onContinue={() => {
+              clearPurchaseLog();
+              setShowRunSummary(false);
+            }}
+          />
+        )}
+        
+        {gameState === 'END' && !showRunSummary && (
           <EndScreen 
             stats={stats}
             onPlayAgain={() => handlePlay(gameMode)} 

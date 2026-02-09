@@ -1,8 +1,41 @@
 // Persistence helper for Coffee Rush progression data
 // TDS-Inspired Reboot: Phase 1 v1.1 — Schema v10 (Chapter-bound pips + EVO)
 
-import type { GameMode, WeaponType, WeaponSlot } from './types';
+import type { GameMode, WeaponType, WeaponSlot, PurchaseEvent } from './types';
 import { GAME_CONFIG } from './config';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PURCHASE LOG (separate localStorage key)
+// ═══════════════════════════════════════════════════════════════════════════════
+const PURCHASE_LOG_KEY = 'coffee-rush-purchase-log';
+
+export const logPurchase = (event: PurchaseEvent): void => {
+  try {
+    const log = getPurchaseLog();
+    log.push(event);
+    localStorage.setItem(PURCHASE_LOG_KEY, JSON.stringify(log));
+  } catch {
+    console.warn('Failed to log purchase');
+  }
+};
+
+export const getPurchaseLog = (): PurchaseEvent[] => {
+  try {
+    const stored = localStorage.getItem(PURCHASE_LOG_KEY);
+    if (!stored) return [];
+    return JSON.parse(stored) as PurchaseEvent[];
+  } catch {
+    return [];
+  }
+};
+
+export const clearPurchaseLog = (): void => {
+  try {
+    localStorage.removeItem(PURCHASE_LOG_KEY);
+  } catch {
+    console.warn('Failed to clear purchase log');
+  }
+};
 
 const STORAGE_KEY = 'coffee-rush-progress';
 const SAVE_VERSION = 10; // Reboot: Pip/EVO system, clean reset from v9
@@ -116,18 +149,24 @@ export const getPipCost = (currentPips: number, baseCost: number, costScaling: n
 export const purchasePowerPip = (cost: number): boolean => {
   const current = loadProgression();
   if (current.totalCoins < cost) return false;
+  const beforeValue = current.powerPips;
+  const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
   current.powerPips += 1;
   saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'power_pip', target: 'power', before: `pips:${beforeValue}`, after: `pips:${current.powerPips}`, beforeValue, afterValue: current.powerPips, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 
 export const purchaseDamagePip = (cost: number): boolean => {
   const current = loadProgression();
   if (current.totalCoins < cost) return false;
+  const beforeValue = current.damagePips;
+  const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
   current.damagePips += 1;
   saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'damage_pip', target: 'damage', before: `pips:${beforeValue}`, after: `pips:${current.damagePips}`, beforeValue, afterValue: current.damagePips, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 
@@ -135,9 +174,12 @@ export const purchaseBlockPip = (slotIndex: number, cost: number): boolean => {
   const current = loadProgression();
   if (current.totalCoins < cost) return false;
   if (slotIndex < 0 || slotIndex >= current.blockPips.length) return false;
+  const beforeValue = current.blockPips[slotIndex];
+  const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
   current.blockPips[slotIndex] += 1;
   saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'block_pip', target: `block_${slotIndex}`, before: `pips:${beforeValue}`, after: `pips:${current.blockPips[slotIndex]}`, beforeValue, afterValue: current.blockPips[slotIndex], coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 
@@ -145,35 +187,53 @@ export const purchaseWeaponPip = (slotIndex: number, cost: number): boolean => {
   const current = loadProgression();
   if (current.totalCoins < cost) return false;
   if (slotIndex < 0 || slotIndex >= current.weaponPips.length) return false;
+  const beforeValue = current.weaponPips[slotIndex];
+  const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
   current.weaponPips[slotIndex] += 1;
   saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'weapon_pip', target: `weapon_${slotIndex}`, before: `pips:${beforeValue}`, after: `pips:${current.weaponPips[slotIndex]}`, beforeValue, afterValue: current.weaponPips[slotIndex], coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 
 export const saveEvoChoice = (category: string, slotIndex: number, traitId: string): void => {
   const current = loadProgression();
+  const coinsBefore = current.totalCoins;
+  let beforeCount = 0;
+  let afterCount = 0;
   if (category === 'block') {
     if (!current.blockEvoChoices[slotIndex]) current.blockEvoChoices[slotIndex] = [];
+    beforeCount = current.blockEvoChoices[slotIndex].length;
     current.blockEvoChoices[slotIndex].push(traitId);
+    afterCount = current.blockEvoChoices[slotIndex].length;
   } else if (category === 'weapon') {
     if (!current.weaponEvoChoices[slotIndex]) current.weaponEvoChoices[slotIndex] = [];
+    beforeCount = current.weaponEvoChoices[slotIndex].length;
     current.weaponEvoChoices[slotIndex].push(traitId);
+    afterCount = current.weaponEvoChoices[slotIndex].length;
   } else if (category === 'power') {
+    beforeCount = current.powerEvoChoices.length;
     current.powerEvoChoices.push(traitId);
+    afterCount = current.powerEvoChoices.length;
   } else if (category === 'damage') {
+    beforeCount = current.damageEvoChoices.length;
     current.damageEvoChoices.push(traitId);
+    afterCount = current.damageEvoChoices.length;
   }
   saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'evo_choice', target: `${category}_${slotIndex}`, before: `evos:${beforeCount}`, after: `evos:${afterCount} (+${traitId})`, beforeValue: beforeCount, afterValue: afterCount, coinCost: 0, coinsBefore, coinsAfter: coinsBefore });
 };
 
 export const purchaseCargoBox = (cost: number): boolean => {
   const current = loadProgression();
   if (current.totalCoins < cost) return false;
   if (current.blockCountLevel >= GAME_CONFIG.BLOCK_COUNT_MAX_LEVEL) return false;
+  const beforeValue = current.blockCountLevel;
+  const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
   current.blockCountLevel += 1;
   saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'cargo_box', target: 'blockCount', before: `level:${beforeValue}`, after: `level:${current.blockCountLevel}`, beforeValue, afterValue: current.blockCountLevel, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 

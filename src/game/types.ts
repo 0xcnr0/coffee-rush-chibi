@@ -163,6 +163,22 @@ export interface GameStats {
   telemetry?: RunTelemetry;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PURCHASE EVENT LOG (Garage upgrade trace)
+// ═══════════════════════════════════════════════════════════════════════════════
+export interface PurchaseEvent {
+  ts: number;
+  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice';
+  target: string;           // e.g. "block_0", "weapon_1", "power", "damage"
+  before: string;           // human-readable
+  after: string;            // human-readable
+  beforeValue: number;      // numeric for analysis
+  afterValue: number;       // numeric for analysis
+  coinCost: number;
+  coinsBefore: number;
+  coinsAfter: number;
+}
+
 export interface RunTelemetry {
   // Run result
   gameMode: GameMode;
@@ -194,11 +210,13 @@ export interface RunTelemetry {
   timeToFirstBlockLost: number;
   tonicBombUses: number;
   
-  // Gate telemetry (new for TDS reboot)
-  gateDamageDealt: number[];      // damage dealt to each gate [gate1, gate2, ...]
-  gateTimeSpent: number[];        // seconds at each gate
+  // Gate telemetry
+  gateDamageDealt: number[];
+  gateTimeSpent: number[];
   shotsToGate: number;
   shotsToEnemies: number;
+  bombGateDamageTotal: number;
+  bombGateDamageByGate: number[];
   
   // Phase timing
   phaseAtDeath: PlayPhase | null;
