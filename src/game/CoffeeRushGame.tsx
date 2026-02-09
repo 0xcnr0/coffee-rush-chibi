@@ -605,7 +605,7 @@ export const CoffeeRushGame: React.FC = () => {
     
     const topBlock = activeBlocks[activeBlocks.length - 1];
     proj.x = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
-    proj.y = topBlock.y;
+    proj.y = topBlock.y + GAME_CONFIG.MUZZLE_Y_OFFSET;
     proj.targetX = targetEnemy.x;
     proj.targetY = targetEnemy.y - targetEnemy.height / 2;
     const stressMultiplier = isStressTest ? 0.4 : 1;
@@ -624,7 +624,7 @@ export const CoffeeRushGame: React.FC = () => {
     
     const topBlock = activeBlocks[activeBlocks.length - 1];
     proj.x = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
-    proj.y = topBlock.y;
+    proj.y = topBlock.y + GAME_CONFIG.MUZZLE_Y_OFFSET;
     proj.targetX = targetX;
     proj.targetY = targetY;
     proj.radius = GAME_CONFIG.PROJECTILE_RADIUS;
@@ -1049,7 +1049,7 @@ export const CoffeeRushGame: React.FC = () => {
         if (activeBlocks.length > 0) {
           const originX = cartX;
           const topBlock = activeBlocks[activeBlocks.length - 1];
-          const originY = topBlock.y;
+          const originY = topBlock.y + GAME_CONFIG.MUZZLE_Y_OFFSET;
           
           // ── Smart target selection (TDS-style variety) ──
           const crowding = enemies.filter(e => e.x < cartX + GAME_CONFIG.CROWDING_RANGE).length;
