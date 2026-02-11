@@ -6,7 +6,7 @@ export type GameMode = 'ENDLESS' | 'CHAPTER';
 
 // Phase 1 v1.1: Renamed phases for TDS-style gate flow
 // SIEGE replaces FIGHT, EVO_PICK replaces PICK (PickOverlay disabled)
-export type PlayPhase = 'TRAVEL' | 'SIEGE' | 'EVO_PICK' | 'BOSS';
+export type PlayPhase = 'TRAVEL' | 'SIEGE' | 'EVO_PICK' | 'BOSS' | 'APPROACH' | 'VICTORY';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GATE BUILDING (HP-based objective)

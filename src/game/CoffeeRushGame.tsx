@@ -159,8 +159,11 @@ export const CoffeeRushGame: React.FC = () => {
   const gateDestroyedRef = useRef<boolean[]>([false, false, false, false, false]);
   const burstsTriggeredRef = useRef(0);
   const targetModeCountsRef = useRef({ front: 0, mid: 0, back: 0, gate: 0 });
-  // Gate cleanup state (victory pulse before transition)
   const gateCleanupTimerRef = useRef(0);
+  
+  // Stage 1 pilot refs
+  const stage1WaveRef = useRef({ spawned: 0, breatherTimer: 0 });
+  const bombSilenceTimerRef = useRef(0);
   
   const [debugInfo, setDebugInfo] = useState<{
     fps: number;
@@ -302,6 +305,8 @@ export const CoffeeRushGame: React.FC = () => {
     gateDestroyedRef.current = [false, false, false, false, false];
     burstsTriggeredRef.current = 0;
     targetModeCountsRef.current = { front: 0, mid: 0, back: 0, gate: 0 };
+    stage1WaveRef.current = { spawned: 0, breatherTimer: 0 };
+    bombSilenceTimerRef.current = 0;
     clearPurchaseLog();
     setShowRunSummary(false);
     
@@ -335,7 +340,7 @@ export const CoffeeRushGame: React.FC = () => {
     setStageIndex(1);
     playPhaseRef.current = 'TRAVEL';
     setPlayPhase('TRAVEL');
-    travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
+    travelTimerRef.current = stageIndexRef.current === 1 ? GAME_CONFIG.STAGE1_TRAVEL_DURATION : GAME_CONFIG.TRAVEL_DURATION;
     isSimulationFrozenRef.current = false;
     phaseTimersRef.current = { travel: 0, siege: 0, evoPick: 0, boss: 0 };
     gateBuildingRef.current = null;
@@ -715,6 +720,13 @@ export const CoffeeRushGame: React.FC = () => {
         spawnParticles(gate.x + gate.width / 2, gate.y, 'sparkle', 5);
       }
     }
+    
+    // Stage 1 SIEGE: bomb creates spawn silence window
+    if (stageIndexRef.current === 1 && playPhaseRef.current === 'SIEGE') {
+      bombSilenceTimerRef.current = GAME_CONFIG.STAGE1_BOMB_SPAWN_DELAY;
+      stage1WaveRef.current.spawned = 0; // Reset wave counter
+      stage1WaveRef.current.breatherTimer = 0;
+    }
   }, [enemyPool, spawnParticles]);
   
   // ═══════════════════════════════════════════════════════════════════════
@@ -782,8 +794,10 @@ export const CoffeeRushGame: React.FC = () => {
     
     // Phase time tracking
     const phaseKey = playPhaseRef.current === 'EVO_PICK' ? 'evoPick' 
+      : playPhaseRef.current === 'APPROACH' ? 'travel'
+      : playPhaseRef.current === 'VICTORY' ? 'siege'
       : playPhaseRef.current.toLowerCase() as 'travel' | 'siege' | 'boss';
-    phaseTimersRef.current[phaseKey] += deltaTime;
+    if (phaseKey in phaseTimersRef.current) phaseTimersRef.current[phaseKey] += deltaTime;
     
     // Simulation freeze (EVO popup)
     if (isSimulationFrozenRef.current) {
@@ -835,32 +849,126 @@ export const CoffeeRushGame: React.FC = () => {
     if (playPhaseRef.current === 'TRAVEL') {
       travelTimerRef.current -= deltaTime;
       
-      // Despawn remaining enemies during travel
+      const isStage1 = stageIndexRef.current === 1;
+      
+      if (isStage1) {
+        // Stage 1 pilot: 10s travel with enemy spawning (no despawn)
+        // Spawn enemies during travel (same logic as siege spawning)
+        const stage = getStage(1);
+        const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, stage.spawnInterval);
+        if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
+          spawnEnemy();
+          lastSpawnRef.current = currentTime;
+        }
+        
+        if (travelTimerRef.current <= 0) {
+          console.log('STATE -> APPROACH');
+          playPhaseRef.current = 'APPROACH';
+          setPlayPhase('APPROACH');
+          // Create gate at far right for slide-in
+          const gate = createGateBuilding(1);
+          if (gate) {
+            gate.x = GAME_CONFIG.STAGE1_GATE_START_X;
+            gateBuildingRef.current = gate;
+            setGateBuildingState(gate);
+          }
+          travelTimerRef.current = GAME_CONFIG.STAGE1_APPROACH_DURATION;
+        }
+      } else {
+        // Stages 2+: original short travel with despawn
+        enemyPool.getActive().forEach(enemy => {
+          if (enemy.state !== 'SERVED' && !enemy.isServed) {
+            enemy.hp = 0;
+            enemy.state = 'SERVED';
+            enemy.isServed = true;
+            enemy.servedTimer = GAME_CONFIG.TRAVEL_DESPAWN_DELAY;
+          }
+        });
+        
+        if (travelTimerRef.current <= 0) {
+          const si = stageIndexRef.current;
+          const stage = getStage(si);
+          
+          if (stage.isBoss) {
+            playPhaseRef.current = 'BOSS';
+            setPlayPhase('BOSS');
+          } else {
+            gateBuildingRef.current = createGateBuilding(si);
+            setGateBuildingState(gateBuildingRef.current);
+            playPhaseRef.current = 'SIEGE';
+            setPlayPhase('SIEGE');
+            console.log('STATE -> SIEGE');
+            lastSpawnRef.current = timeRef.current;
+          }
+        }
+      }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // APPROACH PHASE (Stage 1 pilot: gate slides in)
+    // ═══════════════════════════════════════════════════════════════════
+    if (playPhaseRef.current === 'APPROACH') {
+      travelTimerRef.current -= deltaTime;
+      
+      // Lerp gate to final position
+      const gate = gateBuildingRef.current;
+      if (gate) {
+        const finalX = GAME_CONFIG.CANVAS_WIDTH - GAME_CONFIG.GATE_BUILDING_X_OFFSET;
+        const progress = 1 - Math.max(0, travelTimerRef.current / GAME_CONFIG.STAGE1_APPROACH_DURATION);
+        gate.x = GAME_CONFIG.STAGE1_GATE_START_X + (finalX - GAME_CONFIG.STAGE1_GATE_START_X) * Math.min(1, progress);
+      }
+      
+      // No enemy spawning during approach
+      
+      if (travelTimerRef.current <= 0) {
+        // Gate in position, start siege
+        if (gate) {
+          gate.x = GAME_CONFIG.CANVAS_WIDTH - GAME_CONFIG.GATE_BUILDING_X_OFFSET;
+        }
+        console.log('STATE -> SIEGE');
+        playPhaseRef.current = 'SIEGE';
+        setPlayPhase('SIEGE');
+        lastSpawnRef.current = timeRef.current;
+        stage1WaveRef.current = { spawned: 0, breatherTimer: 0 };
+        bombSilenceTimerRef.current = 0;
+      }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // VICTORY PHASE (Stage 1 pilot: gate destroyed cleanup)
+    // ═══════════════════════════════════════════════════════════════════
+    if (playPhaseRef.current === 'VICTORY') {
+      gateCleanupTimerRef.current -= deltaTime;
+      
+      // Fade remaining enemies
       enemyPool.getActive().forEach(enemy => {
         if (enemy.state !== 'SERVED' && !enemy.isServed) {
           enemy.hp = 0;
           enemy.state = 'SERVED';
           enemy.isServed = true;
-          enemy.servedTimer = GAME_CONFIG.TRAVEL_DESPAWN_DELAY;
+          enemy.servedTimer = 0.3;
         }
       });
       
-      if (travelTimerRef.current <= 0) {
-        const si = stageIndexRef.current;
-        const stage = getStage(si);
-        
-        if (stage.isBoss) {
-          playPhaseRef.current = 'BOSS';
-          setPlayPhase('BOSS');
-        } else {
-          // Create gate building for this stage
-          gateBuildingRef.current = createGateBuilding(si);
-          setGateBuildingState(gateBuildingRef.current);
-          playPhaseRef.current = 'SIEGE';
-          setPlayPhase('SIEGE');
-          lastSpawnRef.current = timeRef.current;
-        }
+      if (gateCleanupTimerRef.current <= 0) {
+        // Proceed to Stage 2 with normal flow
+        stageIndexRef.current = 2;
+        setStageIndex(2);
+        travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
+        playPhaseRef.current = 'TRAVEL';
+        setPlayPhase('TRAVEL');
+        console.log('STATE -> TRAVEL (Stage 2)');
+        gateBuildingRef.current = null;
+        setGateBuildingState(null);
       }
+      
+      // Render and skip rest of sim
+      ctx.clearRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
+      drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
+        tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
+        bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
+        deltaTime, gateBuildingRef.current, currentTime);
+      return;
     }
     
     // ═══════════════════════════════════════════════════════════════════
@@ -1002,8 +1110,16 @@ export const CoffeeRushGame: React.FC = () => {
         spawnParticles(gate.x + gate.width / 2, gate.y + gate.height / 2, 'confetti', 20);
         screenShakeRef.current = { x: 0, y: 0, duration: 0.5 };
         
-        // Start cleanup timer
-        gateCleanupTimerRef.current = GAME_CONFIG.GATE_CLEANUP_DURATION;
+        if (stageIndexRef.current === 1) {
+          // Stage 1 pilot: use VICTORY phase
+          console.log('STATE -> VICTORY');
+          playPhaseRef.current = 'VICTORY';
+          setPlayPhase('VICTORY');
+          gateCleanupTimerRef.current = GAME_CONFIG.GATE_CLEANUP_DURATION;
+        } else {
+          // Other stages: existing cleanup flow
+          gateCleanupTimerRef.current = GAME_CONFIG.GATE_CLEANUP_DURATION;
+        }
       }
     }
     
@@ -1013,19 +1129,50 @@ export const CoffeeRushGame: React.FC = () => {
     const canSpawn = playPhaseRef.current === 'SIEGE' && gate && !gate.isDestroyed;
     
     if (canSpawn) {
-      const stage = getStage(stageIndexRef.current);
-      let spawnInterval = stage.spawnInterval;
+      const isStage1Siege = stageIndexRef.current === 1;
       
-      // Breathing window: slower spawns
-      if (gate!.breathingActive) {
-        spawnInterval *= GAME_CONFIG.GATE_BREATHING_SPAWN_MULT;
-      }
-      
-      const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval);
-      
-      if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
-        spawnEnemy();
-        lastSpawnRef.current = currentTime;
+      if (isStage1Siege) {
+        // Stage 1 pilot: wave-based spawning with breather windows
+        // Bomb silence timer
+        if (bombSilenceTimerRef.current > 0) {
+          bombSilenceTimerRef.current -= deltaTime;
+        } else if (stage1WaveRef.current.breatherTimer > 0) {
+          // Breather between waves
+          stage1WaveRef.current.breatherTimer -= deltaTime;
+          if (stage1WaveRef.current.breatherTimer <= 0) {
+            stage1WaveRef.current.spawned = 0; // Reset for next wave
+          }
+        } else if (stage1WaveRef.current.spawned < GAME_CONFIG.STAGE1_WAVE_SIZE) {
+          // Spawn wave enemies
+          const stage = getStage(1);
+          const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, stage.spawnInterval);
+          if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
+            spawnEnemy();
+            lastSpawnRef.current = currentTime;
+            stage1WaveRef.current.spawned++;
+          }
+        } else {
+          // Wave fully spawned, check if all dead for breather
+          const aliveEnemies = enemyPool.getActive().filter(e => !e.isServed && e.state !== 'SERVED').length;
+          if (aliveEnemies === 0) {
+            stage1WaveRef.current.breatherTimer = GAME_CONFIG.STAGE1_WAVE_BREATHER;
+          }
+        }
+      } else {
+        // Stages 2+: original continuous spawning
+        const stage = getStage(stageIndexRef.current);
+        let spawnInterval = stage.spawnInterval;
+        
+        if (gate!.breathingActive) {
+          spawnInterval *= GAME_CONFIG.GATE_BREATHING_SPAWN_MULT;
+        }
+        
+        const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval);
+        
+        if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
+          spawnEnemy();
+          lastSpawnRef.current = currentTime;
+        }
       }
     }
     
@@ -1034,16 +1181,21 @@ export const CoffeeRushGame: React.FC = () => {
     // ═══════════════════════════════════════════════════════════════════
     const enemies = enemyPool.getActive().filter(e => !e.isServed && e.state !== 'SERVED');
     
-    if (enemies.length > 0 && currentTime - lastAttackRef.current > GAME_CONFIG.AUTO_ATTACK_INTERVAL / 1000) {
+    const hasEnemies = enemies.length > 0;
+    const hasGateTarget = gateBuildingRef.current && !gateBuildingRef.current.isDestroyed && playPhaseRef.current === 'SIEGE';
+    if ((hasEnemies || hasGateTarget) && currentTime - lastAttackRef.current > GAME_CONFIG.AUTO_ATTACK_INTERVAL / 1000) {
       const cartX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
       
-      // Find nearest enemy (always needed as fallback)
-      let nearest = enemies[0];
-      let minDist = Math.abs(enemies[0].x - cartX);
-      enemies.forEach(e => {
-        const dist = Math.abs(e.x - cartX);
-        if (dist < minDist) { minDist = dist; nearest = e; }
-      });
+      // Find nearest enemy (may be null if gate-only firing)
+      let nearest: Enemy | null = null;
+      if (hasEnemies) {
+        nearest = enemies[0];
+        let minDist = Math.abs(enemies[0].x - cartX);
+        enemies.forEach(e => {
+          const dist = Math.abs(e.x - cartX);
+          if (dist < minDist) { minDist = dist; nearest = e; }
+        });
+      }
       
       if (GAME_CONFIG.WEAPON_MODE === 'shotgun') {
         const activeBlocks = blocksRef.current.filter(b => !b.destroyed);
@@ -1052,34 +1204,40 @@ export const CoffeeRushGame: React.FC = () => {
           const topBlock = activeBlocks[activeBlocks.length - 1];
           const originY = topBlock.y + GAME_CONFIG.MUZZLE_Y_OFFSET;
           
-          // ── Smart target selection (TDS-style variety) ──
-          const crowding = enemies.filter(e => e.x < cartX + GAME_CONFIG.CROWDING_RANGE).length;
-          const weights = crowding >= GAME_CONFIG.CROWDING_THRESHOLD
-            ? GAME_CONFIG.TARGET_WEIGHTS_CROWDED
-            : GAME_CONFIG.TARGET_WEIGHTS_NORMAL;
+          // ── Determine target mode ──
+          let targetMode: 'front' | 'mid' | 'back' | 'gate' = 'gate';
           
-          // Weighted random pick
-          const roll = Math.random();
-          let cumulative = 0;
-          let targetMode: 'front' | 'mid' | 'back' | 'gate' = 'front';
-          const modes: Array<'front' | 'mid' | 'back' | 'gate'> = ['front', 'mid', 'back', 'gate'];
-          for (let m = 0; m < 4; m++) {
-            cumulative += weights[m];
-            if (roll < cumulative) { targetMode = modes[m]; break; }
-          }
-          
-          // ── Gate snap lock: when lane is clear, force gate targeting ──
-          const nearEnemies = enemies.filter(e => e.x < cartX + 150);
-          if (nearEnemies.length === 0 && gateBuildingRef.current && !gateBuildingRef.current.isDestroyed) {
-            targetMode = 'gate';
-          }
-          
-          // ── Gate pressure limiter (runtime safety valve, only when enemies present) ──
-          if (targetMode !== 'front' && nearEnemies.length > 0 && shotsFiredRef.current > 30) {
-            const gateRatio = shotsToGateRef.current / shotsFiredRef.current;
-            if (gateRatio > 0.08) {
-              targetMode = 'front';
+          if (hasEnemies) {
+            // ── Smart target selection (TDS-style variety) ──
+            const crowding = enemies.filter(e => e.x < cartX + GAME_CONFIG.CROWDING_RANGE).length;
+            const weights = crowding >= GAME_CONFIG.CROWDING_THRESHOLD
+              ? GAME_CONFIG.TARGET_WEIGHTS_CROWDED
+              : GAME_CONFIG.TARGET_WEIGHTS_NORMAL;
+            
+            const roll = Math.random();
+            let cumulative = 0;
+            const modes: Array<'front' | 'mid' | 'back' | 'gate'> = ['front', 'mid', 'back', 'gate'];
+            for (let m = 0; m < 4; m++) {
+              cumulative += weights[m];
+              if (roll < cumulative) { targetMode = modes[m]; break; }
             }
+            
+            // ── Gate snap lock: when lane is clear, force gate targeting ──
+            const nearEnemies = enemies.filter(e => e.x < cartX + 150);
+            if (nearEnemies.length === 0 && gateBuildingRef.current && !gateBuildingRef.current.isDestroyed) {
+              targetMode = 'gate';
+            }
+            
+            // ── Gate pressure limiter (runtime safety valve, only when enemies present) ──
+            if (targetMode !== 'front' && nearEnemies.length > 0 && shotsFiredRef.current > 30) {
+              const gateRatio = shotsToGateRef.current / shotsFiredRef.current;
+              if (gateRatio > 0.08) {
+                targetMode = 'front';
+              }
+            }
+          } else {
+            // No enemies: pure gate targeting (gate-only firing via bug fix)
+            targetMode = 'gate';
           }
           
           // Determine aim target based on mode
@@ -1100,10 +1258,13 @@ export const CoffeeRushGame: React.FC = () => {
           } else if (targetMode === 'gate' && gateBuildingRef.current && !gateBuildingRef.current.isDestroyed) {
             const g = gateBuildingRef.current;
             aimTarget = { x: g.x - 40, y: g.y + g.height / 2 + (Math.random() * 40 - 20) };
-          } else {
+          } else if (nearest) {
             // front (default / fallback)
             targetMode = 'front';
             aimTarget = { x: nearest.x, y: nearest.y - nearest.height / 2 };
+          } else {
+            // No valid target — skip firing
+            return;
           }
           
           targetModeCountsRef.current[targetMode]++;
@@ -1154,7 +1315,7 @@ export const CoffeeRushGame: React.FC = () => {
           shotsFiredRef.current += count;
           burstsTriggeredRef.current++;
         }
-      } else {
+      } else if (nearest) {
         // Single mode: current behavior
         fireProjectile(nearest);
         shotsFiredRef.current++;
@@ -1215,7 +1376,8 @@ export const CoffeeRushGame: React.FC = () => {
       // Gate collision (only if projectile wasn't stopped by enemy)
       if (!hitEnemy || proj.pierce) {
         const g = gateBuildingRef.current;
-        if (g && !g.isDestroyed && proj.x >= g.x && proj.x <= g.x + g.width &&
+        if (g && !g.isDestroyed && playPhaseRef.current !== 'APPROACH' &&
+            proj.x >= g.x && proj.x <= g.x + g.width &&
             proj.y >= g.y && proj.y <= g.y + g.height) {
           g.hp -= proj.damage;
           g.lastHitTime = timeRef.current;

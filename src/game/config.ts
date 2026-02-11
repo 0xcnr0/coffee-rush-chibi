@@ -232,6 +232,16 @@ export const GAME_CONFIG = {
   // CHAPTER PERSISTENCE
   // ─────────────────────────────────────────────────────────────
   CHAPTER_RESET_ENABLED: false,   // Feature flag for Chapter 2 reset (not active now)
+  
+  // ─────────────────────────────────────────────────────────────
+  // STAGE 1 PILOT (TDS Loop Refactor)
+  // ─────────────────────────────────────────────────────────────
+  STAGE1_TRAVEL_DURATION: 10,           // seconds (extended runner phase)
+  STAGE1_APPROACH_DURATION: 1.0,        // gate slide-in time
+  STAGE1_GATE_START_X: 500,             // off-screen right start position
+  STAGE1_WAVE_SIZE: 3,                  // enemies per wave during siege
+  STAGE1_WAVE_BREATHER: 1.0,           // seconds pause between waves
+  STAGE1_BOMB_SPAWN_DELAY: 1.5,        // seconds of silence after bomb
 } as const;
 
 // Colors (HSL values matching index.css)
