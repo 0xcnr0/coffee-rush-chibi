@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { GAME_CONFIG, COLORS, STAGES } from './config';
+import { GAME_CONFIG, COLORS, STAGES, TRAVEL_DURATION_BY_STAGE, BOMB_SILENCE_BY_STAGE } from './config';
 import { drawGame, drawMenuScene } from './renderer';
 import { useGameLoop } from './useGameLoop';
 import { useObjectPool } from './useObjectPool';
@@ -340,7 +340,7 @@ export const CoffeeRushGame: React.FC = () => {
     setStageIndex(1);
     playPhaseRef.current = 'TRAVEL';
     setPlayPhase('TRAVEL');
-    travelTimerRef.current = stageIndexRef.current === 1 ? GAME_CONFIG.STAGE1_TRAVEL_DURATION : GAME_CONFIG.TRAVEL_DURATION;
+    travelTimerRef.current = TRAVEL_DURATION_BY_STAGE[0];
     isSimulationFrozenRef.current = false;
     phaseTimersRef.current = { travel: 0, siege: 0, evoPick: 0, boss: 0 };
     gateBuildingRef.current = null;
@@ -721,11 +721,16 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
-    // Stage 1 SIEGE: bomb creates spawn silence window
-    if (stageIndexRef.current === 1 && playPhaseRef.current === 'SIEGE') {
-      bombSilenceTimerRef.current = GAME_CONFIG.STAGE1_BOMB_SPAWN_DELAY;
-      stage1WaveRef.current.spawned = 0; // Reset wave counter
-      stage1WaveRef.current.breatherTimer = 0;
+    // All stages SIEGE: bomb creates spawn silence window
+    if (playPhaseRef.current === 'SIEGE') {
+      const si = stageIndexRef.current;
+      const silenceDuration = BOMB_SILENCE_BY_STAGE[si - 1] ?? 0.6;
+      bombSilenceTimerRef.current = silenceDuration;
+      lastSpawnRef.current = timeRef.current; // CRITICAL: reset spawn timer (safeguard #3)
+      if (si === 1) {
+        stage1WaveRef.current.spawned = 0; // Reset wave counter
+        stage1WaveRef.current.breatherTimer = 0;
+      }
     }
   }, [enemyPool, spawnParticles]);
   
@@ -750,7 +755,7 @@ export const CoffeeRushGame: React.FC = () => {
       // Next gate
       stageIndexRef.current = currentStage + 1;
       setStageIndex(currentStage + 1);
-      travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
+      travelTimerRef.current = TRAVEL_DURATION_BY_STAGE[currentStage] ?? GAME_CONFIG.TRAVEL_DURATION;
       playPhaseRef.current = 'TRAVEL';
       setPlayPhase('TRAVEL');
     }
@@ -868,14 +873,14 @@ export const CoffeeRushGame: React.FC = () => {
           // Create gate at far right for slide-in
           const gate = createGateBuilding(1);
           if (gate) {
-            gate.x = GAME_CONFIG.STAGE1_GATE_START_X;
+            gate.x = GAME_CONFIG.GATE_START_X;
             gateBuildingRef.current = gate;
             setGateBuildingState(gate);
           }
-          travelTimerRef.current = GAME_CONFIG.STAGE1_APPROACH_DURATION;
+          travelTimerRef.current = GAME_CONFIG.APPROACH_DURATION;
         }
       } else {
-        // Stages 2+: original short travel with despawn
+        // Stages 2+: travel with despawn, then APPROACH (not direct SIEGE)
         enemyPool.getActive().forEach(enemy => {
           if (enemy.state !== 'SERVED' && !enemy.isServed) {
             enemy.hp = 0;
@@ -893,19 +898,24 @@ export const CoffeeRushGame: React.FC = () => {
             playPhaseRef.current = 'BOSS';
             setPlayPhase('BOSS');
           } else {
-            gateBuildingRef.current = createGateBuilding(si);
-            setGateBuildingState(gateBuildingRef.current);
-            playPhaseRef.current = 'SIEGE';
-            setPlayPhase('SIEGE');
-            console.log('STATE -> SIEGE');
-            lastSpawnRef.current = timeRef.current;
+            // Transition to APPROACH (gate slides in)
+            console.log('STATE -> APPROACH (Stage ' + si + ')');
+            playPhaseRef.current = 'APPROACH';
+            setPlayPhase('APPROACH');
+            const gate = createGateBuilding(si);
+            if (gate) {
+              gate.x = GAME_CONFIG.GATE_START_X;
+              gateBuildingRef.current = gate;
+              setGateBuildingState(gate);
+            }
+            travelTimerRef.current = GAME_CONFIG.APPROACH_DURATION;
           }
         }
       }
     }
     
     // ═══════════════════════════════════════════════════════════════════
-    // APPROACH PHASE (Stage 1 pilot: gate slides in)
+    // APPROACH PHASE (all gate stages: gate slides in)
     // ═══════════════════════════════════════════════════════════════════
     if (playPhaseRef.current === 'APPROACH') {
       travelTimerRef.current -= deltaTime;
@@ -914,8 +924,8 @@ export const CoffeeRushGame: React.FC = () => {
       const gate = gateBuildingRef.current;
       if (gate) {
         const finalX = GAME_CONFIG.CANVAS_WIDTH - GAME_CONFIG.GATE_BUILDING_X_OFFSET;
-        const progress = 1 - Math.max(0, travelTimerRef.current / GAME_CONFIG.STAGE1_APPROACH_DURATION);
-        gate.x = GAME_CONFIG.STAGE1_GATE_START_X + (finalX - GAME_CONFIG.STAGE1_GATE_START_X) * Math.min(1, progress);
+        const progress = 1 - Math.max(0, travelTimerRef.current / GAME_CONFIG.APPROACH_DURATION);
+        gate.x = GAME_CONFIG.GATE_START_X + (finalX - GAME_CONFIG.GATE_START_X) * Math.min(1, progress);
       }
       
       // No enemy spawning during approach
@@ -925,17 +935,20 @@ export const CoffeeRushGame: React.FC = () => {
         if (gate) {
           gate.x = GAME_CONFIG.CANVAS_WIDTH - GAME_CONFIG.GATE_BUILDING_X_OFFSET;
         }
-        console.log('STATE -> SIEGE');
+        console.log('STATE -> SIEGE (Stage ' + stageIndexRef.current + ')');
         playPhaseRef.current = 'SIEGE';
         setPlayPhase('SIEGE');
         lastSpawnRef.current = timeRef.current;
-        stage1WaveRef.current = { spawned: 0, breatherTimer: 0 };
+        // Only init wave refs for Stage 1 (wave-based spawning)
+        if (stageIndexRef.current === 1) {
+          stage1WaveRef.current = { spawned: 0, breatherTimer: 0 };
+        }
         bombSilenceTimerRef.current = 0;
       }
     }
     
     // ═══════════════════════════════════════════════════════════════════
-    // VICTORY PHASE (Stage 1 pilot: gate destroyed cleanup)
+    // VICTORY PHASE (all gate stages: gate destroyed cleanup)
     // ═══════════════════════════════════════════════════════════════════
     if (playPhaseRef.current === 'VICTORY') {
       gateCleanupTimerRef.current -= deltaTime;
@@ -951,13 +964,20 @@ export const CoffeeRushGame: React.FC = () => {
       });
       
       if (gateCleanupTimerRef.current <= 0) {
-        // Proceed to Stage 2 with normal flow
-        stageIndexRef.current = 2;
-        setStageIndex(2);
-        travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
+        // Advance to next stage
+        const nextStage = stageIndexRef.current + 1;
+        const nextStageConfig = getStage(nextStage);
+        stageIndexRef.current = nextStage;
+        setStageIndex(nextStage);
+        
+        if (nextStageConfig.isBoss) {
+          travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
+        } else {
+          travelTimerRef.current = TRAVEL_DURATION_BY_STAGE[nextStage - 1] ?? GAME_CONFIG.TRAVEL_DURATION;
+        }
         playPhaseRef.current = 'TRAVEL';
         setPlayPhase('TRAVEL');
-        console.log('STATE -> TRAVEL (Stage 2)');
+        console.log('STATE -> TRAVEL (Stage ' + nextStage + ')');
         gateBuildingRef.current = null;
         setGateBuildingState(null);
       }
@@ -1110,16 +1130,11 @@ export const CoffeeRushGame: React.FC = () => {
         spawnParticles(gate.x + gate.width / 2, gate.y + gate.height / 2, 'confetti', 20);
         screenShakeRef.current = { x: 0, y: 0, duration: 0.5 };
         
-        if (stageIndexRef.current === 1) {
-          // Stage 1 pilot: use VICTORY phase
-          console.log('STATE -> VICTORY');
-          playPhaseRef.current = 'VICTORY';
-          setPlayPhase('VICTORY');
-          gateCleanupTimerRef.current = GAME_CONFIG.GATE_CLEANUP_DURATION;
-        } else {
-          // Other stages: existing cleanup flow
-          gateCleanupTimerRef.current = GAME_CONFIG.GATE_CLEANUP_DURATION;
-        }
+        // All gate stages: use VICTORY phase
+        console.log('STATE -> VICTORY (Stage ' + stageIndexRef.current + ')');
+        playPhaseRef.current = 'VICTORY';
+        setPlayPhase('VICTORY');
+        gateCleanupTimerRef.current = GAME_CONFIG.GATE_CLEANUP_DURATION;
       }
     }
     
@@ -1159,19 +1174,23 @@ export const CoffeeRushGame: React.FC = () => {
           }
         }
       } else {
-        // Stages 2+: original continuous spawning
-        const stage = getStage(stageIndexRef.current);
-        let spawnInterval = stage.spawnInterval;
-        
-        if (gate!.breathingActive) {
-          spawnInterval *= GAME_CONFIG.GATE_BREATHING_SPAWN_MULT;
-        }
-        
-        const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval);
-        
-        if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
-          spawnEnemy();
-          lastSpawnRef.current = currentTime;
+        // Stages 2+: continuous spawning with bomb silence
+        if (bombSilenceTimerRef.current > 0) {
+          bombSilenceTimerRef.current -= deltaTime;
+        } else {
+          const stage = getStage(stageIndexRef.current);
+          let spawnInterval = stage.spawnInterval;
+          
+          if (gate!.breathingActive) {
+            spawnInterval *= GAME_CONFIG.GATE_BREATHING_SPAWN_MULT;
+          }
+          
+          const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, spawnInterval);
+          
+          if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
+            spawnEnemy();
+            lastSpawnRef.current = currentTime;
+          }
         }
       }
     }
