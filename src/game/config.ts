@@ -25,7 +25,7 @@ export interface StageConfig {
 }
 
 export const STAGES: readonly StageConfig[] = [
-  { id: 1, gateHP: 600,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
+  { id: 1, gateHP: 420,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
   { id: 2, gateHP: 2000,  spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
   { id: 3, gateHP: 3500,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
   { id: 4, gateHP: 5000,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
@@ -234,15 +234,19 @@ export const GAME_CONFIG = {
   CHAPTER_RESET_ENABLED: false,   // Feature flag for Chapter 2 reset (not active now)
   
   // ─────────────────────────────────────────────────────────────
-  // STAGE 1 PILOT (TDS Loop Refactor)
+  // TDS LOOP (generalized across all stages)
   // ─────────────────────────────────────────────────────────────
-  STAGE1_TRAVEL_DURATION: 10,           // seconds (extended runner phase)
-  STAGE1_APPROACH_DURATION: 1.0,        // gate slide-in time
-  STAGE1_GATE_START_X: 500,             // off-screen right start position
-  STAGE1_WAVE_SIZE: 3,                  // enemies per wave during siege
-  STAGE1_WAVE_BREATHER: 1.0,           // seconds pause between waves
-  STAGE1_BOMB_SPAWN_DELAY: 1.5,        // seconds of silence after bomb
+  APPROACH_DURATION: 1.0,               // gate slide-in time (all stages)
+  GATE_START_X: 500,                    // off-screen right start position
+  STAGE1_WAVE_SIZE: 3,                  // enemies per wave during siege (Stage 1 only)
+  STAGE1_WAVE_BREATHER: 1.0,           // seconds pause between waves (Stage 1 only)
 } as const;
+
+// Per-stage travel duration (seconds) — Stage 1 keeps 10s runner, others get 3.5-4.0s
+export const TRAVEL_DURATION_BY_STAGE = [10, 4.0, 4.0, 3.5, 3.5] as const;
+
+// Per-stage bomb silence duration (seconds) during SIEGE
+export const BOMB_SILENCE_BY_STAGE = [1.5, 1.0, 0.6, 0.6, 0.6] as const;
 
 // Colors (HSL values matching index.css)
 export const COLORS = {
