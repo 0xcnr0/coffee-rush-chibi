@@ -1257,7 +1257,7 @@ export const CoffeeRushGame: React.FC = () => {
             aimTarget = { x: pick.x, y: pick.y - pick.height / 2 };
           } else if (targetMode === 'gate' && gateBuildingRef.current && !gateBuildingRef.current.isDestroyed) {
             const g = gateBuildingRef.current;
-            aimTarget = { x: g.x - 40, y: g.y + g.height / 2 + (Math.random() * 40 - 20) };
+            aimTarget = { x: g.x + g.width / 2, y: g.y + g.height / 2 + (Math.random() * 40 - 20) };
           } else if (nearest) {
             // front (default / fallback)
             targetMode = 'front';
