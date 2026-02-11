@@ -23,25 +23,31 @@ export function drawGame(
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
   const isTraveling = playPhase === 'TRAVEL';
+  const isApproaching = playPhase === 'APPROACH';
   
   if (isTraveling && deltaTime) {
     parallaxOffset1 = (parallaxOffset1 + 30 * deltaTime) % 120;
     parallaxOffset2 = (parallaxOffset2 + 80 * deltaTime) % 60;
     wheelRotation += 8 * deltaTime;
+  } else if (isApproaching && deltaTime) {
+    // Decelerate during approach (half speed)
+    parallaxOffset1 = (parallaxOffset1 + 15 * deltaTime) % 120;
+    parallaxOffset2 = (parallaxOffset2 + 40 * deltaTime) % 60;
+    wheelRotation += 4 * deltaTime;
   }
   
   ctx.save();
   ctx.translate(screenShake.x, screenShake.y);
   
-  drawBackground(ctx, isTraveling);
-  drawGround(ctx, isTraveling);
+  drawBackground(ctx, isTraveling || isApproaching);
+  drawGround(ctx, isTraveling || isApproaching);
   
   // Draw gate building (before enemies so enemies appear in front)
   if (gateBuilding && !gateBuilding.isDestroyed) {
     drawGateBuilding(ctx, gateBuilding, currentTime);
   }
   
-  drawCart(ctx, blocks, isTraveling);
+  drawCart(ctx, blocks, isTraveling || isApproaching);
   drawBarista(ctx, blocks);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
@@ -57,9 +63,17 @@ export function drawGame(
     drawBossHpBar(ctx, bossState);
   }
   
+  // Debug: state label overlay
+  if (playPhase) {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(playPhase, 8, 14);
+  }
+  
   ctx.restore();
 }
-
 export function drawMenuScene(ctx: CanvasRenderingContext2D, blockCount: number) {
   const { CANVAS_HEIGHT, BLOCK_HEIGHT, BLOCK_MAX_HP } = GAME_CONFIG;
   drawBackground(ctx);
