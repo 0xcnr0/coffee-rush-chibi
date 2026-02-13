@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { GAME_CONFIG, COLORS, STAGES, TRAVEL_DURATION_BY_STAGE, BOMB_SILENCE_BY_STAGE, MINI_RUSH_CONFIG } from './config';
+import { GAME_CONFIG, COLORS, STAGES, TRAVEL_DURATION_BY_STAGE, BOMB_SILENCE_BY_STAGE, MINI_RUSH_CONFIG, LATCH_DAMAGE_MULT_BY_STAGE } from './config';
 import { drawGame, drawMenuScene } from './renderer';
 import { useGameLoop } from './useGameLoop';
 import { useObjectPool } from './useObjectPool';
@@ -1584,6 +1584,9 @@ export const CoffeeRushGame: React.FC = () => {
         if (enemy.latchedTimer <= 0 && activeBlocks.length > 0) {
           const targetBlock = activeBlocks[activeBlocks.length - 1];
           let tickDamage = GAME_CONFIG.LATCHED_TICK_DAMAGE;
+          // Stage-aware latch damage multiplier (death wall pressure)
+          const stageMult = LATCH_DAMAGE_MULT_BY_STAGE[stageIndexRef.current - 1] ?? 1.0;
+          tickDamage *= stageMult;
           if (enemy.kind === 'BOSS') tickDamage *= GAME_CONFIG.BOSS_TICK_DAMAGE_MULT;
           else if (enemy.kind === 'HEAVY') tickDamage *= GAME_CONFIG.HEAVY_TICK_DAMAGE_MULT;
           targetBlock.hp -= tickDamage;
