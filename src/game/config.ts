@@ -27,7 +27,7 @@ export interface StageConfig {
 export const STAGES: readonly StageConfig[] = [
   { id: 1, gateHP: 300,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
   { id: 2, gateHP: 450,   spawnInterval: 800,  enemyHpMult: 1.15, enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 0 },
-  { id: 3, gateHP: 2000,  spawnInterval: 500,  enemyHpMult: 2.2,  enemySpeedMult: 1.25, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 5 },
+  { id: 3, gateHP: 2000,  spawnInterval: 420,  enemyHpMult: 2.2,  enemySpeedMult: 1.25, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 3 },
   { id: 4, gateHP: 3500,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
   { id: 5, gateHP: 5000,  spawnInterval: 500,  enemyHpMult: 2.8,  enemySpeedMult: 1.20, enemyDropCoins: 20,  gateLumpSum: 800,  heavyEvery: 5 },
   { id: 6, isBoss: true,  spawnInterval: 0,    enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 50,  gateLumpSum: 0,    heavyEvery: 0, bossHP: 10000, bossDropCoins: 50, clearBonus: 1500 },
@@ -286,6 +286,10 @@ export const MINI_RUSH_CONFIG = {
 
 // Per-stage bomb silence duration (seconds) during SIEGE
 export const BOMB_SILENCE_BY_STAGE = [1.5, 1.0, 0.6, 0.6, 0.6] as const;
+
+// Per-stage latched tick damage multiplier (Stage 3+ death wall pressure)
+// Stage 1-2: normal (1.0x), Stage 3+: 1.75x (4 → 7 effective damage)
+export const LATCH_DAMAGE_MULT_BY_STAGE = [1.0, 1.0, 1.75, 1.75, 1.75] as const;
 
 // Colors (HSL values matching index.css)
 export const COLORS = {
