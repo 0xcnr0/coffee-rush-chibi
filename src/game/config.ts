@@ -25,7 +25,7 @@ export interface StageConfig {
 }
 
 export const STAGES: readonly StageConfig[] = [
-  { id: 1, gateHP: 420,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
+  { id: 1, gateHP: 350,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
   { id: 2, gateHP: 2000,  spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
   { id: 3, gateHP: 3500,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
   { id: 4, gateHP: 5000,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
@@ -104,6 +104,10 @@ export const GAME_CONFIG = {
   GATE_BREATHING_SLOWDOWN_DURATION: 1.0,  // seconds
   GATE_BREATHING_SPAWN_MULT: 1.5,         // spawn interval multiplied during breathing
   GATE_CLEANUP_DURATION: 0.8,             // seconds for victory pulse + enemy fade
+  
+  // Post-Victory Breather (pacing window between gates)
+  POST_VICTORY_BREATHER_DURATION: 4.0,    // seconds of running before next TRAVEL
+  BREATHER_SPAWN_REDUCTION: 0.40,         // spawn at 40% rate (60% reduction)
   
   // ─────────────────────────────────────────────────────────────
   // TRAVEL (purely visual transition)

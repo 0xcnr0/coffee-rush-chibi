@@ -22,7 +22,7 @@ export function drawGame(
   currentTime?: number,
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
-  const isTraveling = playPhase === 'TRAVEL';
+  const isTraveling = playPhase === 'TRAVEL' || playPhase === 'BREATHER';
   const isApproaching = playPhase === 'APPROACH';
   
   if (isTraveling && deltaTime) {
