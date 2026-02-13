@@ -197,16 +197,19 @@ export const GAME_CONFIG = {
   // WEAPON ABILITIES (Phase 1: Saw full, Flame+Minigun ability-only)
   // ─────────────────────────────────────────────────────────────
   // Passive Saw (melee zone)
-  SAW_PASSIVE_RADIUS: 70,          // px from cart front
-  SAW_PASSIVE_TICK_INTERVAL: 0.2,  // seconds between ticks
-  SAW_PASSIVE_TICK_DAMAGE: 8,      // damage per tick per enemy
+  SAW_PASSIVE_RADIUS: 65,          // px from cart front
+  SAW_PASSIVE_TICK_INTERVAL: 0.25, // seconds between ticks
+  SAW_PASSIVE_TICK_DAMAGE: 7,      // damage per tick per enemy
   
   // Active Saw Throw (power skill)
   SAW_THROW_COST: 5,               // Power cost
-  SAW_THROW_DAMAGE: 20,            // damage per enemy hit
+  SAW_THROW_DAMAGE: 18,            // damage per enemy hit
   SAW_THROW_SPEED: 320,            // px/s (slower than shotgun)
-  SAW_THROW_LIFETIME: 1.2,         // seconds before despawn
+  SAW_THROW_LIFETIME: 1.1,         // seconds before despawn
   SAW_THROW_RADIUS: 12,            // projectile hitbox radius
+  
+  // Saw Unlock (Garage purchase)
+  SAW_UNLOCK_COST: 140,            // coins to unlock saw system
   
   // Legacy (kept for compatibility)
   SAW_FIRE_RATE: 1200,

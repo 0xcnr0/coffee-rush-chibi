@@ -279,8 +279,8 @@ export const CoffeeRushGame: React.FC = () => {
     damageMultiplierRef.current = damageMultiplier;
     powerRegenMultiplierRef.current = powerRegenMult;
     
-    // Check for saw weapon
-    hasSawRef.current = progression.weaponSlots.some(s => s.weaponType === 'saw');
+    // Check for saw weapon (purchased from Garage)
+    hasSawRef.current = progression.sawUnlocked;
     
     // Reset all refs
     latchedCountRef.current = 0;
@@ -748,6 +748,7 @@ export const CoffeeRushGame: React.FC = () => {
   // SAW THROW (piercing power skill)
   // ═══════════════════════════════════════════════════════════════════════
   const handleSawThrow = useCallback(() => {
+    if (!hasSawRef.current) return;
     if (powerRef.current < GAME_CONFIG.SAW_THROW_COST) return;
     
     powerRef.current -= GAME_CONFIG.SAW_THROW_COST;
@@ -849,7 +850,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime);
+        deltaTime, gateBuildingRef.current, currentTime, hasSawRef.current);
       return;
     }
     
@@ -1018,7 +1019,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime);
+        deltaTime, gateBuildingRef.current, currentTime, hasSawRef.current);
       return;
     }
     
@@ -1100,7 +1101,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime);
+        deltaTime, gateBuildingRef.current, currentTime, hasSawRef.current);
       return;
     }
     
@@ -1407,30 +1408,32 @@ export const CoffeeRushGame: React.FC = () => {
     }
     
     // ═══════════════════════════════════════════════════════════════════
-    // PASSIVE SAW (melee zone - always active, damages enemies only)
+    // PASSIVE SAW (melee zone - only if unlocked)
     // ═══════════════════════════════════════════════════════════════════
-    sawPassiveTickRef.current -= deltaTime;
-    if (sawPassiveTickRef.current <= 0) {
-      sawPassiveTickRef.current = GAME_CONFIG.SAW_PASSIVE_TICK_INTERVAL;
-      const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.SAW_PASSIVE_RADIUS * 0.5;
-      const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
-      const sawCenterY = groundY - 60; // centered on cart height
-      
-      enemies.forEach(enemy => {
-        const ex = enemy.x;
-        const ey = enemy.y - enemy.height / 2;
-        const dx = ex - sawCenterX;
-        const dy = ey - sawCenterY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < GAME_CONFIG.SAW_PASSIVE_RADIUS) {
-          enemy.hp -= GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE;
-          sawTelemetryRef.current.passiveDamage += GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE;
-          spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 1);
-          if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
-            latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+    if (hasSawRef.current) {
+      sawPassiveTickRef.current -= deltaTime;
+      if (sawPassiveTickRef.current <= 0) {
+        sawPassiveTickRef.current = GAME_CONFIG.SAW_PASSIVE_TICK_INTERVAL;
+        const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.SAW_PASSIVE_RADIUS * 0.5;
+        const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+        const sawCenterY = groundY - 60;
+        
+        enemies.forEach(enemy => {
+          const ex = enemy.x;
+          const ey = enemy.y - enemy.height / 2;
+          const dx = ex - sawCenterX;
+          const dy = ey - sawCenterY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < GAME_CONFIG.SAW_PASSIVE_RADIUS) {
+            enemy.hp -= GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE;
+            sawTelemetryRef.current.passiveDamage += GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE;
+            spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 1);
+            if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
+              latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+            }
           }
-        }
-      });
+        });
+      }
     }
     
     // ═══════════════════════════════════════════════════════════════════
@@ -1653,7 +1656,7 @@ export const CoffeeRushGame: React.FC = () => {
     drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
       tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
       bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-      deltaTime, gateBuildingRef.current, currentTime);
+      deltaTime, gateBuildingRef.current, currentTime, hasSawRef.current);
   }, [
     enemyPool, projectilePool, tipPool, particlePool,
     spawnEnemy, fireProjectile, spawnParticles, spawnTip,
@@ -1711,7 +1714,8 @@ export const CoffeeRushGame: React.FC = () => {
             onTonicBomb={handleTonicBomb}
             canUseBomb={canUseBomb}
             onSawThrow={handleSawThrow}
-            canUseSaw={powerRef.current >= GAME_CONFIG.SAW_THROW_COST}
+            canUseSaw={hasSawRef.current && powerRef.current >= GAME_CONFIG.SAW_THROW_COST}
+            hasSaw={hasSawRef.current}
             onPause={handlePause}
             gameMode={gameMode}
             bossState={bossState}
