@@ -210,7 +210,7 @@ export const GAME_CONFIG = {
   
   // Active Saw Throw (power skill)
   SAW_THROW_COST: 5,               // Power cost
-  SAW_THROW_DAMAGE: 35,            // damage per enemy hit (one-shots Stage 1 enemies)
+  SAW_THROW_DAMAGE: 20,            // damage per enemy hit (strong but doesn't one-shot gate)
   SAW_THROW_SPEED: 200,            // px/s (nerfed from 240)
   SAW_THROW_LIFETIME: 0.7,         // seconds before despawn (nerfed from 0.9)
   SAW_THROW_RADIUS: 12,            // projectile hitbox radius
