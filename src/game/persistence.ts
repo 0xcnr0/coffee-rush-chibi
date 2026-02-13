@@ -38,7 +38,7 @@ export const clearPurchaseLog = (): void => {
 };
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 10; // Reboot: Pip/EVO system, clean reset from v9
+const SAVE_VERSION = 11; // Added sawUnlocked field, clean reset from v10
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROGRESSION DATA SCHEMA (v10)
@@ -61,6 +61,7 @@ export interface ProgressionData {
   chapter1Cleared: boolean;
   bestChapter1Time: number;
   bestStageReached: number;
+  sawUnlocked: boolean;
   lastGameMode: GameMode;
   energy: number;
   regenAnchorTs: number | null;
@@ -97,6 +98,7 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   chapter1Cleared: false,
   bestChapter1Time: 0,
   bestStageReached: 0,
+  sawUnlocked: false,
   lastGameMode: 'CHAPTER',
   energy: GAME_CONFIG.ENERGY_MAX,
   regenAnchorTs: null,
@@ -344,6 +346,19 @@ export const addDebugEnergy = (amount: number = 10): number => {
   prog.energy += amount;
   saveProgression(prog);
   return prog.energy;
+};
+
+export const purchaseSaw = (cost: number): boolean => {
+  const current = loadProgression();
+  if (current.sawUnlocked) return false;
+  if (current.bestStageReached < 2) return false;
+  if (current.totalCoins < cost) return false;
+  const coinsBefore = current.totalCoins;
+  current.totalCoins -= cost;
+  current.sawUnlocked = true;
+  saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'saw_unlock', target: 'saw', before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
+  return true;
 };
 
 export const addDebugCoins = (amount: number = 200): number => {

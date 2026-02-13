@@ -169,7 +169,7 @@ export interface GameStats {
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface PurchaseEvent {
   ts: number;
-  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice';
+  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'saw_unlock';
   target: string;           // e.g. "block_0", "weapon_1", "power", "damage"
   before: string;           // human-readable
   after: string;            // human-readable

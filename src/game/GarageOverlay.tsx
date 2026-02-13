@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy } from './persistence';
+import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseSaw } from './persistence';
 import { GAME_CONFIG } from './config';
 import { toast } from 'sonner';
 import type { GameMode } from './types';
@@ -279,6 +279,57 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
             coins={progression.totalCoins}
             onPurchase={handleDamagePip}
           />
+        </div>
+        
+        {/* SAW SYSTEM Upgrade Card */}
+        <div className={`flex items-center gap-3 p-2.5 rounded-xl border-2 transition-all duration-200 ${
+          progression.sawUnlocked 
+            ? 'bg-sky-900/40 border-sky-500/30' 
+            : progression.bestStageReached < 2 
+              ? 'bg-coffee-dark/40 border-coffee-medium/20 opacity-50'
+              : progression.totalCoins >= GAME_CONFIG.SAW_UNLOCK_COST
+                ? 'bg-coffee-dark/80 border-sky-400/50 hover:border-sky-400'
+                : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'
+        }`}>
+          <div className={`p-1.5 rounded-lg ${progression.sawUnlocked ? 'bg-sky-500/20' : 'bg-coffee-medium/20'}`}>
+            <span className="text-xl">🪚</span>
+          </div>
+          <div className="flex-1 text-left">
+            <span className="text-xs text-coffee-cream/80 font-semibold">SAW SYSTEM</span>
+            {progression.sawUnlocked ? (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Check className="w-3 h-3 text-sky-400" />
+                <span className="text-[10px] text-sky-400 font-bold">EQUIPPED</span>
+              </div>
+            ) : progression.bestStageReached < 2 ? (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Lock className="w-3 h-3 text-coffee-cream/40" />
+                <span className="text-[10px] text-coffee-cream/40">Reach Stage 3</span>
+              </div>
+            ) : (
+              <span className="text-[10px] text-coffee-cream/50 mt-0.5 block">Passive melee + throw skill</span>
+            )}
+          </div>
+          {!progression.sawUnlocked && progression.bestStageReached >= 2 && (
+            <button
+              onClick={() => {
+                if (purchaseSaw(GAME_CONFIG.SAW_UNLOCK_COST)) {
+                  setProgression(loadProgression());
+                  onProgressionChange?.();
+                  toast.success('SAW SYSTEM Unlocked!', { icon: '🪚' });
+                }
+              }}
+              disabled={progression.totalCoins < GAME_CONFIG.SAW_UNLOCK_COST}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                progression.totalCoins >= GAME_CONFIG.SAW_UNLOCK_COST
+                  ? 'bg-sky-600 hover:bg-sky-500 text-white active:scale-95'
+                  : 'bg-coffee-dark/60 text-coffee-cream/40'
+              }`}
+            >
+              <span>🪙</span>
+              <span>{GAME_CONFIG.SAW_UNLOCK_COST}</span>
+            </button>
+          )}
         </div>
         
         <div className="flex gap-2">

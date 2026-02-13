@@ -20,6 +20,7 @@ export function drawGame(
   deltaTime?: number,
   gateBuilding?: GateBuilding | null,
   currentTime?: number,
+  hasSaw?: boolean,
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
   const isTraveling = playPhase === 'TRAVEL' || playPhase === 'BREATHER';
@@ -50,8 +51,8 @@ export function drawGame(
   drawCart(ctx, blocks, isTraveling || isApproaching);
   drawBarista(ctx, blocks);
   
-  // Draw passive saw zone
-  drawSawZone(ctx, blocks);
+  // Draw passive saw zone (only if unlocked)
+  if (hasSaw) drawSawZone(ctx, blocks);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
   projectiles.forEach(proj => drawProjectile(ctx, proj));
