@@ -38,9 +38,35 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     if (t?.bossOutcome === 'died_during_boss') lines.push(`  Boss HP remaining: ${t.bossHpPercent}%`);
     lines.push('');
 
-    // 2. STAGE & GATE BREAKDOWN
+    // 2. DEATH INFO
     lines.push(hr);
-    lines.push('2. STAGE & GATE BREAKDOWN');
+    lines.push('2. DEATH INFO');
+    lines.push(hr);
+    lines.push(`Death Phase: ${t?.phaseAtDeath ?? 'N/A'}`);
+    lines.push(`Death Stage: ${t?.deathStage ?? '?'}`);
+    lines.push('');
+
+    // 3. PER-STAGE PHASE TIMING
+    lines.push(hr);
+    lines.push('3. PER-STAGE PHASE TIMING');
+    lines.push(hr);
+    for (let i = 0; i < 5; i++) {
+      const stageReached = t?.stageReached ?? 1;
+      if (stageReached <= i) {
+        lines.push(`S${i + 1}: [unreached]`);
+      } else {
+        const travel = fmt(t?.travelTimeByStage?.[i] ?? 0, 1);
+        const siege = fmt(t?.siegeTimeByStage?.[i] ?? 0, 1);
+        const breather = fmt(t?.breatherTimeByStage?.[i] ?? 0, 1);
+        lines.push(`S${i + 1}: travel=${travel}s | siege=${siege}s | breather=${breather}s`);
+      }
+    }
+    lines.push(`Totals: travel=${fmt(t?.totalTravelTime ?? 0, 1)}s | siege=${fmt(t?.totalSiegeTime ?? 0, 1)}s | breather=${fmt(t?.totalBreatherTime ?? 0, 1)}s`);
+    lines.push('');
+
+    // 4. STAGE & GATE BREAKDOWN
+    lines.push(hr);
+    lines.push('4. STAGE & GATE BREAKDOWN');
     lines.push(hr);
     for (let i = 0; i < 5; i++) {
       const stage = STAGES[i];
@@ -58,9 +84,9 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     }
     lines.push('');
 
-    // 3. LINE-OF-SIGHT & DAMAGE FLOW
+    // 5. LINE-OF-SIGHT & DAMAGE FLOW
     lines.push(hr);
-    lines.push('3. LINE-OF-SIGHT & DAMAGE FLOW');
+    lines.push('5. LINE-OF-SIGHT & DAMAGE FLOW');
     lines.push(hr);
     lines.push(`Shots: ${t?.shotsFired ?? 0} fired, ${t?.shotsHit ?? 0} hit (${t?.hitRate ?? 0}%)`);
     lines.push(`To Enemies: ${t?.shotsToEnemies ?? 0} | To Gate: ${t?.shotsToGate ?? 0}`);
@@ -75,9 +101,9 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(`Star Throw: ${t?.sawThrowUses ?? 0} uses | Dmg to Enemies: ${t?.sawThrowDamageToEnemies ?? 0} | Dmg to Gate: ${t?.sawThrowDamageToGate ?? 0} | Passive: ${t?.sawPassiveDamageDealt ?? 0}`);
     lines.push('');
 
-    // 4. PRESSURE / SURVIVAL
+    // 6. PRESSURE / SURVIVAL
     lines.push(hr);
-    lines.push('4. PRESSURE / SURVIVAL');
+    lines.push('6. PRESSURE / SURVIVAL');
     lines.push(hr);
     lines.push(`Max Latched: ${t?.maxLatchedPeak ?? 0} peak | Time at max: ${fmt(t?.timeAtMaxLatched ?? 0)}s`);
     lines.push(`Blocks Lost: ${t?.blocksLost ?? 0} | First block lost: ${t?.timeToFirstBlockLost === -1 ? 'N/A' : fmt(t?.timeToFirstBlockLost ?? 0) + 's'}`);
@@ -86,7 +112,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
 
     // 5. ECONOMY TRACE
     lines.push(hr);
-    lines.push('5. ECONOMY TRACE');
+    lines.push('7. ECONOMY TRACE');
     lines.push(hr);
     lines.push(`Coins Start (wallet): ${t?.coinsStart ?? 0}`);
     lines.push(`+ Kills: ${t?.coinsFromKills ?? 0}`);
@@ -105,7 +131,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
 
     // 6. GARAGE / UPGRADE TRACE
     lines.push(hr);
-    lines.push('6. GARAGE / UPGRADE TRACE');
+    lines.push('8. GARAGE / UPGRADE TRACE');
     lines.push(hr);
     if (purchaseLog.length === 0) {
       lines.push('[No upgrades purchased before this run]');
@@ -123,7 +149,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
 
     // 7. CONFIG SNAPSHOT
     lines.push(hr);
-    lines.push('7. CONFIG SNAPSHOT');
+    lines.push('9. CONFIG SNAPSHOT');
     lines.push(hr);
     lines.push(`AUTO_ATTACK_INTERVAL: ${GAME_CONFIG.AUTO_ATTACK_INTERVAL}`);
     lines.push(`PROJECTILE_DAMAGE: ${GAME_CONFIG.PROJECTILE_DAMAGE}`);

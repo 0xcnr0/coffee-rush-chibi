@@ -141,6 +141,12 @@ export const CoffeeRushGame: React.FC = () => {
   
   // Phase time tracking
   const phaseTimersRef = useRef({ travel: 0, siege: 0, evoPick: 0, boss: 0 });
+  // Per-stage phase timing
+  const perStageTimersRef = useRef({
+    travel: [0, 0, 0, 0, 0],
+    siege: [0, 0, 0, 0, 0],
+    breather: [0, 0, 0, 0, 0],
+  });
   
   // Coins earned from kills and gates this run
   const coinsFromKillsRef = useRef(0);
@@ -349,6 +355,7 @@ export const CoffeeRushGame: React.FC = () => {
     travelTimerRef.current = TRAVEL_DURATION_BY_STAGE[0];
     isSimulationFrozenRef.current = false;
     phaseTimersRef.current = { travel: 0, siege: 0, evoPick: 0, boss: 0 };
+    perStageTimersRef.current = { travel: [0, 0, 0, 0, 0], siege: [0, 0, 0, 0, 0], breather: [0, 0, 0, 0, 0] };
     gateBuildingRef.current = null;
     setGateBuildingState(null);
     setEvoPopupData(null);
@@ -448,10 +455,17 @@ export const CoffeeRushGame: React.FC = () => {
       burstsTriggered: burstsTriggeredRef.current,
       targetModeCounts: { ...targetModeCountsRef.current },
       phaseAtDeath: playPhaseRef.current,
+      deathStage: stageIndexRef.current,
       timeInTravel: phaseTimersRef.current.travel,
       timeInSiege: phaseTimersRef.current.siege,
       timeInEvoPick: phaseTimersRef.current.evoPick,
       timeInBoss: phaseTimersRef.current.boss,
+      travelTimeByStage: [...perStageTimersRef.current.travel],
+      siegeTimeByStage: [...perStageTimersRef.current.siege],
+      breatherTimeByStage: [...perStageTimersRef.current.breather],
+      totalTravelTime: perStageTimersRef.current.travel.reduce((a, b) => a + b, 0),
+      totalSiegeTime: perStageTimersRef.current.siege.reduce((a, b) => a + b, 0),
+      totalBreatherTime: perStageTimersRef.current.breather.reduce((a, b) => a + b, 0),
       enemiesSpawned: { ...t.enemiesSpawned },
       enemiesKilled: { ...t.enemiesKilled },
       // Saw telemetry
@@ -847,6 +861,19 @@ export const CoffeeRushGame: React.FC = () => {
       : playPhaseRef.current === 'BREATHER' ? 'travel'
       : playPhaseRef.current.toLowerCase() as 'travel' | 'siege' | 'boss';
     if (phaseKey in phaseTimersRef.current) phaseTimersRef.current[phaseKey] += deltaTime;
+    
+    // Per-stage phase timing
+    const psi = stageIndexRef.current - 1; // 0-indexed
+    if (psi >= 0 && psi < 5) {
+      const phase = playPhaseRef.current;
+      if (phase === 'TRAVEL' || phase === 'APPROACH') {
+        perStageTimersRef.current.travel[psi] += deltaTime;
+      } else if (phase === 'SIEGE' || phase === 'VICTORY') {
+        perStageTimersRef.current.siege[psi] += deltaTime;
+      } else if (phase === 'BREATHER') {
+        perStageTimersRef.current.breather[psi] += deltaTime;
+      }
+    }
     
     // Simulation freeze (EVO popup)
     if (isSimulationFrozenRef.current) {

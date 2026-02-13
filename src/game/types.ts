@@ -239,12 +239,21 @@ export interface RunTelemetry {
   sawThrowDamageToGate: number;
   sawThrowUses: number;
   
-  // Phase timing
+  // Phase timing (global totals)
   phaseAtDeath: PlayPhase | null;
+  deathStage: number;           // which stage the player died in
   timeInTravel: number;
   timeInSiege: number;
   timeInEvoPick: number;
   timeInBoss: number;
+  
+  // Per-stage phase timing breakdown (index 0 = Stage 1, up to 4 = Stage 5)
+  travelTimeByStage: number[];    // seconds in TRAVEL per stage
+  siegeTimeByStage: number[];     // seconds in SIEGE per stage
+  breatherTimeByStage: number[];  // seconds in BREATHER per stage
+  totalTravelTime: number;
+  totalSiegeTime: number;
+  totalBreatherTime: number;
   
   // Spawn distribution
   enemiesSpawned: { normal: number; heavy: number; boss: number };
