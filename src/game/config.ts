@@ -27,7 +27,7 @@ export interface StageConfig {
 export const STAGES: readonly StageConfig[] = [
   { id: 1, gateHP: 300,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
   { id: 2, gateHP: 450,   spawnInterval: 800,  enemyHpMult: 1.15, enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 0 },
-  { id: 3, gateHP: 2000,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
+  { id: 3, gateHP: 2000,  spawnInterval: 500,  enemyHpMult: 2.2,  enemySpeedMult: 1.25, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 5 },
   { id: 4, gateHP: 3500,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
   { id: 5, gateHP: 5000,  spawnInterval: 500,  enemyHpMult: 2.8,  enemySpeedMult: 1.20, enemyDropCoins: 20,  gateLumpSum: 800,  heavyEvery: 5 },
   { id: 6, isBoss: true,  spawnInterval: 0,    enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 50,  gateLumpSum: 0,    heavyEvery: 0, bossHP: 10000, bossDropCoins: 50, clearBonus: 1500 },
@@ -107,7 +107,7 @@ export const GAME_CONFIG = {
   
   // Post-Victory Breather (pacing window between gates)
   POST_VICTORY_BREATHER_DURATION: 4.0,    // seconds of running before next TRAVEL
-  BREATHER_SPAWN_REDUCTION: 0.40,         // spawn at 40% rate (60% reduction)
+  BREATHER_SPAWN_REDUCTION: 0.60,         // spawn at 60% rate (40% reduction)
   
   // ─────────────────────────────────────────────────────────────
   // TRAVEL (purely visual transition)
@@ -279,9 +279,9 @@ export const TRAVEL_DURATION_BY_STAGE = [10, 14, 16, 18, 20] as const;
 // A burst of faster spawning mid-travel to create pressure spikes
 export const MINI_RUSH_CONFIG = {
   ENABLED_FROM_STAGE: 2,        // mini-rush starts from stage 2 travel
-  DURATION: 4.0,                // seconds of 2x spawn rate
-  SPAWN_MULT: 0.5,              // spawn interval multiplied (0.5 = 2x faster)
-  START_RATIO: 0.4,             // starts at 40% through travel (middle section)
+  DURATION: 5.0,                // seconds of ~3x spawn rate
+  SPAWN_MULT: 0.35,             // spawn interval multiplied (0.35 = ~3x faster)
+  START_RATIO: 0.25,            // starts at 25% through travel (earlier pressure)
 } as const;
 
 // Per-stage bomb silence duration (seconds) during SIEGE
