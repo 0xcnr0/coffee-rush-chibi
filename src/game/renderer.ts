@@ -50,6 +50,9 @@ export function drawGame(
   drawCart(ctx, blocks, isTraveling || isApproaching);
   drawBarista(ctx, blocks);
   
+  // Draw passive saw zone
+  drawSawZone(ctx, blocks);
+  
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
   projectiles.forEach(proj => drawProjectile(ctx, proj));
   particles.forEach(particle => drawParticle(ctx, particle));
@@ -170,6 +173,50 @@ function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, cur
     ctx.font = '10px sans-serif';
     ctx.fillText('💨', gate.x + gate.width / 2 - 5, gate.y - 16);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PASSIVE SAW ZONE (visual)
+// ═══════════════════════════════════════════════════════════════════════
+function drawSawZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
+  const activeBlocks = blocks.filter(b => !b.destroyed);
+  if (activeBlocks.length === 0) return;
+  
+  const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.SAW_PASSIVE_RADIUS * 0.5;
+  const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+  const sawCenterY = groundY - 60;
+  const radius = GAME_CONFIG.SAW_PASSIVE_RADIUS;
+  
+  // Faint danger zone circle
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = 'hsl(200, 60%, 50%)';
+  ctx.beginPath();
+  ctx.arc(sawCenterX, sawCenterY, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  
+  // Rotating saw blade
+  ctx.save();
+  ctx.translate(sawCenterX, sawCenterY);
+  ctx.rotate(Date.now() / 150);
+  const bladeRadius = 18;
+  ctx.fillStyle = 'hsla(200, 50%, 60%, 0.7)';
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const angle = (i / 10) * Math.PI * 2;
+    const r = i % 2 === 0 ? bladeRadius : bladeRadius * 0.5;
+    if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+  }
+  ctx.closePath();
+  ctx.fill();
+  // Center dot
+  ctx.fillStyle = 'hsla(200, 40%, 40%, 0.9)';
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 // ═══════════════════════════════════════════════════════════════════════

@@ -10,6 +10,8 @@ interface GameHUDProps {
   power: number;
   onTonicBomb: () => void;
   canUseBomb: boolean;
+  onSawThrow: () => void;
+  canUseSaw: boolean;
   onPause: () => void;
   gameMode: GameMode;
   bossState: BossState;
@@ -21,7 +23,7 @@ interface GameHUDProps {
 
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived, tips, power,
-  onTonicBomb, canUseBomb, onPause,
+  onTonicBomb, canUseBomb, onSawThrow, canUseSaw, onPause,
   gameMode, bossState, bossIncomingTimer,
   playPhase, stageIndex = 1, gateBuilding,
 }) => {
@@ -33,7 +35,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({
 
   const skillCost = GAME_CONFIG.TONIC_BOMB_COST;
   const canUseSkill = power >= skillCost;
-  const totalStages = STAGES.length; // 6 (5 gates + boss)
+  const sawCost = GAME_CONFIG.SAW_THROW_COST;
+  const totalStages = STAGES.length;
   
   return (
     <>
@@ -155,7 +158,19 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
           
-          {/* Skill Button */}
+          {/* Saw Throw Button */}
+          <Button onClick={onSawThrow} disabled={!canUseSaw}
+            className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
+              canUseSaw ? 'bg-sky-600 hover:bg-sky-500 text-coffee-foam border-sky-400/50 hover:scale-105 active:scale-95' 
+              : 'bg-coffee-dark/60 text-coffee-cream/40 border-coffee-dark/30'}`}>
+            <span className="text-2xl">🪚</span>
+            <div className={`absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              canUseSaw ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
+              {sawCost}⚡
+            </div>
+          </Button>
+          
+          {/* Bomb Button */}
           <Button onClick={onTonicBomb} disabled={!canUseSkill}
             className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
               canUseSkill ? 'bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam border-warm-orange/50 hover:scale-105 active:scale-95' 

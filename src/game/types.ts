@@ -231,6 +231,12 @@ export interface RunTelemetry {
   // Target mode telemetry
   targetModeCounts: { front: number; mid: number; back: number; gate: number };
   
+  // Saw telemetry
+  sawPassiveDamageDealt: number;
+  sawThrowDamageToEnemies: number;
+  sawThrowDamageToGate: number;
+  sawThrowUses: number;
+  
   // Phase timing
   phaseAtDeath: PlayPhase | null;
   timeInTravel: number;
