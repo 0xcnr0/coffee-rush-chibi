@@ -28,6 +28,20 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   gameMode, bossState, bossIncomingTimer,
   playPhase, stageIndex = 1, gateBuilding,
 }) => {
+  const [gateClearedStage, setGateClearedStage] = React.useState<number | null>(null);
+  const gateClearedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Show "Gate Cleared" banner when entering VICTORY phase
+  const prevPhaseRef = React.useRef<PlayPhase | undefined>(undefined);
+  React.useEffect(() => {
+    if (playPhase === 'VICTORY' && prevPhaseRef.current !== 'VICTORY') {
+      setGateClearedStage(stageIndex);
+      if (gateClearedTimerRef.current) clearTimeout(gateClearedTimerRef.current);
+      gateClearedTimerRef.current = setTimeout(() => setGateClearedStage(null), 2500);
+    }
+    prevPhaseRef.current = playPhase;
+    return () => { if (gateClearedTimerRef.current) clearTimeout(gateClearedTimerRef.current); };
+  }, [playPhase, stageIndex]);
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -41,6 +55,17 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   
   return (
     <>
+      {/* GATE CLEARED Banner */}
+      {gateClearedStage !== null && (
+        <div className="absolute top-1/4 left-0 right-0 z-30 flex justify-center animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="bg-gold/90 text-coffee-espresso px-6 py-3 rounded-xl text-xl font-bold shadow-lg border-2 border-gold/60 flex items-center gap-2">
+            <span>🏰</span>
+            <span>GATE {gateClearedStage} CLEARED!</span>
+            <span>✨</span>
+          </div>
+        </div>
+      )}
+      
       {/* BOSS INCOMING Banner */}
       {bossIncomingTimer > 0 && (
         <div className="absolute top-1/3 left-0 right-0 z-30 flex justify-center">

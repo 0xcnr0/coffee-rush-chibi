@@ -197,25 +197,31 @@ function drawSawZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   ctx.fill();
   ctx.restore();
   
-  // Rotating saw blade
+  // Rotating star (5-pointed, like wheels)
   ctx.save();
   ctx.translate(sawCenterX, sawCenterY);
-  ctx.rotate(Date.now() / 150);
-  const bladeRadius = 18;
-  ctx.fillStyle = 'hsla(200, 50%, 60%, 0.7)';
+  ctx.rotate(Date.now() / 200);
+  const starRadius = 18;
+  const innerRadius = 8;
+  const points = 5;
+  ctx.fillStyle = 'hsla(45, 85%, 55%, 0.85)';
   ctx.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const angle = (i / 10) * Math.PI * 2;
-    const r = i % 2 === 0 ? bladeRadius : bladeRadius * 0.5;
+  for (let i = 0; i < points * 2; i++) {
+    const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+    const r = i % 2 === 0 ? starRadius : innerRadius;
     if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
     else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
   }
   ctx.closePath();
   ctx.fill();
+  // Star outline glow
+  ctx.strokeStyle = 'hsla(45, 90%, 70%, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
   // Center dot
-  ctx.fillStyle = 'hsla(200, 40%, 40%, 0.9)';
+  ctx.fillStyle = 'hsla(45, 70%, 40%, 0.9)';
   ctx.beginPath();
-  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.arc(0, 0, 4, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
