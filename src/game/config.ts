@@ -25,7 +25,7 @@ export interface StageConfig {
 }
 
 export const STAGES: readonly StageConfig[] = [
-  { id: 1, gateHP: 350,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
+  { id: 1, gateHP: 350,   spawnInterval: 900,  enemyHpMult: 0.8,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
   { id: 2, gateHP: 800,   spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
   { id: 3, gateHP: 2000,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
   { id: 4, gateHP: 3500,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
@@ -273,7 +273,16 @@ export const GAME_CONFIG = {
 } as const;
 
 // Per-stage travel duration (seconds) — Stage 1 keeps 10s runner, others get 3.5-4.0s
-export const TRAVEL_DURATION_BY_STAGE = [10, 14, 10, 8, 8] as const;
+export const TRAVEL_DURATION_BY_STAGE = [10, 14, 16, 18, 20] as const;
+
+// Mini-rush config (Stage 2+ travel only)
+// A burst of faster spawning mid-travel to create pressure spikes
+export const MINI_RUSH_CONFIG = {
+  ENABLED_FROM_STAGE: 2,        // mini-rush starts from stage 2 travel
+  DURATION: 4.0,                // seconds of 2x spawn rate
+  SPAWN_MULT: 0.5,              // spawn interval multiplied (0.5 = 2x faster)
+  START_RATIO: 0.4,             // starts at 40% through travel (middle section)
+} as const;
 
 // Per-stage bomb silence duration (seconds) during SIEGE
 export const BOMB_SILENCE_BY_STAGE = [1.5, 1.0, 0.6, 0.6, 0.6] as const;
