@@ -1490,13 +1490,15 @@ export const CoffeeRushGame: React.FC = () => {
       });
       
       // Gate collision (only if projectile wasn't stopped by enemy)
+      // Pierce projectiles only hit gate ONCE (prevent multi-frame hits)
       if (!hitEnemy || proj.pierce) {
         const g = gateBuildingRef.current;
-        if (g && !g.isDestroyed && playPhaseRef.current !== 'APPROACH' &&
+        if (g && !g.isDestroyed && !(proj as any)._hitGate && playPhaseRef.current !== 'APPROACH' &&
             proj.x >= g.x && proj.x <= g.x + g.width &&
             proj.y >= g.y && proj.y <= g.y + g.height) {
           g.hp -= proj.damage;
           g.lastHitTime = timeRef.current;
+          if (proj.pierce) (proj as any)._hitGate = true; // prevent re-hit
           const si = stageIndexRef.current - 1;
           if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += proj.damage;
           if (proj.isSaw) sawTelemetryRef.current.throwDamageGate += proj.damage;
