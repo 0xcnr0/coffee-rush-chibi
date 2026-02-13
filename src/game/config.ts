@@ -180,7 +180,7 @@ export const GAME_CONFIG = {
   
   // Block count (cargo boxes)
   BLOCK_COUNT_MAX_LEVEL: 3,
-  BLOCK_COUNT_BASE_COST: 28,
+  BLOCK_COUNT_BASE_COST: 30,
   
   // ─────────────────────────────────────────────────────────────
   // HEAVY ENEMY
