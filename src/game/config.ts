@@ -242,7 +242,7 @@ export const GAME_CONFIG = {
   SHOTGUN_SPREAD_DEG_MIN: 16,
   SHOTGUN_SPREAD_DEG_MAX: 32,
   SHOTGUN_SPREAD_DISTANCE_SCALE: 0.35, // spread widens with distance
-  MUZZLE_Y_OFFSET: 75,                // px down from topBlock.y → flatter TDS-style shots
+  MUZZLE_Y_OFFSET: 20,                // px down from topBlock.y → chassis-level shots
   SHOTGUN_DAMAGE_SPLIT: 'weighted_center' as 'equal' | 'weighted_center',
   
   // ─────────────────────────────────────────────────────────────
