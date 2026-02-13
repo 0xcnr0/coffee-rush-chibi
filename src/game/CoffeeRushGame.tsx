@@ -921,15 +921,14 @@ export const CoffeeRushGame: React.FC = () => {
           travelTimerRef.current = GAME_CONFIG.APPROACH_DURATION;
         }
       } else {
-        // Stages 2+: travel with despawn, then APPROACH (not direct SIEGE)
-        enemyPool.getActive().forEach(enemy => {
-          if (enemy.state !== 'SERVED' && !enemy.isServed) {
-            enemy.hp = 0;
-            enemy.state = 'SERVED';
-            enemy.isServed = true;
-            enemy.servedTimer = GAME_CONFIG.TRAVEL_DESPAWN_DELAY;
-          }
-        });
+        // Stages 2+: travel WITH enemy spawning (no despawn — keeps pressure)
+        const si = stageIndexRef.current;
+        const stage = getStage(si);
+        const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, stage.spawnInterval);
+        if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
+          spawnEnemy();
+          lastSpawnRef.current = currentTime;
+        }
         
         if (travelTimerRef.current <= 0) {
           const si = stageIndexRef.current;
