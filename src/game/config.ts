@@ -272,8 +272,8 @@ export const GAME_CONFIG = {
   STAGE2_WAVE_BREATHER: 0.8,           // seconds pause between waves (Stage 2)
 } as const;
 
-// Per-stage travel duration (seconds) — Stage 1 keeps 10s runner, others get 3.5-4.0s
-export const TRAVEL_DURATION_BY_STAGE = [10, 14, 16, 18, 20] as const;
+// Per-stage travel duration (seconds) — Stage 1: 10s runner, Stage 2: 4s quick transit, Stage 3+: death-wall travel
+export const TRAVEL_DURATION_BY_STAGE = [10, 4, 16, 18, 20] as const;
 
 // Mini-rush config (Stage 2+ travel only)
 // A burst of faster spawning mid-travel to create pressure spikes
