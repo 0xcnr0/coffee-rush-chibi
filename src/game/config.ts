@@ -25,7 +25,7 @@ export interface StageConfig {
 }
 
 export const STAGES: readonly StageConfig[] = [
-  { id: 1, gateHP: 350,   spawnInterval: 900,  enemyHpMult: 0.8,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
+  { id: 1, gateHP: 300,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
   { id: 2, gateHP: 800,   spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
   { id: 3, gateHP: 2000,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
   { id: 4, gateHP: 3500,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
@@ -34,7 +34,7 @@ export const STAGES: readonly StageConfig[] = [
 ] as const;
 
 // Gate HP ratios relative to Gate 1 (for easy calibration)
-export const GATE_HP_RATIOS = [1.0, 2.29, 5.71, 10.0, 14.29] as const;
+export const GATE_HP_RATIOS = [1.0, 2.67, 6.67, 11.67, 16.67] as const;
 
 export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
@@ -210,7 +210,7 @@ export const GAME_CONFIG = {
   
   // Active Saw Throw (power skill)
   SAW_THROW_COST: 5,               // Power cost
-  SAW_THROW_DAMAGE: 5,             // damage per enemy hit (nerfed from 8)
+  SAW_THROW_DAMAGE: 35,            // damage per enemy hit (one-shots Stage 1 enemies)
   SAW_THROW_SPEED: 200,            // px/s (nerfed from 240)
   SAW_THROW_LIFETIME: 0.7,         // seconds before despawn (nerfed from 0.9)
   SAW_THROW_RADIUS: 12,            // projectile hitbox radius
