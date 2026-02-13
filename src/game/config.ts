@@ -26,15 +26,15 @@ export interface StageConfig {
 
 export const STAGES: readonly StageConfig[] = [
   { id: 1, gateHP: 350,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
-  { id: 2, gateHP: 1400,  spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
-  { id: 3, gateHP: 3500,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
-  { id: 4, gateHP: 5000,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
-  { id: 5, gateHP: 7000,  spawnInterval: 500,  enemyHpMult: 2.8,  enemySpeedMult: 1.20, enemyDropCoins: 20,  gateLumpSum: 800,  heavyEvery: 5 },
+  { id: 2, gateHP: 800,   spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
+  { id: 3, gateHP: 2000,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
+  { id: 4, gateHP: 3500,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
+  { id: 5, gateHP: 5000,  spawnInterval: 500,  enemyHpMult: 2.8,  enemySpeedMult: 1.20, enemyDropCoins: 20,  gateLumpSum: 800,  heavyEvery: 5 },
   { id: 6, isBoss: true,  spawnInterval: 0,    enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 50,  gateLumpSum: 0,    heavyEvery: 0, bossHP: 10000, bossDropCoins: 50, clearBonus: 1500 },
 ] as const;
 
 // Gate HP ratios relative to Gate 1 (for easy calibration)
-export const GATE_HP_RATIOS = [1.0, 2.0, 3.5, 5.0, 7.0] as const;
+export const GATE_HP_RATIOS = [1.0, 2.29, 5.71, 10.0, 14.29] as const;
 
 export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
@@ -161,7 +161,7 @@ export const GAME_CONFIG = {
   
   // Star weapon upgrades: 5 pips → EVO, max E2 for Chapter 1 (10 pips total)
   STAR_PIP_PER_EVO: 5,
-  STAR_PIP_BASE_COST: 80,
+  STAR_PIP_BASE_COST: 250,
   STAR_PIP_COST_SCALING: 1.35,
   STAR_MAX_EVOS_CH1: 2,             // Chapter 1 cap: E2 (10 pips)
   STAR_DAMAGE_BONUS_PER_PIP: 0.10,  // +10% passive & throw damage per pip
@@ -180,7 +180,7 @@ export const GAME_CONFIG = {
   
   // Block count (cargo boxes)
   BLOCK_COUNT_MAX_LEVEL: 3,
-  BLOCK_COUNT_BASE_COST: 30,
+  BLOCK_COUNT_BASE_COST: 28,
   
   // ─────────────────────────────────────────────────────────────
   // HEAVY ENEMY
@@ -210,9 +210,9 @@ export const GAME_CONFIG = {
   
   // Active Saw Throw (power skill)
   SAW_THROW_COST: 5,               // Power cost
-  SAW_THROW_DAMAGE: 8,             // damage per enemy hit (nerfed from 14)
-  SAW_THROW_SPEED: 240,            // px/s (nerfed from 280)
-  SAW_THROW_LIFETIME: 0.9,         // seconds before despawn (nerfed from 1.1)
+  SAW_THROW_DAMAGE: 5,             // damage per enemy hit (nerfed from 8)
+  SAW_THROW_SPEED: 200,            // px/s (nerfed from 240)
+  SAW_THROW_LIFETIME: 0.7,         // seconds before despawn (nerfed from 0.9)
   SAW_THROW_RADIUS: 12,            // projectile hitbox radius
   
   // Star per-box (Garage purchase)
