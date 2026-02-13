@@ -1,27 +1,36 @@
 
 
-# Stage 1 Gate HP + Enemy HP Geri Al + Star Throw Ayarı
+# RunSummaryOverlay'e Star Throw Telemetri Verisi Ekleme
+
+## Problem
+Star throw hasarı `sawTelemetryRef` ile dogru sekilde kaydediliyor ancak RunSummaryOverlay (kopyalanabilen dev paneli) bu verileri gostermiyor. Gate hasar dagiliminda sadece "bullets" ve "bomb" var, star throw ayri gorunmuyor.
 
 ## Degisiklikler
 
-### 1. Stage 1 enemyHpMult: 0.8 -> 1.0 (geri al)
-Dusmanlar tekrar normal canlarinda olacak.
+### Dosya: `src/game/RunSummaryOverlay.tsx`
 
-### 2. Stage 1 gateHP: 350 -> 300
-Gate daha hizli yikilacak, kuşatma suresi kisalacak.
+**1. Gate Breakdown'da star throw hasarini ayir (Bolum 2)**
+- Mevcut: `[bullets: X, bomb: Y]`
+- Yeni: `[bullets: X, bomb: Y, star: Z]`
+- `bulletDmg = dealt - bombDmg - starDmg` olarak hesaplanacak
 
-### 3. Star Throw Damage: 5 -> 35
-- Stage 1 enemy HP = 32 (base 32 x 1.0 mult)
-- 35 hasar ile normal dusmanlari tek atar
-- Gate'e de ayni 35 hasar verir
-- Stage 2+ dusmanlar (HP 42+) tek olmaz, dengeyi korur
+**2. Bolum 3'e Star Throw istatistikleri ekle**
+- Star Throw Uses (kac kez atildi)
+- Star Throw Damage to Enemies
+- Star Throw Damage to Gate
+
+**3. Bolum 4'e Star Throw bilgisi ekle**
+- "Bomb Uses" satirinin yanina "Star Throws: X" ekle
 
 ## Teknik Detaylar
 
-Tek dosya: `src/game/config.ts`
+Telemetride zaten mevcut olan veriler:
+- `t.sawThrowUses` - kac kez atildi
+- `t.sawThrowDamageToEnemies` - dusmanlara verilen hasar
+- `t.sawThrowDamageToGate` - gate'e verilen hasar
+- `t.sawPassiveDamageDealt` - pasif alan hasari
 
-- STAGES[0].enemyHpMult: 0.8 -> 1.0
-- STAGES[0].gateHP: 350 -> 300
-- SAW_THROW_DAMAGE: 5 -> 35
-- GATE_HP_RATIOS[0] ayni kalir (1.0), diger oranlar Gate1=300 baz alinarak guncellenir: [1.0, 2.67, 6.67, 11.67, 16.67]
+Gate basina star throw hasari icin per-gate breakdown mevcut degil (sadece toplam var). Gate breakdown'da toplam star throw gate hasarini gosterecegiz, per-gate ayrimini ise mevcut `gateDamageDealt` ve `bombGateDamage` farkindan cikaracagiz.
+
+Tek dosya degisikligi: `src/game/RunSummaryOverlay.tsx`
 
