@@ -48,14 +48,13 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
       const remaining = t?.gateHpRemainingByGate?.[i] ?? maxHp;
       const dealt = t?.gateDamageDealt?.[i] ?? 0;
       const bombDmg = t?.bombGateDamageByGate?.[i] ?? 0;
-      const starGateDmg = t?.sawThrowDamageToGate ?? 0;
-      const bulletDmg = dealt - bombDmg - starGateDmg;
+      const bulletDmg = dealt - bombDmg;
       const pct = maxHp > 0 ? fmt((dealt / maxHp) * 100, 1) : '0.0';
       const time = fmt(t?.gateTimeSpent?.[i] ?? 0, 1);
       const stageReached = t?.stageReached ?? 1;
       const destroyed = t?.gateDestroyedByGate?.[i] ?? false;
       const status = stageReached <= i ? '[unreached]' : destroyed ? 'YES' : 'NO';
-      lines.push(`G${i + 1}: HP rem: ${remaining}/${maxHp} | Dealt: ${dealt} (${pct}%) [bullets: ${bulletDmg}, bomb: ${bombDmg}, star: ${starGateDmg}] | Time: ${time}s | Destroyed: ${status}`);
+      lines.push(`G${i + 1}: HP rem: ${remaining}/${maxHp} | Dealt: ${dealt} (${pct}%) [bullets: ${bulletDmg}, bomb: ${bombDmg}] | Time: ${time}s | Destroyed: ${status}`);
     }
     lines.push('');
 
