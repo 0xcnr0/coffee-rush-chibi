@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseSaw, purchaseStarForBox } from './persistence';
+import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseSaw, purchaseStarForBox, purchaseStarPip } from './persistence';
 import { GAME_CONFIG } from './config';
 import { toast } from 'sonner';
 import type { GameMode } from './types';
@@ -112,6 +112,14 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   const handleDamagePip = () => {
     const cost = getPipCost(progression.damagePips, GAME_CONFIG.DAMAGE_PIP_BASE_COST, GAME_CONFIG.DAMAGE_PIP_COST_SCALING);
     if (purchaseDamagePip(cost)) {
+      setProgression(loadProgression());
+      onProgressionChange?.();
+    }
+  };
+
+  const handleStarPip = () => {
+    const cost = getPipCost(progression.starPips, GAME_CONFIG.STAR_PIP_BASE_COST, GAME_CONFIG.STAR_PIP_COST_SCALING);
+    if (purchaseStarPip(cost)) {
       setProgression(loadProgression());
       onProgressionChange?.();
     }
@@ -312,6 +320,23 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
             onPurchase={handleDamagePip}
           />
         </div>
+        
+        {/* Star pip upgrade row - only visible when star is unlocked */}
+        {progression.starPerBox?.some(v => v) && (
+          <div className="flex gap-2">
+            <PipTile
+              name="Star"
+              icon={<Star className="w-5 h-5 text-sky-400" />}
+              currentPips={progression.starPips}
+              pipsPerEvo={GAME_CONFIG.STAR_PIP_PER_EVO}
+              maxEvos={GAME_CONFIG.STAR_MAX_EVOS_CH1}
+              evoCount={progression.starEvoChoices?.length || 0}
+              cost={getPipCost(progression.starPips, GAME_CONFIG.STAR_PIP_BASE_COST, GAME_CONFIG.STAR_PIP_COST_SCALING)}
+              coins={progression.totalCoins}
+              onPurchase={handleStarPip}
+            />
+          </div>
+        )}
         
         {/* Per-box Star buttons rendered in the cart overlay area */}
         

@@ -25,7 +25,7 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
   
   const getCompactSummary = () => {
     const { pipLevels: p } = telemetry;
-    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} Stage${telemetry.stageReached} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Coins:${telemetry.coinsEarnedActual}(B:${telemetry.coinsTotalBreakdown}/D:${telemetry.economyDelta}) | Pips:B${p.blockCount}/P${p.powerPips}/D${p.damagePips} | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}`;
+    return `[${telemetry.gameMode}] ${formatTime(timeSurvived)} Stage${telemetry.stageReached} | Boss:${telemetry.bossOutcome}${telemetry.bossHpPercent > 0 ? `(${telemetry.bossHpPercent}%)` : ''} | Coins:${telemetry.coinsEarnedActual}(B:${telemetry.coinsTotalBreakdown}/D:${telemetry.economyDelta}) | Pips:B${p.blockCount}/P${p.powerPips}/D${p.damagePips}/S${p.starPips ?? 0} | Hit:${telemetry.hitRate}% (${telemetry.shotsHit}/${telemetry.shotsFired}) | Latched:${telemetry.maxLatchedPeak}peak | Blocks:-${telemetry.blocksLost} | Bombs:${telemetry.tonicBombUses}`;
   };
   
   const handleCopy = async (format: 'json' | 'compact') => {

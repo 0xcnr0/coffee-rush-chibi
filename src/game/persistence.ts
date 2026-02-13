@@ -38,7 +38,7 @@ export const clearPurchaseLog = (): void => {
 };
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 12; // Added starPerBox field, clean reset from v11
+const SAVE_VERSION = 13; // Added starPips/starEvoChoices for Star pip/EVO system
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROGRESSION DATA SCHEMA (v10)
@@ -63,6 +63,8 @@ export interface ProgressionData {
   bestStageReached: number;
   sawUnlocked: boolean;
   starPerBox: boolean[];
+  starPips: number;
+  starEvoChoices: string[];
   lastGameMode: GameMode;
   energy: number;
   regenAnchorTs: number | null;
@@ -101,6 +103,8 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   bestStageReached: 0,
   sawUnlocked: false,
   starPerBox: [false, false, false],
+  starPips: 0,
+  starEvoChoices: [],
   lastGameMode: 'CHAPTER',
   energy: GAME_CONFIG.ENERGY_MAX,
   regenAnchorTs: null,
@@ -377,6 +381,20 @@ export const purchaseStarForBox = (boxIndex: number, cost: number): boolean => {
   current.sawUnlocked = current.starPerBox.some(v => v);
   saveProgression(current);
   logPurchase({ ts: Date.now(), type: 'star_unlock', target: `star_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
+  return true;
+};
+
+export const purchaseStarPip = (cost: number): boolean => {
+  const current = loadProgression();
+  if (current.totalCoins < cost) return false;
+  const maxPips = GAME_CONFIG.STAR_PIP_PER_EVO * GAME_CONFIG.STAR_MAX_EVOS_CH1;
+  if (current.starPips >= maxPips) return false;
+  const beforeValue = current.starPips;
+  const coinsBefore = current.totalCoins;
+  current.totalCoins -= cost;
+  current.starPips += 1;
+  saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'star_pip', target: 'star', before: `pips:${beforeValue}`, after: `pips:${current.starPips}`, beforeValue, afterValue: current.starPips, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 

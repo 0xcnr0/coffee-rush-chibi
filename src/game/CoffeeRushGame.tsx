@@ -210,6 +210,7 @@ export const CoffeeRushGame: React.FC = () => {
   const lastSawAttackRef = useRef(-999);
   const hasSawRef = useRef(false);
   const sawPassiveTickRef = useRef(0);
+  const starDamageMultRef = useRef(1);
   const sawTelemetryRef = useRef({ passiveDamage: 0, throwDamageEnemies: 0, throwDamageGate: 0, throwUses: 0 });
   
   // Telemetry
@@ -281,6 +282,7 @@ export const CoffeeRushGame: React.FC = () => {
     
     // Check for star weapon (purchased from Garage, per-box)
     hasSawRef.current = progression.starPerBox?.some(v => v) ?? progression.sawUnlocked;
+    starDamageMultRef.current = 1 + (progression.starPips ?? 0) * GAME_CONFIG.STAR_DAMAGE_BONUS_PER_PIP;
     
     // Reset all refs
     latchedCountRef.current = 0;
@@ -408,6 +410,7 @@ export const CoffeeRushGame: React.FC = () => {
         powerPips: prog.powerPips,
         damagePips: prog.damagePips,
         blockCount: prog.blockCountLevel,
+        starPips: prog.starPips ?? 0,
       },
       shotsFired: shotsFiredRef.current,
       shotsHit: shotsHitRef.current,
@@ -768,7 +771,7 @@ export const CoffeeRushGame: React.FC = () => {
     proj.targetX = GAME_CONFIG.CANVAS_WIDTH + 100; // fly straight right
     proj.targetY = proj.y; // straight line
     proj.speed = GAME_CONFIG.SAW_THROW_SPEED;
-    proj.damage = Math.floor(GAME_CONFIG.SAW_THROW_DAMAGE * damageMultiplierRef.current);
+    proj.damage = Math.floor(GAME_CONFIG.SAW_THROW_DAMAGE * damageMultiplierRef.current * starDamageMultRef.current);
     proj.radius = GAME_CONFIG.SAW_THROW_RADIUS;
     proj.pierce = true;
     proj.isSaw = true;
@@ -1429,8 +1432,9 @@ export const CoffeeRushGame: React.FC = () => {
           const dy = ey - sawCenterY;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < GAME_CONFIG.SAW_PASSIVE_RADIUS) {
-            enemy.hp -= GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE;
-            sawTelemetryRef.current.passiveDamage += GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE;
+            const starDmg = Math.floor(GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE * starDamageMultRef.current);
+            enemy.hp -= starDmg;
+            sawTelemetryRef.current.passiveDamage += starDmg;
             spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 1);
             if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
               latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
