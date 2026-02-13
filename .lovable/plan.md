@@ -1,131 +1,89 @@
 
 
-# Scale TDS Flow to All Stages + Stage 1 HP Tune
+# Saw System: Garage Unlock + Balance Tune
 
-## Summary
+## Overview
 
-Run 4 confirmed Stage 1 pilot works (Gate1 destroyed: bullets 432, bomb 168). Now we generalize the TRAVEL -> APPROACH -> SIEGE -> VICTORY flow to all gate stages and tune pacing.
+Convert the Saw from an always-active weapon into a purchasable Garage upgrade, gated behind Stage 2 completion. Adjust balance values per ChatGPT specs.
 
 ---
 
 ## Changes by File
 
-### 1. `src/game/config.ts`
+### 1. `src/game/persistence.ts` (Schema)
 
-- **Stage 1 Gate HP**: 600 -> 420
-- **Add `BOMB_SILENCE_BY_STAGE`** array: `[1.5, 1.0, 0.6, 0.6, 0.6]`
-- **Add `TRAVEL_DURATION_BY_STAGE`** array: `[10, 4.0, 4.0, 3.5, 3.5]` (seconds) -- Stage 1 keeps its 10s runner phase, Stages 2-5 get 3.5-4.0s for a real "run" feel before gate appears (per ChatGPT safeguard #1)
-- **Rename** `STAGE1_GATE_START_X` -> `GATE_START_X` and `STAGE1_APPROACH_DURATION` -> `APPROACH_DURATION` (now shared by all stages)
+- Add `sawUnlocked: boolean` field to `ProgressionData` (default: `false`)
+- Add `purchaseSaw(cost: number): boolean` function
+  - Checks `bestStageReached >= 2` and `totalCoins >= cost`
+  - Sets `sawUnlocked = true`, deducts coins
+  - Logs purchase event
+- Add `'saw_unlock'` to PurchaseEvent type union
+- Bump `SAVE_VERSION` to 11 (clean reset ensures new field exists)
 
-### 2. `src/game/CoffeeRushGame.tsx`
+### 2. `src/game/types.ts`
 
-#### A. TRAVEL phase -- Stage 2-5 now transition to APPROACH (not SIEGE)
+- Add `'saw_unlock'` to the `PurchaseEvent.type` union
 
-Currently lines 877-903: Stage 2+ goes TRAVEL -> SIEGE (gate appears instantly). Change the `else` branch so that when travel timer ends for a non-boss stage, it transitions to APPROACH instead:
-- Create gate at `GATE_START_X` (off-screen)
-- Set `travelTimerRef.current = APPROACH_DURATION`
-- Set phase to APPROACH
+### 3. `src/game/config.ts` (Balance Tune)
 
-Stage 2-5 still despawn enemies during travel (existing behavior). Stage 1 still spawns during travel (existing behavior).
+Adjust values per ChatGPT design:
 
-Travel duration: use `TRAVEL_DURATION_BY_STAGE[stageIndex - 1]` instead of hardcoded values.
+| Parameter | Current | New |
+|---|---|---|
+| `SAW_PASSIVE_RADIUS` | 70 | 65 |
+| `SAW_PASSIVE_TICK_INTERVAL` | 0.2 | 0.25 |
+| `SAW_PASSIVE_TICK_DAMAGE` | 8 | 7 |
+| `SAW_THROW_DAMAGE` | 20 | 18 |
+| `SAW_THROW_LIFETIME` | 1.2 | 1.1 |
 
-#### B. APPROACH phase -- remove Stage 1 restriction
+Add new constant:
+- `SAW_UNLOCK_COST: 140`
 
-Lines 907-935: Currently labeled "Stage 1 pilot". Make generic:
-- The lerp logic already uses `gateBuildingRef.current` -- it works for any stage
-- On transition to SIEGE: only init `stage1WaveRef` if Stage 1 (wave spawning stays Stage 1 only)
-- Init `bombSilenceTimerRef = 0` for all stages
+### 4. `src/game/CoffeeRushGame.tsx` (Game Loop Guards)
 
-#### C. Gate destruction -- VICTORY for ALL stages
+- On run start (line ~283): Set `hasSawRef.current = progression.sawUnlocked` instead of checking `weaponSlots`
+- Passive saw loop (line ~1410): Wrap entire block in `if (hasSawRef.current)`
+- Saw throw handler (line ~750): Add early return `if (!hasSawRef.current)`
+- HUD props: Pass `canUseSaw` as `hasSawRef.current && power >= cost`
 
-Lines 1097-1122: Remove the `if (stageIndexRef.current === 1)` guard. All gate destructions use VICTORY phase.
+### 5. `src/game/GameHUD.tsx`
 
-#### D. VICTORY phase -- generalize stage advancement
+- Add `hasSaw: boolean` prop
+- Only render the saw button when `hasSaw === true`
 
-Lines 937-972: Currently hardcoded `stageIndexRef.current = 2`. Replace with:
-```text
-const nextStage = stageIndexRef.current + 1;
-const nextStageConfig = getStage(nextStage);
-if (nextStageConfig.isBoss) {
-  // Boss stage
-  stageIndexRef.current = nextStage;
-  travelTimerRef.current = TRAVEL_DURATION;
-  playPhase = 'TRAVEL';
-} else {
-  stageIndexRef.current = nextStage;
-  travelTimerRef.current = TRAVEL_DURATION_BY_STAGE[nextStage - 1];
-  playPhase = 'TRAVEL';
-}
-```
+### 6. `src/game/GarageOverlay.tsx` (Purchase UI)
 
-This handles Stage 5 -> Boss transition correctly (ChatGPT safeguard #2). EVO_PICK is currently triggered from Garage between runs, not mid-run, so no bypass risk.
+Add a "SAW SYSTEM" upgrade card in the Battle tab bottom panel (between the pip tiles and PLAY button):
 
-#### E. Bomb silence -- all stages during SIEGE
+- Shows lock icon + "Reach Stage 3" text when `bestStageReached < 2`
+- Shows cost (140 coins) + buy button when unlocked but not purchased
+- Shows "EQUIPPED" badge when already purchased
+- On purchase: calls `purchaseSaw(140)`, refreshes progression state, triggers `onProgressionChange`
 
-Lines 724-729: Remove `stageIndexRef.current === 1` guard. Use per-stage duration:
-```text
-if (playPhaseRef.current === 'SIEGE') {
-  const si = stageIndexRef.current;
-  const silenceDuration = BOMB_SILENCE_BY_STAGE[si - 1] ?? 0.6;
-  bombSilenceTimerRef.current = silenceDuration;
-  lastSpawnRef.current = currentTime;  // CRITICAL: reset spawn timer (safeguard #3)
-  if (si === 1) {
-    stage1WaveRef.current.spawned = 0;
-    stage1WaveRef.current.breatherTimer = 0;
-  }
-}
-```
+### 7. `src/game/renderer.ts`
 
-The `lastSpawnRef.current = currentTime` reset prevents instant spawn burst when silence ends (ChatGPT safeguard #3).
-
-#### F. Spawning -- add bomb silence to Stage 2+ continuous spawning
-
-Lines 1161-1176: Add bomb silence check before continuous spawning for Stage 2+:
-```text
-if (bombSilenceTimerRef.current > 0) {
-  bombSilenceTimerRef.current -= deltaTime;
-} else {
-  // existing continuous spawn logic
-}
-```
-
-#### G. Old GATE CLEANUP block (lines 977-1021) -- becomes dead code
-
-Since all stages now use VICTORY, the old cleanup block at lines 977-1021 will never trigger for gate stages. It can be kept as a safety net (boss cleanup) or removed. Safest: keep it but it should not execute for gate stages.
-
-### 3. `src/game/renderer.ts`
-
-No changes needed. APPROACH parallax deceleration and debug label already work based on `playPhase` string.
+- Pass `hasSaw` flag to draw functions
+- Only render the spinning saw visual when `hasSaw === true`
 
 ---
 
-## Stage Flow After Changes
+## Unlock Flow
 
 ```text
-Stage 1: TRAVEL (10s, enemies spawn) -> APPROACH (1s) -> SIEGE (wave-based + bomb silence 1.5s) -> VICTORY -> next
-Stage 2: TRAVEL (4.0s, enemies despawn) -> APPROACH (1s) -> SIEGE (continuous + bomb silence 1.0s) -> VICTORY -> next
-Stage 3: TRAVEL (4.0s, enemies despawn) -> APPROACH (1s) -> SIEGE (continuous + bomb silence 0.6s) -> VICTORY -> next
-Stage 4: TRAVEL (3.5s, enemies despawn) -> APPROACH (1s) -> SIEGE (continuous + bomb silence 0.6s) -> VICTORY -> next
-Stage 5: TRAVEL (3.5s, enemies despawn) -> APPROACH (1s) -> SIEGE (continuous + bomb silence 0.6s) -> VICTORY -> next
-Stage 6: TRAVEL (1.2s) -> BOSS
+Fresh save -> Saw locked (grayed in Garage, "Reach Stage 3")
+Player clears Stage 2 gate -> bestStageReached >= 2
+Garage now shows "SAW SYSTEM - 140 coins"
+Player purchases -> sawUnlocked = true (permanent)
+Next run -> passive saw + throw button active
 ```
-
----
-
-## 3 Critical Safeguards (from ChatGPT analysis)
-
-1. **Stage 2-5 travel duration increased** to 3.5-4.0s (was 1.2s) so the "runner" feel exists between gates
-2. **VICTORY -> next stage** respects Boss transition -- no hardcoded stage index, checks `isBoss`
-3. **Bomb silence resets `lastSpawnRef.current`** to prevent instant spawn burst when silence ends
 
 ---
 
 ## What Is NOT Changed
 
-- Stage 1 wave/breather system stays Stage 1 only
-- Weapon geometry, hitboxes, aim tilt unchanged
-- Boss flow (Stage 6) unchanged
-- Telemetry unchanged
-- No new dependencies
+- Shotgun damage, bomb behavior, gate HP
+- Spawn scaling, economy values
+- Existing pip/EVO system
+- Boss flow
+- Wave system (Stage 1)
 
