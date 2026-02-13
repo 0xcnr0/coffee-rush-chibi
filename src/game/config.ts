@@ -26,7 +26,7 @@ export interface StageConfig {
 
 export const STAGES: readonly StageConfig[] = [
   { id: 1, gateHP: 300,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
-  { id: 2, gateHP: 450,   spawnInterval: 800,  enemyHpMult: 1.15, enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 0 },
+  { id: 2, gateHP: 320,   spawnInterval: 800,  enemyHpMult: 1.15, enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 0 },
   { id: 3, gateHP: 2000,  spawnInterval: 420,  enemyHpMult: 2.2,  enemySpeedMult: 1.25, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 3 },
   { id: 4, gateHP: 3500,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
   { id: 5, gateHP: 5000,  spawnInterval: 500,  enemyHpMult: 2.8,  enemySpeedMult: 1.20, enemyDropCoins: 20,  gateLumpSum: 800,  heavyEvery: 5 },
@@ -34,7 +34,7 @@ export const STAGES: readonly StageConfig[] = [
 ] as const;
 
 // Gate HP ratios relative to Gate 1 (for easy calibration)
-export const GATE_HP_RATIOS = [1.0, 2.67, 6.67, 11.67, 16.67] as const;
+export const GATE_HP_RATIOS = [1.0, 1.07, 6.67, 11.67, 16.67] as const;
 
 export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
@@ -272,8 +272,8 @@ export const GAME_CONFIG = {
   STAGE2_WAVE_BREATHER: 0.8,           // seconds pause between waves (Stage 2)
 } as const;
 
-// Per-stage travel duration (seconds) — Stage 1: 10s runner, Stage 2: 4s quick transit, Stage 3+: death-wall travel
-export const TRAVEL_DURATION_BY_STAGE = [10, 4, 16, 18, 20] as const;
+// Per-stage travel duration (seconds) — Stage 1: 10s runner, Stage 2: 10s balanced, Stage 3+: death-wall travel
+export const TRAVEL_DURATION_BY_STAGE = [10, 10, 16, 18, 20] as const;
 
 // Mini-rush config (Stage 2+ travel only)
 // A burst of faster spawning mid-travel to create pressure spikes
