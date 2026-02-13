@@ -737,7 +737,7 @@ export const CoffeeRushGame: React.FC = () => {
       const silenceDuration = BOMB_SILENCE_BY_STAGE[si - 1] ?? 0.6;
       bombSilenceTimerRef.current = silenceDuration;
       lastSpawnRef.current = timeRef.current; // CRITICAL: reset spawn timer (safeguard #3)
-      if (si === 1) {
+      if (si === 1 || si === 2) {
         stage1WaveRef.current.spawned = 0; // Reset wave counter
         stage1WaveRef.current.breatherTimer = 0;
       }
@@ -762,8 +762,9 @@ export const CoffeeRushGame: React.FC = () => {
     const proj = projectilePool.acquire();
     if (!proj) return;
     
+    const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
     proj.x = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
-    proj.y = topBlock.y + GAME_CONFIG.MUZZLE_Y_OFFSET;
+    proj.y = groundY - 30; // ground level so it hits walking enemies
     proj.targetX = GAME_CONFIG.CANVAS_WIDTH + 100; // fly straight right
     proj.targetY = proj.y; // straight line
     proj.speed = GAME_CONFIG.SAW_THROW_SPEED;
@@ -979,8 +980,8 @@ export const CoffeeRushGame: React.FC = () => {
         playPhaseRef.current = 'SIEGE';
         setPlayPhase('SIEGE');
         lastSpawnRef.current = timeRef.current;
-        // Only init wave refs for Stage 1 (wave-based spawning)
-        if (stageIndexRef.current === 1) {
+        // Init wave refs for wave-based stages (Stage 1 & 2)
+        if (stageIndexRef.current === 1 || stageIndexRef.current === 2) {
           stage1WaveRef.current = { spawned: 0, breatherTimer: 0 };
         }
         bombSilenceTimerRef.current = 0;
@@ -1209,10 +1210,14 @@ export const CoffeeRushGame: React.FC = () => {
     const canSpawn = playPhaseRef.current === 'SIEGE' && gate && !gate.isDestroyed;
     
     if (canSpawn) {
-      const isStage1Siege = stageIndexRef.current === 1;
+      const si = stageIndexRef.current;
+      const isWaveSiege = si === 1 || si === 2;
       
-      if (isStage1Siege) {
-        // Stage 1 pilot: wave-based spawning with breather windows
+      if (isWaveSiege) {
+        // Wave-based spawning with breather windows (Stage 1 & 2)
+        const waveSize = si === 1 ? GAME_CONFIG.STAGE1_WAVE_SIZE : GAME_CONFIG.STAGE2_WAVE_SIZE;
+        const waveBreather = si === 1 ? GAME_CONFIG.STAGE1_WAVE_BREATHER : GAME_CONFIG.STAGE2_WAVE_BREATHER;
+        
         // Bomb silence timer
         if (bombSilenceTimerRef.current > 0) {
           bombSilenceTimerRef.current -= deltaTime;
@@ -1222,9 +1227,9 @@ export const CoffeeRushGame: React.FC = () => {
           if (stage1WaveRef.current.breatherTimer <= 0) {
             stage1WaveRef.current.spawned = 0; // Reset for next wave
           }
-        } else if (stage1WaveRef.current.spawned < GAME_CONFIG.STAGE1_WAVE_SIZE) {
+        } else if (stage1WaveRef.current.spawned < waveSize) {
           // Spawn wave enemies
-          const stage = getStage(1);
+          const stage = getStage(si);
           const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, stage.spawnInterval);
           if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
             spawnEnemy();
@@ -1235,7 +1240,7 @@ export const CoffeeRushGame: React.FC = () => {
           // Wave fully spawned, check if all dead for breather
           const aliveEnemies = enemyPool.getActive().filter(e => !e.isServed && e.state !== 'SERVED').length;
           if (aliveEnemies === 0) {
-            stage1WaveRef.current.breatherTimer = GAME_CONFIG.STAGE1_WAVE_BREATHER;
+            stage1WaveRef.current.breatherTimer = waveBreather;
           }
         }
       } else {
