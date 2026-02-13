@@ -253,8 +253,8 @@ export const GAME_CONFIG = {
   CROWDING_THRESHOLD: 6,            // enemies near cart = "crowded"
   CROWDING_RANGE: 220,              // px from cart to count crowding
   // Target mode weights: [front, mid, back, gate]
-  TARGET_WEIGHTS_CROWDED: [0.70, 0.20, 0.05, 0.05] as readonly number[],
-  TARGET_WEIGHTS_NORMAL:  [0.50, 0.25, 0.17, 0.08] as readonly number[],
+  TARGET_WEIGHTS_CROWDED: [0.55, 0.20, 0.05, 0.20] as readonly number[],
+  TARGET_WEIGHTS_NORMAL:  [0.40, 0.20, 0.15, 0.25] as readonly number[],
   
   // ─────────────────────────────────────────────────────────────
   // CHAPTER PERSISTENCE

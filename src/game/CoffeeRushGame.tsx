@@ -1327,13 +1327,6 @@ export const CoffeeRushGame: React.FC = () => {
               targetMode = 'gate';
             }
             
-            // ── Gate pressure limiter (runtime safety valve, only when enemies present) ──
-            if (targetMode !== 'front' && nearEnemies.length > 0 && shotsFiredRef.current > 30) {
-              const gateRatio = shotsToGateRef.current / shotsFiredRef.current;
-              if (gateRatio > 0.08) {
-                targetMode = 'front';
-              }
-            }
           } else {
             // No enemies: pure gate targeting (gate-only firing via bug fix)
             targetMode = 'gate';
