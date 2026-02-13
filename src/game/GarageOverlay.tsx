@@ -268,27 +268,60 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           const canAffordStar = progression.totalCoins >= GAME_CONFIG.STAR_PER_BOX_COST;
           const boxY = chassisY - ((boxIdx + 1) * boxHeight);
           
+          // Star pip upgrade (only if star is purchased for this box)
+          const hasAnyStar = starPerBox.some(v => v);
+          const starPipCost = getPipCost(progression.starPips, GAME_CONFIG.STAR_PIP_BASE_COST, GAME_CONFIG.STAR_PIP_COST_SCALING);
+          const starMaxEvos = GAME_CONFIG.STAR_MAX_EVOS_CH1;
+          const starEvoCount = progression.starEvoChoices?.length || 0;
+          const starIsMaxed = starEvoCount >= starMaxEvos;
+          const starPipsInTier = progression.starPips % GAME_CONFIG.STAR_PIP_PER_EVO;
+          
           return (
             <div key={`star-${boxIdx}`} className="absolute pointer-events-auto"
               style={{ top: boxY, left: cartRightEdge + 6 }}>
-              <button
-                onClick={() => {
-                  if (purchaseStarForBox(boxIdx, GAME_CONFIG.STAR_PER_BOX_COST)) {
-                    setProgression(loadProgression());
-                    onProgressionChange?.();
-                    toast.success('Star Equipped!', { icon: '⭐' });
-                  }
-                }}
-                disabled={isStarred || !canAffordStar}
-                className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] transition-all duration-200
-                  ${isStarred ? 'bg-sky-900/60 border-sky-500/50' 
-                    : canAffordStar ? 'bg-coffee-dark/80 border-sky-400/50 hover:border-sky-400 active:scale-95'
+              {!isStarred ? (
+                /* Star purchase button */
+                <button
+                  onClick={() => {
+                    if (purchaseStarForBox(boxIdx, GAME_CONFIG.STAR_PER_BOX_COST)) {
+                      setProgression(loadProgression());
+                      onProgressionChange?.();
+                      toast.success('Star Equipped!', { icon: '⭐' });
+                    }
+                  }}
+                  disabled={!canAffordStar}
+                  className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] transition-all duration-200
+                    ${canAffordStar ? 'bg-coffee-dark/80 border-sky-400/50 hover:border-sky-400 active:scale-95'
                     : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'}`}>
-                <Star className={`w-3.5 h-3.5 ${isStarred ? 'text-sky-400 fill-sky-400' : 'text-sky-400'}`} />
-                {isStarred 
-                  ? <Check className="w-2.5 h-2.5 text-sky-400 mt-0.5" />
-                  : <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.STAR_PER_BOX_COST}</span>}
-              </button>
+                  <Star className="w-3.5 h-3.5 text-sky-400" />
+                  <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.STAR_PER_BOX_COST}</span>
+                </button>
+              ) : hasAnyStar && boxIdx === 0 ? (
+                /* Star pip upgrade button (only on first starred box to avoid duplicates) */
+                <button
+                  onClick={handleStarPip}
+                  disabled={starIsMaxed || progression.totalCoins < starPipCost}
+                  className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[46px] transition-all duration-200
+                    ${starIsMaxed ? 'bg-sky-900/60 border-sky-500/50 opacity-60'
+                      : progression.totalCoins >= starPipCost ? 'bg-coffee-dark/80 border-sky-400/50 hover:border-sky-400 active:scale-95'
+                      : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'}`}>
+                  <Star className="w-3.5 h-3.5 text-sky-400 fill-sky-400" />
+                  <div className="flex gap-px mt-0.5">
+                    {Array.from({ length: GAME_CONFIG.STAR_PIP_PER_EVO }, (_, i) => (
+                      <div key={i} className={`w-1 h-1 rounded-full ${i < starPipsInTier ? 'bg-sky-400' : 'bg-coffee-medium/40'}`} />
+                    ))}
+                    {starEvoCount > 0 && <span className="text-[6px] text-sky-300 font-bold ml-0.5">E{starEvoCount}</span>}
+                  </div>
+                  {starIsMaxed ? <span className="text-[6px] text-green-400 mt-0.5">MAX</span>
+                    : <span className="text-[7px] mt-0.5 text-gold">🪙{starPipCost}</span>}
+                </button>
+              ) : (
+                /* Already starred, not the upgrade slot */
+                <div className="flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] bg-sky-900/60 border-sky-500/50">
+                  <Star className="w-3.5 h-3.5 text-sky-400 fill-sky-400" />
+                  <Check className="w-2.5 h-2.5 text-sky-400 mt-0.5" />
+                </div>
+              )}
             </div>
           );
         })}
@@ -321,22 +354,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           />
         </div>
         
-        {/* Star pip upgrade row - only visible when star is unlocked */}
-        {progression.starPerBox?.some(v => v) && (
-          <div className="flex gap-2">
-            <PipTile
-              name="Star"
-              icon={<Star className="w-5 h-5 text-sky-400" />}
-              currentPips={progression.starPips}
-              pipsPerEvo={GAME_CONFIG.STAR_PIP_PER_EVO}
-              maxEvos={GAME_CONFIG.STAR_MAX_EVOS_CH1}
-              evoCount={progression.starEvoChoices?.length || 0}
-              cost={getPipCost(progression.starPips, GAME_CONFIG.STAR_PIP_BASE_COST, GAME_CONFIG.STAR_PIP_COST_SCALING)}
-              coins={progression.totalCoins}
-              onPurchase={handleStarPip}
-            />
-          </div>
-        )}
+        {/* Star pip upgrade moved to cargo box area */}
         
         {/* Per-box Star buttons rendered in the cart overlay area */}
         
