@@ -198,14 +198,14 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   // Passive Saw (melee zone)
   SAW_PASSIVE_RADIUS: 65,          // px from cart front
-  SAW_PASSIVE_TICK_INTERVAL: 0.25, // seconds between ticks
-  SAW_PASSIVE_TICK_DAMAGE: 5,      // damage per tick per enemy (nerfed from 7)
+  SAW_PASSIVE_TICK_INTERVAL: 0.40, // seconds between ticks (nerfed from 0.25)
+  SAW_PASSIVE_TICK_DAMAGE: 2,      // damage per tick per enemy (nerfed from 5)
   
   // Active Saw Throw (power skill)
   SAW_THROW_COST: 5,               // Power cost
-  SAW_THROW_DAMAGE: 14,            // damage per enemy hit (nerfed from 18)
-  SAW_THROW_SPEED: 280,            // px/s (nerfed from 320)
-  SAW_THROW_LIFETIME: 1.1,         // seconds before despawn
+  SAW_THROW_DAMAGE: 8,             // damage per enemy hit (nerfed from 14)
+  SAW_THROW_SPEED: 240,            // px/s (nerfed from 280)
+  SAW_THROW_LIFETIME: 0.9,         // seconds before despawn (nerfed from 1.1)
   SAW_THROW_RADIUS: 12,            // projectile hitbox radius
   
   // Star per-box (Garage purchase)
