@@ -801,6 +801,7 @@ export const CoffeeRushGame: React.FC = () => {
     const phaseKey = playPhaseRef.current === 'EVO_PICK' ? 'evoPick' 
       : playPhaseRef.current === 'APPROACH' ? 'travel'
       : playPhaseRef.current === 'VICTORY' ? 'siege'
+      : playPhaseRef.current === 'BREATHER' ? 'travel'
       : playPhaseRef.current.toLowerCase() as 'travel' | 'siege' | 'boss';
     if (phaseKey in phaseTimersRef.current) phaseTimersRef.current[phaseKey] += deltaTime;
     
@@ -964,7 +965,42 @@ export const CoffeeRushGame: React.FC = () => {
       });
       
       if (gateCleanupTimerRef.current <= 0) {
-        // Advance to next stage
+        // Transition to BREATHER (pacing window before next TRAVEL)
+        console.log('STATE -> BREATHER (after Stage ' + stageIndexRef.current + ')');
+        playPhaseRef.current = 'BREATHER';
+        setPlayPhase('BREATHER');
+        travelTimerRef.current = GAME_CONFIG.POST_VICTORY_BREATHER_DURATION;
+        gateBuildingRef.current = null;
+        setGateBuildingState(null);
+        lastSpawnRef.current = timeRef.current;
+      }
+      
+      // Render and skip rest of sim
+      ctx.clearRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
+      drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
+        tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
+        bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
+        deltaTime, gateBuildingRef.current, currentTime);
+      return;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // BREATHER PHASE (post-victory pacing: running, reduced spawns, no gate)
+    // ═══════════════════════════════════════════════════════════════════
+    if (playPhaseRef.current === 'BREATHER') {
+      travelTimerRef.current -= deltaTime;
+      
+      // Reduced enemy spawning (40% of normal rate = 60% reduction)
+      const stage = getStage(stageIndexRef.current);
+      const baseInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, stage.spawnInterval);
+      const breatherInterval = baseInterval / GAME_CONFIG.BREATHER_SPAWN_REDUCTION; // slower spawns
+      if (currentTime - lastSpawnRef.current > breatherInterval / 1000) {
+        spawnEnemy();
+        lastSpawnRef.current = currentTime;
+      }
+      
+      if (travelTimerRef.current <= 0) {
+        // Advance to next stage and enter TRAVEL
         const nextStage = stageIndexRef.current + 1;
         const nextStageConfig = getStage(nextStage);
         stageIndexRef.current = nextStage;
@@ -978,17 +1014,7 @@ export const CoffeeRushGame: React.FC = () => {
         playPhaseRef.current = 'TRAVEL';
         setPlayPhase('TRAVEL');
         console.log('STATE -> TRAVEL (Stage ' + nextStage + ')');
-        gateBuildingRef.current = null;
-        setGateBuildingState(null);
       }
-      
-      // Render and skip rest of sim
-      ctx.clearRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
-      drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
-        tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
-        bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime);
-      return;
     }
     
     // ═══════════════════════════════════════════════════════════════════
