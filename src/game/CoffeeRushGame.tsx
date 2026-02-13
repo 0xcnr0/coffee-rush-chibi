@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { GAME_CONFIG, COLORS, STAGES, TRAVEL_DURATION_BY_STAGE, BOMB_SILENCE_BY_STAGE } from './config';
+import { GAME_CONFIG, COLORS, STAGES, TRAVEL_DURATION_BY_STAGE, BOMB_SILENCE_BY_STAGE, MINI_RUSH_CONFIG } from './config';
 import { drawGame, drawMenuScene } from './renderer';
 import { useGameLoop } from './useGameLoop';
 import { useObjectPool } from './useObjectPool';
@@ -925,9 +925,17 @@ export const CoffeeRushGame: React.FC = () => {
         }
       } else {
         // Stages 2+: travel WITH enemy spawning (no despawn — keeps pressure)
+        // Mini-rush: faster spawning in middle section of travel
         const si = stageIndexRef.current;
         const stage = getStage(si);
-        const effectiveInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, stage.spawnInterval);
+        const totalTravelDuration = TRAVEL_DURATION_BY_STAGE[si - 1] ?? GAME_CONFIG.TRAVEL_DURATION;
+        const elapsed = totalTravelDuration - travelTimerRef.current;
+        const rushStart = totalTravelDuration * MINI_RUSH_CONFIG.START_RATIO;
+        const rushEnd = rushStart + MINI_RUSH_CONFIG.DURATION;
+        const isInMiniRush = si >= MINI_RUSH_CONFIG.ENABLED_FROM_STAGE && elapsed >= rushStart && elapsed < rushEnd;
+        
+        const baseInterval = Math.max(GAME_CONFIG.MIN_SPAWN_INTERVAL, stage.spawnInterval);
+        const effectiveInterval = isInMiniRush ? baseInterval * MINI_RUSH_CONFIG.SPAWN_MULT : baseInterval;
         if (currentTime - lastSpawnRef.current > effectiveInterval / 1000) {
           spawnEnemy();
           lastSpawnRef.current = currentTime;
