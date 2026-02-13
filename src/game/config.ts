@@ -199,12 +199,12 @@ export const GAME_CONFIG = {
   // Passive Saw (melee zone)
   SAW_PASSIVE_RADIUS: 65,          // px from cart front
   SAW_PASSIVE_TICK_INTERVAL: 0.25, // seconds between ticks
-  SAW_PASSIVE_TICK_DAMAGE: 7,      // damage per tick per enemy
+  SAW_PASSIVE_TICK_DAMAGE: 5,      // damage per tick per enemy (nerfed from 7)
   
   // Active Saw Throw (power skill)
   SAW_THROW_COST: 5,               // Power cost
-  SAW_THROW_DAMAGE: 18,            // damage per enemy hit
-  SAW_THROW_SPEED: 320,            // px/s (slower than shotgun)
+  SAW_THROW_DAMAGE: 14,            // damage per enemy hit (nerfed from 18)
+  SAW_THROW_SPEED: 280,            // px/s (nerfed from 320)
   SAW_THROW_LIFETIME: 1.1,         // seconds before despawn
   SAW_THROW_RADIUS: 12,            // projectile hitbox radius
   
@@ -261,10 +261,12 @@ export const GAME_CONFIG = {
   GATE_START_X: 500,                    // off-screen right start position
   STAGE1_WAVE_SIZE: 3,                  // enemies per wave during siege (Stage 1 only)
   STAGE1_WAVE_BREATHER: 1.0,           // seconds pause between waves (Stage 1 only)
+  STAGE2_WAVE_SIZE: 4,                  // enemies per wave during siege (Stage 2)
+  STAGE2_WAVE_BREATHER: 0.8,           // seconds pause between waves (Stage 2)
 } as const;
 
 // Per-stage travel duration (seconds) — Stage 1 keeps 10s runner, others get 3.5-4.0s
-export const TRAVEL_DURATION_BY_STAGE = [10, 4.0, 4.0, 3.5, 3.5] as const;
+export const TRAVEL_DURATION_BY_STAGE = [10, 8.0, 4.0, 3.5, 3.5] as const;
 
 // Per-stage bomb silence duration (seconds) during SIEGE
 export const BOMB_SILENCE_BY_STAGE = [1.5, 1.0, 0.6, 0.6, 0.6] as const;
