@@ -209,6 +209,8 @@ export const CoffeeRushGame: React.FC = () => {
   // Saw weapon state
   const lastSawAttackRef = useRef(-999);
   const hasSawRef = useRef(false);
+  const sawPassiveTickRef = useRef(0);
+  const sawTelemetryRef = useRef({ passiveDamage: 0, throwDamageEnemies: 0, throwDamageGate: 0, throwUses: 0 });
   
   // Telemetry
   const telemetryRef = useRef({
@@ -286,6 +288,8 @@ export const CoffeeRushGame: React.FC = () => {
     lastAttackRef.current = -999;
     lastSpawnRef.current = -999;
     lastSawAttackRef.current = -999;
+    sawPassiveTickRef.current = 0;
+    sawTelemetryRef.current = { passiveDamage: 0, throwDamageEnemies: 0, throwDamageGate: 0, throwUses: 0 };
     powerRef.current = 0;
     timeRef.current = 0;
     tipsRef.current = 0;
@@ -447,6 +451,12 @@ export const CoffeeRushGame: React.FC = () => {
       timeInBoss: phaseTimersRef.current.boss,
       enemiesSpawned: { ...t.enemiesSpawned },
       enemiesKilled: { ...t.enemiesKilled },
+      // Saw telemetry
+      sawPassiveDamageDealt: sawTelemetryRef.current.passiveDamage,
+      sawThrowDamageToEnemies: sawTelemetryRef.current.throwDamageEnemies,
+      sawThrowDamageToGate: sawTelemetryRef.current.throwDamageGate,
+      sawThrowUses: sawTelemetryRef.current.throwUses,
+      // Economy
       coinsStart: coinsStartRef.current,
       coinsEnd: 0,
       coinsEarnedActual: 0,
@@ -733,6 +743,34 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
   }, [enemyPool, spawnParticles]);
+  
+  // ═══════════════════════════════════════════════════════════════════════
+  // SAW THROW (piercing power skill)
+  // ═══════════════════════════════════════════════════════════════════════
+  const handleSawThrow = useCallback(() => {
+    if (powerRef.current < GAME_CONFIG.SAW_THROW_COST) return;
+    
+    powerRef.current -= GAME_CONFIG.SAW_THROW_COST;
+    setPower(powerRef.current);
+    sawTelemetryRef.current.throwUses++;
+    
+    const activeBlocks = blocksRef.current.filter(b => !b.destroyed);
+    if (activeBlocks.length === 0) return;
+    
+    const topBlock = activeBlocks[activeBlocks.length - 1];
+    const proj = projectilePool.acquire();
+    if (!proj) return;
+    
+    proj.x = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
+    proj.y = topBlock.y + GAME_CONFIG.MUZZLE_Y_OFFSET;
+    proj.targetX = GAME_CONFIG.CANVAS_WIDTH + 100; // fly straight right
+    proj.targetY = proj.y; // straight line
+    proj.speed = GAME_CONFIG.SAW_THROW_SPEED;
+    proj.damage = Math.floor(GAME_CONFIG.SAW_THROW_DAMAGE * damageMultiplierRef.current);
+    proj.radius = GAME_CONFIG.SAW_THROW_RADIUS;
+    proj.pierce = true;
+    proj.isSaw = true;
+  }, [projectilePool]);
   
   // ═══════════════════════════════════════════════════════════════════════
   // EVO CHOICE HANDLER
@@ -1368,18 +1406,31 @@ export const CoffeeRushGame: React.FC = () => {
       lastAttackRef.current = currentTime;
     }
     
-    // Saw auto-attack (if equipped)
-    if (hasSawRef.current && enemies.length > 0 && currentTime - lastSawAttackRef.current > GAME_CONFIG.SAW_FIRE_RATE / 1000) {
-      const cartX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
-      let nearest = enemies[0];
-      let minDist = Math.abs(enemies[0].x - cartX);
-      enemies.forEach(e => {
-        const dist = Math.abs(e.x - cartX);
-        if (dist < minDist) { minDist = dist; nearest = e; }
-      });
+    // ═══════════════════════════════════════════════════════════════════
+    // PASSIVE SAW (melee zone - always active, damages enemies only)
+    // ═══════════════════════════════════════════════════════════════════
+    sawPassiveTickRef.current -= deltaTime;
+    if (sawPassiveTickRef.current <= 0) {
+      sawPassiveTickRef.current = GAME_CONFIG.SAW_PASSIVE_TICK_INTERVAL;
+      const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.SAW_PASSIVE_RADIUS * 0.5;
+      const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+      const sawCenterY = groundY - 60; // centered on cart height
       
-      fireProjectile(nearest, true, true); // pierce + saw
-      lastSawAttackRef.current = currentTime;
+      enemies.forEach(enemy => {
+        const ex = enemy.x;
+        const ey = enemy.y - enemy.height / 2;
+        const dx = ex - sawCenterX;
+        const dy = ey - sawCenterY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < GAME_CONFIG.SAW_PASSIVE_RADIUS) {
+          enemy.hp -= GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE;
+          sawTelemetryRef.current.passiveDamage += GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE;
+          spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 1);
+          if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
+            latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+          }
+        }
+      });
     }
     
     // ═══════════════════════════════════════════════════════════════════
@@ -1410,6 +1461,7 @@ export const CoffeeRushGame: React.FC = () => {
           enemy.hp -= proj.damage;
           shotsHitRef.current++;
           shotsToEnemiesRef.current++;
+          if (proj.isSaw) sawTelemetryRef.current.throwDamageEnemies += proj.damage;
           spawnParticles(proj.x, proj.y, 'sparkle', 3);
           hitEnemy = true;
           if (!proj.pierce) {
@@ -1428,10 +1480,13 @@ export const CoffeeRushGame: React.FC = () => {
           g.lastHitTime = timeRef.current;
           const si = stageIndexRef.current - 1;
           if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += proj.damage;
+          if (proj.isSaw) sawTelemetryRef.current.throwDamageGate += proj.damage;
           shotsToGateRef.current++;
           spawnParticles(proj.x, proj.y, 'sparkle', 3);
-          projectilePool.release(proj);
-          return;
+          if (!proj.pierce) {
+            projectilePool.release(proj);
+            return;
+          }
         }
       }
       
@@ -1655,6 +1710,8 @@ export const CoffeeRushGame: React.FC = () => {
             power={power}
             onTonicBomb={handleTonicBomb}
             canUseBomb={canUseBomb}
+            onSawThrow={handleSawThrow}
+            canUseSaw={powerRef.current >= GAME_CONFIG.SAW_THROW_COST}
             onPause={handlePause}
             gameMode={gameMode}
             bossState={bossState}
