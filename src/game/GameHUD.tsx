@@ -40,7 +40,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       gateClearedTimerRef.current = setTimeout(() => setGateClearedStage(null), 2000);
     }
     prevPhaseRef.current = playPhase;
-    return () => { if (gateClearedTimerRef.current) clearTimeout(gateClearedTimerRef.current); };
+    
   }, [playPhase, stageIndex]);
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
