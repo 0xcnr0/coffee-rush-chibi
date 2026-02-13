@@ -1,30 +1,33 @@
 
 
-# Muzzle Pozisyonunu Yukari Alma
+# Stage 3 Olum Duvari - Uygulama
 
-## Mevcut Durum
-- `groundY` = 640 - 180 = **460px**
-- Tek blokla `topBlock.y` = 460 - 30 - 45 = **385px**
-- `MUZZLE_Y_OFFSET: 75` ile muzzle pozisyonu = 385 + 75 = **460px** (tam yer seviyesi!)
-- Gate binasi: ust kenar **300px**, alt kenar **460px**
-- Sonuc: Mermiler yerden atildigi icin gate'in alt kenarini ancak sikiyorlar, ust kismi hic hedeflenmiyor
+## Degisiklikler (1 dosya, 3 bolge)
 
-## Degisiklik
+### `src/game/config.ts`
 
-### Dosya: `src/game/config.ts`
+**1. Stage 3 dusman parametreleri (satir 30):**
+```
+spawnInterval: 700 --> 500
+enemyHpMult: 1.7 --> 2.2
+enemySpeedMult: 1.10 --> 1.25
+heavyEvery: 8 --> 5
+```
 
-**MUZZLE_Y_OFFSET: 75 --> 20**
+**2. Breather spawn orani (satir 110):**
+```
+BREATHER_SPAWN_REDUCTION: 0.40 --> 0.60
+```
 
-Yeni muzzle pozisyonu = 385 + 20 = **405px** (sasi hizasi, gate'in ortasina dogru atis yapilir)
+**3. Mini-Rush config (satir 280-284):**
+```
+DURATION: 4.0 --> 5.0
+SPAWN_MULT: 0.5 --> 0.35
+START_RATIO: 0.4 --> 0.25
+```
 
-Kasa alindikca topBlock.y yukari cikar (340, 295...), muzzle otomatik olarak daha da yukari tasinir. Boylece upgrade'li oyuncular gate'in ustune dogru bile ates edebilir.
-
-## Beklenen Etki
-- Mermiler gate'in alt ucundan degil, ortalarindan gecmeye baslar
-- Shotgun spread'i gate'in daha genis bir alanini kaplar (isabet artar)
-- Kasa upgrade'leri ile muzzle dogal olarak yukari cikar, progresyon hissi verir
-- Gate 2 gecis suresi daha da kisalir
-
-## Teknik Detay
-1 dosya, 1 satir degisiklik.
+## Fallback (kullanicinin belirttigi)
+Eger 2 kasa + 1 star ile de gecilemezse:
+- `heavyEvery`: 5 --> 6
+- `BREATHER_SPAWN_REDUCTION`: 0.60 --> 0.55
 
