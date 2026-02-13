@@ -279,8 +279,8 @@ export const CoffeeRushGame: React.FC = () => {
     damageMultiplierRef.current = damageMultiplier;
     powerRegenMultiplierRef.current = powerRegenMult;
     
-    // Check for saw weapon (purchased from Garage)
-    hasSawRef.current = progression.sawUnlocked;
+    // Check for star weapon (purchased from Garage, per-box)
+    hasSawRef.current = progression.starPerBox?.some(v => v) ?? progression.sawUnlocked;
     
     // Reset all refs
     latchedCountRef.current = 0;
@@ -1188,7 +1188,7 @@ export const CoffeeRushGame: React.FC = () => {
         const stage = getStage(stageIndexRef.current);
         coinsFromGateLumpsRef.current += stage.gateLumpSum;
         tipsRef.current += stage.gateLumpSum;
-        if (shouldUpdateHUD) setTips(tipsRef.current);
+        setTips(tipsRef.current);
         
         // Victory pulse
         spawnParticles(gate.x + gate.width / 2, gate.y, 'crumble', 15);
@@ -1548,7 +1548,7 @@ export const CoffeeRushGame: React.FC = () => {
         const coinDrop = enemy.kind === 'BOSS' ? (stage.bossDropCoins ?? stage.enemyDropCoins) : stage.enemyDropCoins;
         coinsFromKillsRef.current += coinDrop;
         tipsRef.current += coinDrop;
-        if (shouldUpdateHUD) setTips(tipsRef.current);
+        setTips(tipsRef.current);
         
         // Spawn tip visual
         spawnTip(enemy.x, enemy.y - enemy.height, coinDrop);

@@ -208,8 +208,9 @@ export const GAME_CONFIG = {
   SAW_THROW_LIFETIME: 1.1,         // seconds before despawn
   SAW_THROW_RADIUS: 12,            // projectile hitbox radius
   
-  // Saw Unlock (Garage purchase)
-  SAW_UNLOCK_COST: 140,            // coins to unlock saw system
+  // Star per-box (Garage purchase)
+  STAR_PER_BOX_COST: 140,          // coins to unlock star per cargo box
+  SAW_UNLOCK_COST: 140,            // legacy alias
   
   // Legacy (kept for compatibility)
   SAW_FIRE_RATE: 1200,

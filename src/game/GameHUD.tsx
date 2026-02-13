@@ -136,8 +136,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({
           </div>
           
           <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
-            <span className="text-lg">💰</span>
-            <span className="text-lg font-bold text-gold">${tips}</span>
+            <span className="text-lg">🪙</span>
+            <span className="text-lg font-bold text-gold">{tips}</span>
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
               className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
                 canUseSaw ? 'bg-sky-600 hover:bg-sky-500 text-coffee-foam border-sky-400/50 hover:scale-105 active:scale-95' 
                 : 'bg-coffee-dark/60 text-coffee-cream/40 border-coffee-dark/30'}`}>
-              <span className="text-2xl">🪚</span>
+              <span className="text-2xl">⭐</span>
               <div className={`absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                 canUseSaw ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
                 {sawCost}⚡

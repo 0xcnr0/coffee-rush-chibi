@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play } from 'lucide-react';
+import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseSaw } from './persistence';
+import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseSaw, purchaseStarForBox } from './persistence';
 import { GAME_CONFIG } from './config';
 import { toast } from 'sonner';
 import type { GameMode } from './types';
@@ -252,6 +252,38 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
               : <span className="text-[7px] mt-0.5 text-gold">🪙{getCargoBoxCost(progression.blockCountLevel)}</span>}
           </button>
         </div>
+        
+        {/* Per-box Star buttons next to each cargo box */}
+        {progression.bestStageReached >= 2 && Array.from({ length: progression.blockCountLevel }, (_, boxIdx) => {
+          const starPerBox = progression.starPerBox || [false, false, false];
+          const isStarred = starPerBox[boxIdx] || false;
+          const canAffordStar = progression.totalCoins >= GAME_CONFIG.STAR_PER_BOX_COST;
+          const boxY = chassisY - ((boxIdx + 1) * boxHeight);
+          
+          return (
+            <div key={`star-${boxIdx}`} className="absolute pointer-events-auto"
+              style={{ top: boxY, left: cartRightEdge + 6 }}>
+              <button
+                onClick={() => {
+                  if (purchaseStarForBox(boxIdx, GAME_CONFIG.STAR_PER_BOX_COST)) {
+                    setProgression(loadProgression());
+                    onProgressionChange?.();
+                    toast.success('Star Equipped!', { icon: '⭐' });
+                  }
+                }}
+                disabled={isStarred || !canAffordStar}
+                className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] transition-all duration-200
+                  ${isStarred ? 'bg-sky-900/60 border-sky-500/50' 
+                    : canAffordStar ? 'bg-coffee-dark/80 border-sky-400/50 hover:border-sky-400 active:scale-95'
+                    : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'}`}>
+                <Star className={`w-3.5 h-3.5 ${isStarred ? 'text-sky-400 fill-sky-400' : 'text-sky-400'}`} />
+                {isStarred 
+                  ? <Check className="w-2.5 h-2.5 text-sky-400 mt-0.5" />
+                  : <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.STAR_PER_BOX_COST}</span>}
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex-1" />
@@ -281,56 +313,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           />
         </div>
         
-        {/* SAW SYSTEM Upgrade Card */}
-        <div className={`flex items-center gap-3 p-2.5 rounded-xl border-2 transition-all duration-200 ${
-          progression.sawUnlocked 
-            ? 'bg-sky-900/40 border-sky-500/30' 
-            : progression.bestStageReached < 2 
-              ? 'bg-coffee-dark/40 border-coffee-medium/20 opacity-50'
-              : progression.totalCoins >= GAME_CONFIG.SAW_UNLOCK_COST
-                ? 'bg-coffee-dark/80 border-sky-400/50 hover:border-sky-400'
-                : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'
-        }`}>
-          <div className={`p-1.5 rounded-lg ${progression.sawUnlocked ? 'bg-sky-500/20' : 'bg-coffee-medium/20'}`}>
-            <span className="text-xl">🪚</span>
-          </div>
-          <div className="flex-1 text-left">
-            <span className="text-xs text-coffee-cream/80 font-semibold">SAW SYSTEM</span>
-            {progression.sawUnlocked ? (
-              <div className="flex items-center gap-1 mt-0.5">
-                <Check className="w-3 h-3 text-sky-400" />
-                <span className="text-[10px] text-sky-400 font-bold">EQUIPPED</span>
-              </div>
-            ) : progression.bestStageReached < 2 ? (
-              <div className="flex items-center gap-1 mt-0.5">
-                <Lock className="w-3 h-3 text-coffee-cream/40" />
-                <span className="text-[10px] text-coffee-cream/40">Reach Stage 3</span>
-              </div>
-            ) : (
-              <span className="text-[10px] text-coffee-cream/50 mt-0.5 block">Passive melee + throw skill</span>
-            )}
-          </div>
-          {!progression.sawUnlocked && progression.bestStageReached >= 2 && (
-            <button
-              onClick={() => {
-                if (purchaseSaw(GAME_CONFIG.SAW_UNLOCK_COST)) {
-                  setProgression(loadProgression());
-                  onProgressionChange?.();
-                  toast.success('SAW SYSTEM Unlocked!', { icon: '🪚' });
-                }
-              }}
-              disabled={progression.totalCoins < GAME_CONFIG.SAW_UNLOCK_COST}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                progression.totalCoins >= GAME_CONFIG.SAW_UNLOCK_COST
-                  ? 'bg-sky-600 hover:bg-sky-500 text-white active:scale-95'
-                  : 'bg-coffee-dark/60 text-coffee-cream/40'
-              }`}
-            >
-              <span>🪙</span>
-              <span>{GAME_CONFIG.SAW_UNLOCK_COST}</span>
-            </button>
-          )}
-        </div>
+        {/* Per-box Star buttons rendered in the cart overlay area */}
         
         <div className="flex gap-2">
           <Button onClick={handlePlay}

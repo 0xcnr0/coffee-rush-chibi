@@ -38,7 +38,7 @@ export const clearPurchaseLog = (): void => {
 };
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 11; // Added sawUnlocked field, clean reset from v10
+const SAVE_VERSION = 12; // Added starPerBox field, clean reset from v11
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // PROGRESSION DATA SCHEMA (v10)
@@ -62,6 +62,7 @@ export interface ProgressionData {
   bestChapter1Time: number;
   bestStageReached: number;
   sawUnlocked: boolean;
+  starPerBox: boolean[];
   lastGameMode: GameMode;
   energy: number;
   regenAnchorTs: number | null;
@@ -99,6 +100,7 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   bestChapter1Time: 0,
   bestStageReached: 0,
   sawUnlocked: false,
+  starPerBox: [false, false, false],
   lastGameMode: 'CHAPTER',
   energy: GAME_CONFIG.ENERGY_MAX,
   regenAnchorTs: null,
@@ -358,6 +360,23 @@ export const purchaseSaw = (cost: number): boolean => {
   current.sawUnlocked = true;
   saveProgression(current);
   logPurchase({ ts: Date.now(), type: 'saw_unlock', target: 'saw', before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
+  return true;
+};
+
+export const purchaseStarForBox = (boxIndex: number, cost: number): boolean => {
+  const current = loadProgression();
+  if (current.bestStageReached < 2) return false;
+  if (!current.starPerBox) current.starPerBox = [false, false, false];
+  if (boxIndex < 0 || boxIndex >= current.starPerBox.length) return false;
+  if (current.starPerBox[boxIndex]) return false;
+  if (current.totalCoins < cost) return false;
+  const coinsBefore = current.totalCoins;
+  current.totalCoins -= cost;
+  current.starPerBox[boxIndex] = true;
+  // Also set legacy sawUnlocked for backward compat
+  current.sawUnlocked = current.starPerBox.some(v => v);
+  saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'star_unlock', target: `star_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 
