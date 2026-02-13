@@ -48,13 +48,14 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
       const remaining = t?.gateHpRemainingByGate?.[i] ?? maxHp;
       const dealt = t?.gateDamageDealt?.[i] ?? 0;
       const bombDmg = t?.bombGateDamageByGate?.[i] ?? 0;
-      const bulletDmg = dealt - bombDmg;
+      const starGateDmg = t?.sawThrowDamageToGate ?? 0;
+      const bulletDmg = dealt - bombDmg - starGateDmg;
       const pct = maxHp > 0 ? fmt((dealt / maxHp) * 100, 1) : '0.0';
       const time = fmt(t?.gateTimeSpent?.[i] ?? 0, 1);
       const stageReached = t?.stageReached ?? 1;
       const destroyed = t?.gateDestroyedByGate?.[i] ?? false;
       const status = stageReached <= i ? '[unreached]' : destroyed ? 'YES' : 'NO';
-      lines.push(`G${i + 1}: HP rem: ${remaining}/${maxHp} | Dealt: ${dealt} (${pct}%) [bullets: ${bulletDmg}, bomb: ${bombDmg}] | Time: ${time}s | Destroyed: ${status}`);
+      lines.push(`G${i + 1}: HP rem: ${remaining}/${maxHp} | Dealt: ${dealt} (${pct}%) [bullets: ${bulletDmg}, bomb: ${bombDmg}, star: ${starGateDmg}] | Time: ${time}s | Destroyed: ${status}`);
     }
     lines.push('');
 
@@ -72,6 +73,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(`Bomb Gate Damage Total: ${t?.bombGateDamageTotal ?? 0}`);
     const bgd = t?.bombGateDamageByGate ?? [0, 0, 0, 0, 0];
     lines.push(`  G1: ${bgd[0]} | G2: ${bgd[1]} | G3: ${bgd[2]} | G4: ${bgd[3]} | G5: ${bgd[4]}`);
+    lines.push(`Star Throw: ${t?.sawThrowUses ?? 0} uses | Dmg to Enemies: ${t?.sawThrowDamageToEnemies ?? 0} | Dmg to Gate: ${t?.sawThrowDamageToGate ?? 0} | Passive: ${t?.sawPassiveDamageDealt ?? 0}`);
     lines.push('');
 
     // 4. PRESSURE / SURVIVAL
@@ -80,7 +82,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(hr);
     lines.push(`Max Latched: ${t?.maxLatchedPeak ?? 0} peak | Time at max: ${fmt(t?.timeAtMaxLatched ?? 0)}s`);
     lines.push(`Blocks Lost: ${t?.blocksLost ?? 0} | First block lost: ${t?.timeToFirstBlockLost === -1 ? 'N/A' : fmt(t?.timeToFirstBlockLost ?? 0) + 's'}`);
-    lines.push(`Bomb Uses: ${t?.tonicBombUses ?? 0}`);
+    lines.push(`Bomb Uses: ${t?.tonicBombUses ?? 0} | Star Throws: ${t?.sawThrowUses ?? 0}`);
     lines.push('');
 
     // 5. ECONOMY TRACE
