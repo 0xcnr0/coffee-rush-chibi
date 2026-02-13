@@ -107,7 +107,7 @@ export const GAME_CONFIG = {
   
   // Post-Victory Breather (pacing window between gates)
   POST_VICTORY_BREATHER_DURATION: 4.0,    // seconds of running before next TRAVEL
-  BREATHER_SPAWN_REDUCTION: 0.60,         // spawn at 60% rate (40% reduction)
+  BREATHER_SPAWN_REDUCTION: 0.40,         // spawn at 40% rate (60% reduction)
   
   // ─────────────────────────────────────────────────────────────
   // TRAVEL (purely visual transition)
@@ -278,7 +278,7 @@ export const TRAVEL_DURATION_BY_STAGE = [10, 14, 16, 18, 20] as const;
 // Mini-rush config (Stage 2+ travel only)
 // A burst of faster spawning mid-travel to create pressure spikes
 export const MINI_RUSH_CONFIG = {
-  ENABLED_FROM_STAGE: 2,        // mini-rush starts from stage 2 travel
+  ENABLED_FROM_STAGE: 3,        // mini-rush starts from stage 3 travel (death wall)
   DURATION: 5.0,                // seconds of ~3x spawn rate
   SPAWN_MULT: 0.35,             // spawn interval multiplied (0.35 = ~3x faster)
   START_RATIO: 0.25,            // starts at 25% through travel (earlier pressure)
