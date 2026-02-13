@@ -1491,22 +1491,28 @@ export const CoffeeRushGame: React.FC = () => {
       
       // Gate collision (only if projectile wasn't stopped by enemy)
       // Pierce projectiles only hit gate ONCE (prevent multi-frame hits)
+      // Star Throw (isSaw + pierce): GUARANTEED gate hit when gate exists during SIEGE
       if (!hitEnemy || proj.pierce) {
         const g = gateBuildingRef.current;
-        if (g && !g.isDestroyed && !(proj as any)._hitGate && playPhaseRef.current !== 'APPROACH' &&
-            proj.x >= g.x && proj.x <= g.x + g.width &&
-            proj.y >= g.y && proj.y <= g.y + g.height) {
-          g.hp -= proj.damage;
-          g.lastHitTime = timeRef.current;
-          if (proj.pierce) (proj as any)._hitGate = true; // prevent re-hit
-          const si = stageIndexRef.current - 1;
-          if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += proj.damage;
-          if (proj.isSaw) sawTelemetryRef.current.throwDamageGate += proj.damage;
-          shotsToGateRef.current++;
-          spawnParticles(proj.x, proj.y, 'sparkle', 3);
-          if (!proj.pierce) {
-            projectilePool.release(proj);
-            return;
+        if (g && !g.isDestroyed && !(proj as any)._hitGate && playPhaseRef.current !== 'APPROACH') {
+          // Star Throw: guaranteed gate hit (no positional check needed)
+          const isSawPierce = proj.isSaw && proj.pierce;
+          const positionHit = proj.x >= g.x && proj.x <= g.x + g.width &&
+              proj.y >= g.y && proj.y <= g.y + g.height;
+          
+          if (isSawPierce || positionHit) {
+            g.hp -= proj.damage;
+            g.lastHitTime = timeRef.current;
+            if (proj.pierce) (proj as any)._hitGate = true; // prevent re-hit
+            const si = stageIndexRef.current - 1;
+            if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += proj.damage;
+            if (proj.isSaw) sawTelemetryRef.current.throwDamageGate += proj.damage;
+            shotsToGateRef.current++;
+            spawnParticles(isSawPierce ? g.x : proj.x, isSawPierce ? g.y + g.height / 2 : proj.y, 'sparkle', 3);
+            if (!proj.pierce) {
+              projectilePool.release(proj);
+              return;
+            }
           }
         }
       }
