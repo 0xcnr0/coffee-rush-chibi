@@ -266,7 +266,7 @@ export const GAME_CONFIG = {
 } as const;
 
 // Per-stage travel duration (seconds) — Stage 1 keeps 10s runner, others get 3.5-4.0s
-export const TRAVEL_DURATION_BY_STAGE = [10, 8.0, 4.0, 3.5, 3.5] as const;
+export const TRAVEL_DURATION_BY_STAGE = [10, 14, 10, 8, 8] as const;
 
 // Per-stage bomb silence duration (seconds) during SIEGE
 export const BOMB_SILENCE_BY_STAGE = [1.5, 1.0, 0.6, 0.6, 0.6] as const;
