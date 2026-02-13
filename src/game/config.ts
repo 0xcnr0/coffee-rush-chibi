@@ -26,7 +26,7 @@ export interface StageConfig {
 
 export const STAGES: readonly StageConfig[] = [
   { id: 1, gateHP: 300,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
-  { id: 2, gateHP: 650,   spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
+  { id: 2, gateHP: 650,   spawnInterval: 800,  enemyHpMult: 1.15, enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
   { id: 3, gateHP: 2000,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
   { id: 4, gateHP: 3500,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
   { id: 5, gateHP: 5000,  spawnInterval: 500,  enemyHpMult: 2.8,  enemySpeedMult: 1.20, enemyDropCoins: 20,  gateLumpSum: 800,  heavyEvery: 5 },
