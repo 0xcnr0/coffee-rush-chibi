@@ -145,6 +145,58 @@ export const WEAPON_EVO_TIERS: Record<string, EvoTrait[][]> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// STAR WEAPON EVO TRAITS
+// Star upgrade cycle: 5 pips → EVO popup (2 choices), max E2 for Chapter 1
+// ═══════════════════════════════════════════════════════════════════════════════
+export const STAR_EVO_1: EvoTrait[] = [
+  {
+    id: 'star_wider_passive',
+    name: 'Wide Orbit',
+    icon: '🌀',
+    description: '+25% passive radius',
+    category: 'star',
+    effects: [
+      { type: 'radius_mult', value: 1.25 },
+    ],
+  },
+  {
+    id: 'star_faster_throw',
+    name: 'Shooting Star',
+    icon: '💫',
+    description: '+30% throw speed & range',
+    category: 'star',
+    effects: [
+      { type: 'throw_speed_mult', value: 1.30 },
+    ],
+  },
+];
+
+export const STAR_EVO_2: EvoTrait[] = [
+  {
+    id: 'star_double_tick',
+    name: 'Twin Stars',
+    icon: '✨',
+    description: 'Passive hits twice per tick',
+    category: 'star',
+    effects: [
+      { type: 'passive_multi_hit', value: 2 },
+    ],
+  },
+  {
+    id: 'star_cheap_throw',
+    name: 'Star Saver',
+    icon: '⚡',
+    description: '-40% throw Power cost',
+    category: 'star',
+    effects: [
+      { type: 'ability_cost_mult', value: 0.60 },
+    ],
+  },
+];
+
+export const STAR_EVO_TIERS: EvoTrait[][] = [STAR_EVO_1, STAR_EVO_2];
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // POWER REGEN EVO TRAITS (shared for power upgrade path)
 // ═══════════════════════════════════════════════════════════════════════════════
 export const POWER_EVO_1: EvoTrait[] = [

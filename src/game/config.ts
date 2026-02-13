@@ -159,6 +159,13 @@ export const GAME_CONFIG = {
   WEAPON_PIP_BASE_COST: 40,
   WEAPON_PIP_COST_SCALING: 1.3,
   
+  // Star weapon upgrades: 5 pips → EVO, max E2 for Chapter 1 (10 pips total)
+  STAR_PIP_PER_EVO: 5,
+  STAR_PIP_BASE_COST: 25,
+  STAR_PIP_COST_SCALING: 1.35,
+  STAR_MAX_EVOS_CH1: 2,             // Chapter 1 cap: E2 (10 pips)
+  STAR_DAMAGE_BONUS_PER_PIP: 0.10,  // +10% passive & throw damage per pip
+  
   // Power regen upgrade pips
   POWER_PIP_PER_EVO: 3,
   POWER_PIP_BASE_COST: 35,

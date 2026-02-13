@@ -63,13 +63,14 @@ export interface EvoTrait {
   name: string;
   icon: string;
   description: string;
-  category: 'block' | 'weapon' | 'power' | 'damage';
+  category: 'block' | 'weapon' | 'power' | 'damage' | 'star';
   effects: EvoEffect[];
 }
 
 export interface EvoEffect {
   type: 'hp_mult' | 'atk_mult' | 'regen_mult' | 'heal_percent' | 'weapon_atk_mult' | 
-        'projectile_count' | 'ability_cost_mult' | 'power_regen_mult' | 'damage_mult';
+        'projectile_count' | 'ability_cost_mult' | 'power_regen_mult' | 'damage_mult' |
+        'radius_mult' | 'throw_speed_mult' | 'passive_multi_hit';
   value: number;
 }
 
@@ -169,7 +170,7 @@ export interface GameStats {
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface PurchaseEvent {
   ts: number;
-  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'saw_unlock' | 'star_unlock';
+  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'saw_unlock' | 'star_unlock' | 'star_pip';
   target: string;           // e.g. "block_0", "weapon_1", "power", "damage"
   before: string;           // human-readable
   after: string;            // human-readable
@@ -199,6 +200,7 @@ export interface RunTelemetry {
     powerPips: number;
     damagePips: number;
     blockCount: number;
+    starPips: number;
   };
   
   // Combat data
