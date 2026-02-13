@@ -1,71 +1,53 @@
 
 
-# Fix: Real-time Coin Display + Star System UI Redesign
+# Stage 2 Pacing + Star Throw Ground Path + Balance Nerf
 
-## Problem 1: Coin Counter Stays at Zero During Gameplay
+## 3 Issues to Fix
 
-The HUD coin counter (`$tips`) only updates when `shouldUpdateHUD` is true (every 0.1s tick). When coins are earned from kills or gate destruction, the `setTips()` call is skipped if the HUD tick hasn't fired yet. This causes a perceived delay where coins stay at zero.
+### 1. Stage 2 Gate Appears Too Early
 
-Additionally, the HUD uses a `$` prefix and `💰` emoji while the Garage uses `🪙`. These should match.
+Currently Stage 2 uses continuous spawning (no wave system) and the gate appears right after the TRAVEL phase ends. The fix:
 
-### Fix
-- In `CoffeeRushGame.tsx`: Remove the `if (shouldUpdateHUD)` guard from the two `setTips()` calls (lines 1191 and 1551). Always call `setTips(tipsRef.current)` immediately when coins are earned.
-- In `GameHUD.tsx`: Change the coin display icon from `💰` to `🪙` and remove the `$` prefix to match Garage style.
+- **Extend Stage 2 travel duration** from 4.0s to 8.0s in `TRAVEL_DURATION_BY_STAGE`, giving more time for enemies to arrive and deal damage before the gate appears.
+- **Add wave-based spawning to Stage 2** (like Stage 1's pilot system). This creates natural breathing windows and a build-up feel rather than the gate immediately appearing with enemies.
 
----
+**Config changes (`config.ts`):**
+- `TRAVEL_DURATION_BY_STAGE[1]`: 4.0 -> 8.0
+- Add `STAGE2_WAVE_SIZE: 4` and `STAGE2_WAVE_BREATHER: 0.8` constants
 
-## Problem 2: Rename "Saw" to "Star" + Relocate to Per-Box Buttons
+**Game loop changes (`CoffeeRushGame.tsx`):**
+- Expand the wave-based spawning logic (currently `isStage1Siege` only) to also cover Stage 2 using `STAGE2_WAVE_SIZE` and `STAGE2_WAVE_BREATHER`.
 
-The current "SAW SYSTEM" card is a large standalone panel in the bottom section. The user wants:
+### 2. Star Throw Flies Too High (Misses Enemies)
 
-1. **Rename**: "Saw" becomes "Star" everywhere (UI text, toasts). The visual in-game (renderer) already looks like a star shape, so this is consistent.
-2. **Icon**: Use a star icon (⭐ or Star from lucide) instead of 🪚 in Garage and HUD.
-3. **Layout**: Remove the large SAW SYSTEM card. Instead, place a small Star purchase button **next to each cargo box** (same style/size as the cargo box upgrade button), positioned to the right of each box's position on the cart.
-4. **Per-box purchase**: Each cargo box can have its own Star attached. Buying a Star for one box doesn't affect others.
-5. **Single throw button**: Even with multiple Stars purchased, only ONE throw button appears in the HUD. Throw damage does NOT scale with number of Stars.
-6. **Passive stays constant**: The passive melee effect stays the same power regardless of how many boxes have Stars.
+The star throw currently launches from `topBlock.y + MUZZLE_Y_OFFSET` -- the same height as the shotgun. This means it flies above many enemies.
 
-### Persistence Changes (`persistence.ts`)
-- Add `starPerBox: boolean[]` field (e.g., `[false, false, false]`) to track which boxes have Stars. Replace or keep `sawUnlocked` as a derived value (`starPerBox.some(v => v)`).
-- Add `purchaseStarForBox(boxIndex: number, cost: number): boolean` function.
-- Keep the same unlock requirement: `bestStageReached >= 2`.
-- Bump save version to 12.
+**Fix (`CoffeeRushGame.tsx` line 766):**
+- Change the Y position to ground level: `groundY - 30` (just above the road surface, where enemies walk).
+- Keep X the same (fires from cart front).
 
-### Garage UI Changes (`GarageOverlay.tsx`)
-- Remove the large "SAW SYSTEM" card (lines 284-335).
-- For each purchased cargo box (based on `blockCountLevel`), render a small Star button next to the cart, positioned below/beside the cargo box button. Same compact style (32x38px icon button).
-- Button states:
-  - **Locked** (bestStageReached < 2): Not visible at all.
-  - **Available**: Shows star icon + coin cost.
-  - **Purchased**: Shows star icon with a checkmark or filled style.
-- Update toast messages: "Star Equipped!" instead of "SAW SYSTEM Unlocked!".
+This ensures the star rolls/slides along the ground and hits enemies reliably.
 
-### HUD Changes (`GameHUD.tsx`)
-- Rename saw button icon from 🪚 to ⭐.
-- Keep single button regardless of how many boxes have Stars.
-- `hasSaw` prop renamed conceptually but remains a single boolean (derived from `starPerBox.some(v => v)`).
+### 3. Star + Passive Too Strong (Clearing Stage 3 Too Easily)
 
-### Game Logic (`CoffeeRushGame.tsx`)
-- `hasSawRef` logic: Set to `true` if ANY box has a Star (`progression.starPerBox.some(v => v)`).
-- Passive saw damage and throw damage remain unchanged -- no multiplication for multiple Stars.
+Current values make the combined saw passive + throw too powerful. Nerf both:
 
-### Renderer (`renderer.ts`)
-- No functional changes needed. The visual already looks star-shaped.
+**Config changes (`config.ts`):**
 
-### Config (`config.ts`)
-- Rename `SAW_UNLOCK_COST` to `STAR_PER_BOX_COST` (same value: 140 coins per box).
+| Parameter | Current | New | Reasoning |
+|---|---|---|---|
+| `SAW_PASSIVE_TICK_DAMAGE` | 7 | 5 | Passive should be chip damage, not a killer |
+| `SAW_THROW_DAMAGE` | 18 | 14 | Throw should help with gates, not trivialize them |
+| `SAW_THROW_SPEED` | 320 | 280 | Slower = more dodgeable by placement |
+
+These are initial nerfs. The user plans to collect run summaries after this patch for data-driven fine-tuning.
 
 ---
 
-## Summary of Files Changed
+## Files Changed
 
-| File | Changes |
+| File | Change |
 |---|---|
-| `persistence.ts` | Add `starPerBox: boolean[]`, new purchase function, bump save version |
-| `config.ts` | Rename SAW_UNLOCK_COST to STAR_PER_BOX_COST |
-| `CoffeeRushGame.tsx` | Remove `shouldUpdateHUD` guard on `setTips()`, derive `hasSaw` from `starPerBox` |
-| `GameHUD.tsx` | Change coin icon to 🪙, remove $ prefix, change saw icon to star |
-| `GarageOverlay.tsx` | Remove SAW SYSTEM card, add per-box Star buttons next to cargo |
-| `renderer.ts` | No changes needed |
-| `types.ts` | Add `'star_unlock'` to PurchaseEvent type |
+| `config.ts` | Travel duration for Stage 2: 4->8s, add Stage 2 wave constants, nerf star damage values |
+| `CoffeeRushGame.tsx` | Extend wave spawning to Stage 2, fix star throw Y to ground level |
 
