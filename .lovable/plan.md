@@ -1,89 +1,71 @@
 
 
-# Saw System: Garage Unlock + Balance Tune
+# Fix: Real-time Coin Display + Star System UI Redesign
 
-## Overview
+## Problem 1: Coin Counter Stays at Zero During Gameplay
 
-Convert the Saw from an always-active weapon into a purchasable Garage upgrade, gated behind Stage 2 completion. Adjust balance values per ChatGPT specs.
+The HUD coin counter (`$tips`) only updates when `shouldUpdateHUD` is true (every 0.1s tick). When coins are earned from kills or gate destruction, the `setTips()` call is skipped if the HUD tick hasn't fired yet. This causes a perceived delay where coins stay at zero.
 
----
+Additionally, the HUD uses a `$` prefix and `💰` emoji while the Garage uses `🪙`. These should match.
 
-## Changes by File
-
-### 1. `src/game/persistence.ts` (Schema)
-
-- Add `sawUnlocked: boolean` field to `ProgressionData` (default: `false`)
-- Add `purchaseSaw(cost: number): boolean` function
-  - Checks `bestStageReached >= 2` and `totalCoins >= cost`
-  - Sets `sawUnlocked = true`, deducts coins
-  - Logs purchase event
-- Add `'saw_unlock'` to PurchaseEvent type union
-- Bump `SAVE_VERSION` to 11 (clean reset ensures new field exists)
-
-### 2. `src/game/types.ts`
-
-- Add `'saw_unlock'` to the `PurchaseEvent.type` union
-
-### 3. `src/game/config.ts` (Balance Tune)
-
-Adjust values per ChatGPT design:
-
-| Parameter | Current | New |
-|---|---|---|
-| `SAW_PASSIVE_RADIUS` | 70 | 65 |
-| `SAW_PASSIVE_TICK_INTERVAL` | 0.2 | 0.25 |
-| `SAW_PASSIVE_TICK_DAMAGE` | 8 | 7 |
-| `SAW_THROW_DAMAGE` | 20 | 18 |
-| `SAW_THROW_LIFETIME` | 1.2 | 1.1 |
-
-Add new constant:
-- `SAW_UNLOCK_COST: 140`
-
-### 4. `src/game/CoffeeRushGame.tsx` (Game Loop Guards)
-
-- On run start (line ~283): Set `hasSawRef.current = progression.sawUnlocked` instead of checking `weaponSlots`
-- Passive saw loop (line ~1410): Wrap entire block in `if (hasSawRef.current)`
-- Saw throw handler (line ~750): Add early return `if (!hasSawRef.current)`
-- HUD props: Pass `canUseSaw` as `hasSawRef.current && power >= cost`
-
-### 5. `src/game/GameHUD.tsx`
-
-- Add `hasSaw: boolean` prop
-- Only render the saw button when `hasSaw === true`
-
-### 6. `src/game/GarageOverlay.tsx` (Purchase UI)
-
-Add a "SAW SYSTEM" upgrade card in the Battle tab bottom panel (between the pip tiles and PLAY button):
-
-- Shows lock icon + "Reach Stage 3" text when `bestStageReached < 2`
-- Shows cost (140 coins) + buy button when unlocked but not purchased
-- Shows "EQUIPPED" badge when already purchased
-- On purchase: calls `purchaseSaw(140)`, refreshes progression state, triggers `onProgressionChange`
-
-### 7. `src/game/renderer.ts`
-
-- Pass `hasSaw` flag to draw functions
-- Only render the spinning saw visual when `hasSaw === true`
+### Fix
+- In `CoffeeRushGame.tsx`: Remove the `if (shouldUpdateHUD)` guard from the two `setTips()` calls (lines 1191 and 1551). Always call `setTips(tipsRef.current)` immediately when coins are earned.
+- In `GameHUD.tsx`: Change the coin display icon from `💰` to `🪙` and remove the `$` prefix to match Garage style.
 
 ---
 
-## Unlock Flow
+## Problem 2: Rename "Saw" to "Star" + Relocate to Per-Box Buttons
 
-```text
-Fresh save -> Saw locked (grayed in Garage, "Reach Stage 3")
-Player clears Stage 2 gate -> bestStageReached >= 2
-Garage now shows "SAW SYSTEM - 140 coins"
-Player purchases -> sawUnlocked = true (permanent)
-Next run -> passive saw + throw button active
-```
+The current "SAW SYSTEM" card is a large standalone panel in the bottom section. The user wants:
+
+1. **Rename**: "Saw" becomes "Star" everywhere (UI text, toasts). The visual in-game (renderer) already looks like a star shape, so this is consistent.
+2. **Icon**: Use a star icon (⭐ or Star from lucide) instead of 🪚 in Garage and HUD.
+3. **Layout**: Remove the large SAW SYSTEM card. Instead, place a small Star purchase button **next to each cargo box** (same style/size as the cargo box upgrade button), positioned to the right of each box's position on the cart.
+4. **Per-box purchase**: Each cargo box can have its own Star attached. Buying a Star for one box doesn't affect others.
+5. **Single throw button**: Even with multiple Stars purchased, only ONE throw button appears in the HUD. Throw damage does NOT scale with number of Stars.
+6. **Passive stays constant**: The passive melee effect stays the same power regardless of how many boxes have Stars.
+
+### Persistence Changes (`persistence.ts`)
+- Add `starPerBox: boolean[]` field (e.g., `[false, false, false]`) to track which boxes have Stars. Replace or keep `sawUnlocked` as a derived value (`starPerBox.some(v => v)`).
+- Add `purchaseStarForBox(boxIndex: number, cost: number): boolean` function.
+- Keep the same unlock requirement: `bestStageReached >= 2`.
+- Bump save version to 12.
+
+### Garage UI Changes (`GarageOverlay.tsx`)
+- Remove the large "SAW SYSTEM" card (lines 284-335).
+- For each purchased cargo box (based on `blockCountLevel`), render a small Star button next to the cart, positioned below/beside the cargo box button. Same compact style (32x38px icon button).
+- Button states:
+  - **Locked** (bestStageReached < 2): Not visible at all.
+  - **Available**: Shows star icon + coin cost.
+  - **Purchased**: Shows star icon with a checkmark or filled style.
+- Update toast messages: "Star Equipped!" instead of "SAW SYSTEM Unlocked!".
+
+### HUD Changes (`GameHUD.tsx`)
+- Rename saw button icon from 🪚 to ⭐.
+- Keep single button regardless of how many boxes have Stars.
+- `hasSaw` prop renamed conceptually but remains a single boolean (derived from `starPerBox.some(v => v)`).
+
+### Game Logic (`CoffeeRushGame.tsx`)
+- `hasSawRef` logic: Set to `true` if ANY box has a Star (`progression.starPerBox.some(v => v)`).
+- Passive saw damage and throw damage remain unchanged -- no multiplication for multiple Stars.
+
+### Renderer (`renderer.ts`)
+- No functional changes needed. The visual already looks star-shaped.
+
+### Config (`config.ts`)
+- Rename `SAW_UNLOCK_COST` to `STAR_PER_BOX_COST` (same value: 140 coins per box).
 
 ---
 
-## What Is NOT Changed
+## Summary of Files Changed
 
-- Shotgun damage, bomb behavior, gate HP
-- Spawn scaling, economy values
-- Existing pip/EVO system
-- Boss flow
-- Wave system (Stage 1)
+| File | Changes |
+|---|---|
+| `persistence.ts` | Add `starPerBox: boolean[]`, new purchase function, bump save version |
+| `config.ts` | Rename SAW_UNLOCK_COST to STAR_PER_BOX_COST |
+| `CoffeeRushGame.tsx` | Remove `shouldUpdateHUD` guard on `setTips()`, derive `hasSaw` from `starPerBox` |
+| `GameHUD.tsx` | Change coin icon to 🪙, remove $ prefix, change saw icon to star |
+| `GarageOverlay.tsx` | Remove SAW SYSTEM card, add per-box Star buttons next to cargo |
+| `renderer.ts` | No changes needed |
+| `types.ts` | Add `'star_unlock'` to PurchaseEvent type |
 
