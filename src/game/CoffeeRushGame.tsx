@@ -751,7 +751,6 @@ export const CoffeeRushGame: React.FC = () => {
   // SAW THROW (piercing power skill)
   // ═══════════════════════════════════════════════════════════════════════
   const handleSawThrow = useCallback(() => {
-    if (playPhaseRef.current !== 'SIEGE') return;
     if (!hasSawRef.current) return;
     if (powerRef.current < GAME_CONFIG.SAW_THROW_COST) return;
     
@@ -1733,7 +1732,7 @@ export const CoffeeRushGame: React.FC = () => {
             onTonicBomb={handleTonicBomb}
             canUseBomb={canUseBomb}
             onSawThrow={handleSawThrow}
-            canUseSaw={hasSawRef.current && powerRef.current >= GAME_CONFIG.SAW_THROW_COST && playPhase === 'SIEGE'}
+            canUseSaw={hasSawRef.current && powerRef.current >= GAME_CONFIG.SAW_THROW_COST}
             hasSaw={hasSawRef.current}
             onPause={handlePause}
             gameMode={gameMode}
