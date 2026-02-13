@@ -26,7 +26,7 @@ export interface StageConfig {
 
 export const STAGES: readonly StageConfig[] = [
   { id: 1, gateHP: 350,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
-  { id: 2, gateHP: 2000,  spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
+  { id: 2, gateHP: 1400,  spawnInterval: 800,  enemyHpMult: 1.3,  enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 10 },
   { id: 3, gateHP: 3500,  spawnInterval: 700,  enemyHpMult: 1.7,  enemySpeedMult: 1.10, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 8 },
   { id: 4, gateHP: 5000,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
   { id: 5, gateHP: 7000,  spawnInterval: 500,  enemyHpMult: 2.8,  enemySpeedMult: 1.20, enemyDropCoins: 20,  gateLumpSum: 800,  heavyEvery: 5 },
@@ -161,7 +161,7 @@ export const GAME_CONFIG = {
   
   // Star weapon upgrades: 5 pips → EVO, max E2 for Chapter 1 (10 pips total)
   STAR_PIP_PER_EVO: 5,
-  STAR_PIP_BASE_COST: 25,
+  STAR_PIP_BASE_COST: 80,
   STAR_PIP_COST_SCALING: 1.35,
   STAR_MAX_EVOS_CH1: 2,             // Chapter 1 cap: E2 (10 pips)
   STAR_DAMAGE_BONUS_PER_PIP: 0.10,  // +10% passive & throw damage per pip
