@@ -1,53 +1,95 @@
 
 
-# Stage 2 Pacing + Star Throw Ground Path + Balance Nerf
+# Fix: Post-Gate Enemy Gap + Star System Overpower Nerf
 
-## 3 Issues to Fix
+## Telemetry Analysis
 
-### 1. Stage 2 Gate Appears Too Early
+| Run | Duration | Stage | Key Issue |
+|-----|----------|-------|-----------|
+| Run1 | 16.7s | G1 (8%) | Baseline - good first death timing |
+| Run3 | 86.7s | G2 (3.5%) | G1 cleared, died quickly at G2 |
+| Run4 | 101s | G2 (5%) | **No enemies after G1 for long stretch** |
+| Run5 | 137.8s | G3 (1.3%) | **Star passive alone clears everything, 0 bombs used, 245 kills** |
 
-Currently Stage 2 uses continuous spawning (no wave system) and the gate appears right after the TRAVEL phase ends. The fix:
+---
 
-- **Extend Stage 2 travel duration** from 4.0s to 8.0s in `TRAVEL_DURATION_BY_STAGE`, giving more time for enemies to arrive and deal damage before the gate appears.
-- **Add wave-based spawning to Stage 2** (like Stage 1's pilot system). This creates natural breathing windows and a build-up feel rather than the gate immediately appearing with enemies.
+## Problem 1: No Enemies After Gate Victory (13-second dead zone)
 
-**Config changes (`config.ts`):**
-- `TRAVEL_DURATION_BY_STAGE[1]`: 4.0 -> 8.0
-- Add `STAGE2_WAVE_SIZE: 4` and `STAGE2_WAVE_BREATHER: 0.8` constants
+The post-gate flow for Stage 2+ is:
+1. VICTORY: gate cleanup **kills all enemies** (0.8s)
+2. BREATHER: spawns at 40% rate (4s) -- barely any enemies appear
+3. TRAVEL (Stage 2): **despawns all enemies AND spawns nothing** (8s)
+4. APPROACH: no spawning (1s)
 
-**Game loop changes (`CoffeeRushGame.tsx`):**
-- Expand the wave-based spawning logic (currently `isStage1Siege` only) to also cover Stage 2 using `STAGE2_WAVE_SIZE` and `STAGE2_WAVE_BREATHER`.
+That is **13 seconds** of near-zero enemies before Stage 2 siege begins. The user correctly observed "g1 sonrasi hic enemy gelmeden bir sure devam etti."
 
-### 2. Star Throw Flies Too High (Misses Enemies)
+### Fix
 
-The star throw currently launches from `topBlock.y + MUZZLE_Y_OFFSET` -- the same height as the shotgun. This means it flies above many enemies.
+Make Stage 2+ TRAVEL phase spawn enemies continuously (like Stage 1 already does) instead of despawning them. This fills the dead zone with pressure.
 
-**Fix (`CoffeeRushGame.tsx` line 766):**
-- Change the Y position to ground level: `groundY - 30` (just above the road surface, where enemies walk).
-- Keep X the same (fires from cart front).
+**In `CoffeeRushGame.tsx` (lines 923-955):**
+- Remove the enemy despawn logic for Stages 2+
+- Add enemy spawning during TRAVEL for all stages (using that stage's spawn interval)
+- Keep the existing Stage 1 spawning logic as-is
 
-This ensures the star rolls/slides along the ground and hits enemies reliably.
+---
 
-### 3. Star + Passive Too Strong (Clearing Stage 3 Too Easily)
+## Problem 2: Star Passive is Overpowered
 
-Current values make the combined saw passive + throw too powerful. Nerf both:
+Current: 5 damage every 0.25s = **20 DPS** in a 65px radius.
+- Stage 1 enemy (32 HP): dies in 1.6s from passive alone
+- Stage 2 enemy (41 HP): dies in 2.0s from passive alone
+- Stage 3 enemy (54 HP): dies in 2.7s from passive alone
 
-**Config changes (`config.ts`):**
+Combined with shotgun auto-fire, enemies never even reach the cart. Run 5 shows 245 kills, 0 bombs, 0 star throws -- pure passive dominance.
+
+### Fix
+
+Nerf passive to chip-damage role, not a primary damage source:
+
+| Parameter | Current | New | Result |
+|---|---|---|---|
+| `SAW_PASSIVE_TICK_DAMAGE` | 5 | 2 | Chip damage only |
+| `SAW_PASSIVE_TICK_INTERVAL` | 0.25s | 0.40s | Slower ticks |
+
+New DPS: 2 / 0.40 = **5 DPS** (down from 20 DPS, 75% reduction).
+- Stage 1 enemy (32 HP): 6.4s from passive alone (needs shotgun help)
+- Stage 2 enemy (41 HP): 8.2s from passive alone
+
+This makes the passive a helper, not a solo killer.
+
+---
+
+## Problem 3: Star Throw Too Strong for Gates
+
+Star throw pierces through all enemies AND hits the gate for full 14 damage. A couple of throws can chunk gates significantly. The user noted "bir iki kez yildiz firlatmak yetiyor gate 2 ve 3u kesmek icin."
+
+### Fix
 
 | Parameter | Current | New | Reasoning |
 |---|---|---|---|
-| `SAW_PASSIVE_TICK_DAMAGE` | 7 | 5 | Passive should be chip damage, not a killer |
-| `SAW_THROW_DAMAGE` | 18 | 14 | Throw should help with gates, not trivialize them |
-| `SAW_THROW_SPEED` | 320 | 280 | Slower = more dodgeable by placement |
-
-These are initial nerfs. The user plans to collect run summaries after this patch for data-driven fine-tuning.
+| `SAW_THROW_DAMAGE` | 14 | 8 | Throw is a lane-clear tool, not a gate-buster |
+| `SAW_THROW_SPEED` | 280 | 240 | Slower travel = less reliable |
+| `SAW_THROW_LIFETIME` | 1.1s | 0.9s | Shorter range, might not reach gate |
 
 ---
+
+## Summary of All Config Changes
+
+**`config.ts`:**
+- `SAW_PASSIVE_TICK_DAMAGE`: 5 -> 2
+- `SAW_PASSIVE_TICK_INTERVAL`: 0.25 -> 0.40
+- `SAW_THROW_DAMAGE`: 14 -> 8
+- `SAW_THROW_SPEED`: 280 -> 240
+- `SAW_THROW_LIFETIME`: 1.1 -> 0.9
+
+**`CoffeeRushGame.tsx`:**
+- Stage 2+ TRAVEL phase: remove enemy despawn, add enemy spawning (same as Stage 1 pattern)
 
 ## Files Changed
 
 | File | Change |
 |---|---|
-| `config.ts` | Travel duration for Stage 2: 4->8s, add Stage 2 wave constants, nerf star damage values |
-| `CoffeeRushGame.tsx` | Extend wave spawning to Stage 2, fix star throw Y to ground level |
+| `config.ts` | Nerf star passive (2 dmg / 0.4s) and throw (8 dmg, slower, shorter) |
+| `CoffeeRushGame.tsx` | Stage 2+ TRAVEL spawns enemies instead of despawning them |
 
