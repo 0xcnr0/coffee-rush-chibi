@@ -5,6 +5,7 @@ import type { CartBlock, Enemy, Projectile, TipDrop, Particle, BossState, PlayPh
 let parallaxOffset1 = 0;
 let parallaxOffset2 = 0;
 let wheelRotation = 0;
+let starRotation = 0;
 
 export function drawGame(
   ctx: CanvasRenderingContext2D,
@@ -26,12 +27,16 @@ export function drawGame(
   const isTraveling = playPhase === 'TRAVEL' || playPhase === 'BREATHER';
   const isApproaching = playPhase === 'APPROACH';
   
+  // Star always spins
+  if (deltaTime) {
+    starRotation += 3 * deltaTime;
+  }
+  
   if (isTraveling && deltaTime) {
     parallaxOffset1 = (parallaxOffset1 + 30 * deltaTime) % 120;
     parallaxOffset2 = (parallaxOffset2 + 80 * deltaTime) % 60;
     wheelRotation += 8 * deltaTime;
   } else if (isApproaching && deltaTime) {
-    // Decelerate during approach (half speed)
     parallaxOffset1 = (parallaxOffset1 + 15 * deltaTime) % 120;
     parallaxOffset2 = (parallaxOffset2 + 40 * deltaTime) % 60;
     wheelRotation += 4 * deltaTime;
@@ -197,14 +202,14 @@ function drawSawZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   ctx.fill();
   ctx.restore();
   
-  // Rotating star (5-pointed, like wheels)
+  // Rotating star (5-pointed, blue, spins like wheels)
   ctx.save();
   ctx.translate(sawCenterX, sawCenterY);
-  ctx.rotate(Date.now() / 200);
+  ctx.rotate(starRotation);
   const starRadius = 18;
   const innerRadius = 8;
   const points = 5;
-  ctx.fillStyle = 'hsla(45, 85%, 55%, 0.85)';
+  ctx.fillStyle = 'hsla(200, 50%, 60%, 0.7)';
   ctx.beginPath();
   for (let i = 0; i < points * 2; i++) {
     const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
@@ -214,14 +219,10 @@ function drawSawZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   }
   ctx.closePath();
   ctx.fill();
-  // Star outline glow
-  ctx.strokeStyle = 'hsla(45, 90%, 70%, 0.5)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
   // Center dot
-  ctx.fillStyle = 'hsla(45, 70%, 40%, 0.9)';
+  ctx.fillStyle = 'hsla(200, 40%, 40%, 0.9)';
   ctx.beginPath();
-  ctx.arc(0, 0, 4, 0, Math.PI * 2);
+  ctx.arc(0, 0, 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }

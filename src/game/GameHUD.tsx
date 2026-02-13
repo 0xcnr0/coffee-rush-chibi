@@ -37,7 +37,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
     if (playPhase === 'VICTORY' && prevPhaseRef.current !== 'VICTORY') {
       setGateClearedStage(stageIndex);
       if (gateClearedTimerRef.current) clearTimeout(gateClearedTimerRef.current);
-      gateClearedTimerRef.current = setTimeout(() => setGateClearedStage(null), 2500);
+      gateClearedTimerRef.current = setTimeout(() => setGateClearedStage(null), 2000);
     }
     prevPhaseRef.current = playPhase;
     return () => { if (gateClearedTimerRef.current) clearTimeout(gateClearedTimerRef.current); };
