@@ -22,13 +22,12 @@ export function drawGame(
   gateBuilding?: GateBuilding | null,
   currentTime?: number,
   hasStar?: boolean,
-  hasFlame?: boolean,
+  hasFoam?: boolean,
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
   const isTraveling = playPhase === 'TRAVEL' || playPhase === 'BREATHER';
   const isApproaching = playPhase === 'APPROACH';
   
-  // Star always spins
   if (deltaTime) {
     starRotation += 3 * deltaTime;
   }
@@ -49,7 +48,6 @@ export function drawGame(
   drawBackground(ctx, isTraveling || isApproaching);
   drawGround(ctx, isTraveling || isApproaching);
   
-  // Draw gate building (before enemies so enemies appear in front)
   if (gateBuilding && !gateBuilding.isDestroyed) {
     drawGateBuilding(ctx, gateBuilding, currentTime);
   }
@@ -57,10 +55,8 @@ export function drawGame(
   drawCart(ctx, blocks, isTraveling || isApproaching);
   drawBarista(ctx, blocks);
   
-  // Draw passive star zone (only if unlocked)
   if (hasStar) drawStarZone(ctx, blocks);
-  // Draw passive flame zone (only if unlocked)
-  if (hasFlame) drawFlameZone(ctx, blocks);
+  if (hasFoam) drawFoamZone(ctx, blocks);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
   projectiles.forEach(proj => drawProjectile(ctx, proj));
@@ -75,7 +71,6 @@ export function drawGame(
     drawBossHpBar(ctx, bossState);
   }
   
-  // Debug: state label overlay
   if (playPhase) {
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = '10px monospace';
@@ -86,6 +81,8 @@ export function drawGame(
   
   ctx.restore();
 }
+
+// Draw menu scene (blocks and cart)
 export function drawMenuScene(ctx: CanvasRenderingContext2D, blockCount: number) {
   const { CANVAS_HEIGHT, BLOCK_HEIGHT, BLOCK_MAX_HP } = GAME_CONFIG;
   drawBackground(ctx);
@@ -106,7 +103,6 @@ export function drawMenuScene(ctx: CanvasRenderingContext2D, blockCount: number)
 function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, currentTime?: number) {
   const hpPercent = gate.hp / gate.maxHp;
   
-  // Building body (gets redder as HP drops)
   const r = Math.floor(140 + (1 - hpPercent) * 60);
   const g = Math.floor(60 - (1 - hpPercent) * 30);
   const b = Math.floor(50 - (1 - hpPercent) * 20);
@@ -115,7 +111,6 @@ function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, cur
   roundRect(ctx, gate.x, gate.y, gate.width, gate.height, 6);
   ctx.fill();
   
-  // Hit flash effect
   if (currentTime !== undefined && gate.lastHitTime && (currentTime - gate.lastHitTime) < 0.15) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.beginPath();
@@ -123,14 +118,12 @@ function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, cur
     ctx.fill();
   }
   
-  // Stage number
   ctx.fillStyle = 'hsla(0, 0%, 100%, 0.8)';
   ctx.font = 'bold 16px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(`G${gate.stageIndex}`, gate.x + gate.width / 2, gate.y + gate.height / 2 - 10);
   
-  // Cracks (more cracks as HP drops)
   if (hpPercent < 0.75) {
     ctx.strokeStyle = 'hsla(0, 0%, 20%, 0.5)';
     ctx.lineWidth = 2;
@@ -152,7 +145,6 @@ function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, cur
     ctx.stroke();
   }
   
-  // HP bar above building
   const barWidth = gate.width + 10;
   const barHeight = 6;
   const barX = gate.x - 5;
@@ -166,13 +158,11 @@ function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, cur
   roundRect(ctx, barX, barY, barWidth * hpPercent, barHeight, 3);
   ctx.fill();
   
-  // HP text
   ctx.fillStyle = 'hsl(0, 0%, 100%)';
   ctx.font = 'bold 9px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText(`${gate.hp}`, gate.x + gate.width / 2, barY - 3);
   
-  // Breathing indicator
   if (gate.breathingActive) {
     ctx.fillStyle = 'hsla(145, 60%, 45%, 0.3)';
     ctx.beginPath();
@@ -196,7 +186,6 @@ function drawStarZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   const sawCenterY = groundY - 60;
   const radius = GAME_CONFIG.STAR_PASSIVE_RADIUS;
   
-  // Faint danger zone circle
   ctx.save();
   ctx.globalAlpha = 0.08;
   ctx.fillStyle = 'hsl(200, 60%, 50%)';
@@ -205,7 +194,6 @@ function drawStarZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   ctx.fill();
   ctx.restore();
   
-  // Rotating star (5-pointed, blue, spins like wheels)
   ctx.save();
   ctx.translate(sawCenterX, sawCenterY);
   ctx.rotate(starRotation);
@@ -222,7 +210,6 @@ function drawStarZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   }
   ctx.closePath();
   ctx.fill();
-  // Center dot
   ctx.fillStyle = 'hsla(200, 40%, 40%, 0.9)';
   ctx.beginPath();
   ctx.arc(0, 0, 5, 0, Math.PI * 2);
@@ -231,77 +218,79 @@ function drawStarZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// PASSIVE FLAME ZONE (cone visual)
+// PASSIVE FOAM ZONE (sweeping cannon visual — white/cream)
 // ═══════════════════════════════════════════════════════════════════════
-let flameParticleTimer = 0;
-const flameParticles: { x: number; y: number; life: number; vx: number; vy: number; size: number }[] = [];
+let foamSweepAngle = 0;
+let foamParticleTimer = 0;
+const foamParticles: { x: number; y: number; life: number; vx: number; vy: number; size: number }[] = [];
 
-function drawFlameZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
+function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   const activeBlocks = blocks.filter(b => !b.destroyed);
   if (activeBlocks.length === 0) return;
   
   const cartFrontX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
-  const coneOriginY = groundY - 60;
-  const radius = GAME_CONFIG.FLAME_PASSIVE_RADIUS;
-  const halfAngle = (GAME_CONFIG.FLAME_PASSIVE_CONE_ANGLE / 2) * (Math.PI / 180);
+  const cannonOriginY = groundY - 60;
+  const range = GAME_CONFIG.FOAM_PASSIVE_RANGE;
   
-  // Cone fill (orange/red gradient)
+  // Update sweep angle
+  foamSweepAngle += GAME_CONFIG.FOAM_SWEEP_SPEED * 0.016;
+  const sweepHalf = (GAME_CONFIG.FOAM_SWEEP_ANGLE / 2) * (Math.PI / 180);
+  const currentAngle = Math.sin(foamSweepAngle) * sweepHalf;
+  
+  // Draw sweeping beam indicator (faint)
   ctx.save();
-  ctx.globalAlpha = 0.12;
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = 'hsl(45, 50%, 95%)';
   ctx.beginPath();
-  ctx.moveTo(cartFrontX, coneOriginY);
-  ctx.arc(cartFrontX, coneOriginY, radius, -halfAngle, halfAngle);
+  ctx.moveTo(cartFrontX, cannonOriginY);
+  const beamEndX = cartFrontX + Math.cos(currentAngle) * range;
+  const beamEndY = cannonOriginY + Math.sin(currentAngle) * range;
+  // Narrow beam width
+  const perpX = -Math.sin(currentAngle) * 15;
+  const perpY = Math.cos(currentAngle) * 15;
+  ctx.lineTo(beamEndX + perpX, beamEndY + perpY);
+  ctx.lineTo(beamEndX - perpX, beamEndY - perpY);
   ctx.closePath();
-  const gradient = ctx.createRadialGradient(cartFrontX, coneOriginY, 0, cartFrontX, coneOriginY, radius);
-  gradient.addColorStop(0, 'hsl(30, 100%, 55%)');
-  gradient.addColorStop(0.6, 'hsl(15, 90%, 50%)');
-  gradient.addColorStop(1, 'hsl(0, 80%, 40%)');
-  ctx.fillStyle = gradient;
   ctx.fill();
   ctx.restore();
   
-  // Cone border glow
+  // Range indicator (very faint arc)
   ctx.save();
-  ctx.globalAlpha = 0.25;
-  ctx.strokeStyle = 'hsl(25, 90%, 55%)';
-  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.04;
+  ctx.strokeStyle = 'hsl(40, 60%, 85%)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(cartFrontX, coneOriginY);
-  ctx.arc(cartFrontX, coneOriginY, radius, -halfAngle, halfAngle);
-  ctx.closePath();
+  ctx.arc(cartFrontX, cannonOriginY, range, -sweepHalf, sweepHalf);
   ctx.stroke();
   ctx.restore();
   
-  // Simple flame particles
-  flameParticleTimer += 0.016; // ~60fps assumed
-  if (flameParticleTimer > 0.08 && flameParticles.length < 8) {
-    flameParticleTimer = 0;
-    const angle = (Math.random() - 0.5) * GAME_CONFIG.FLAME_PASSIVE_CONE_ANGLE * (Math.PI / 180);
-    const dist = Math.random() * radius * 0.7 + 10;
-    flameParticles.push({
-      x: cartFrontX + Math.cos(angle) * dist,
-      y: coneOriginY + Math.sin(angle) * dist,
-      life: 1.0,
-      vx: Math.cos(angle) * 20,
-      vy: -15 - Math.random() * 20,
-      size: 3 + Math.random() * 4,
+  // Foam particles (cream/white blobs)
+  foamParticleTimer += 0.016;
+  if (foamParticleTimer > 0.12 && foamParticles.length < 6) {
+    foamParticleTimer = 0;
+    const dist = Math.random() * range * 0.6 + 15;
+    foamParticles.push({
+      x: cartFrontX + Math.cos(currentAngle) * dist,
+      y: cannonOriginY + Math.sin(currentAngle) * dist,
+      life: 0.8,
+      vx: Math.cos(currentAngle) * 15,
+      vy: -8 - Math.random() * 12,
+      size: 3 + Math.random() * 3,
     });
   }
   
-  // Update & draw particles
-  for (let i = flameParticles.length - 1; i >= 0; i--) {
-    const p = flameParticles[i];
-    p.life -= 0.03;
+  for (let i = foamParticles.length - 1; i >= 0; i--) {
+    const p = foamParticles[i];
+    p.life -= 0.025;
     p.x += p.vx * 0.016;
     p.y += p.vy * 0.016;
-    p.size *= 0.97;
-    if (p.life <= 0) { flameParticles.splice(i, 1); continue; }
+    p.size *= 0.98;
+    if (p.life <= 0) { foamParticles.splice(i, 1); continue; }
     
     ctx.save();
-    ctx.globalAlpha = p.life * 0.6;
-    const hue = 30 + (1 - p.life) * 20; // orange → red as fading
-    ctx.fillStyle = `hsl(${hue}, 90%, 55%)`;
+    ctx.globalAlpha = p.life * 0.5;
+    ctx.fillStyle = `hsl(40, ${30 + (1 - p.life) * 30}%, ${90 - (1 - p.life) * 10}%)`;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fill();
@@ -310,7 +299,7 @@ function drawFlameZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// BACKGROUND, GROUND, CART, BARISTA (preserved from old renderer)
+// BACKGROUND, GROUND, CART, BARISTA
 // ═══════════════════════════════════════════════════════════════════════
 function drawBackground(ctx: CanvasRenderingContext2D, isTraveling = false) {
   const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CONFIG.CANVAS_HEIGHT);
@@ -442,238 +431,190 @@ function drawBarista(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   ctx.closePath(); ctx.fill();
   ctx.fillStyle = COLORS.espresso;
   ctx.beginPath();
-  ctx.arc(baristaX - 5, baristaY - 2, 3, 0, Math.PI * 2);
-  ctx.arc(baristaX + 5, baristaY - 2, 3, 0, Math.PI * 2);
+  ctx.arc(baristaX - 5, baristaY - 2, 2, 0, Math.PI * 2);
+  ctx.arc(baristaX + 5, baristaY - 2, 2, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = COLORS.espresso; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(baristaX, baristaY + 2, 6, 0.2, Math.PI - 0.2); ctx.stroke();
+  ctx.strokeStyle = COLORS.warmOrange;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(baristaX, baristaY + 3, 4, 0, Math.PI);
+  ctx.stroke();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// ENEMY, PROJECTILE, PARTICLE, TIP (preserved with saw projectile VFX)
+// ENEMIES, PROJECTILES, PARTICLES, TIPS, BOSS
 // ═══════════════════════════════════════════════════════════════════════
 function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
-  const { x, y, width, height, isServed, hp, maxHp, state, kind } = enemy;
-  const isLatched = state === 'LATCHED';
-  const shakeIntensity = kind === 'BOSS' ? 4 : 2;
-  const shakeX = isLatched ? Math.sin(Date.now() / 50) * shakeIntensity : 0;
-  const shakeY = isLatched ? Math.cos(Date.now() / 70) * (shakeIntensity * 0.5) : 0;
-  const drawX = x + shakeX, drawY = y + shakeY;
-  const isHeavy = kind === 'HEAVY', isBoss = kind === 'BOSS';
+  if (!enemy.active || (enemy.state === 'SERVED' && enemy.servedTimer <= 0)) return;
   
-  if (isServed || state === 'SERVED') {
-    ctx.fillStyle = isBoss ? 'hsl(50, 90%, 55%)' : isHeavy ? 'hsl(40, 70%, 55%)' : COLORS.awake;
-    ctx.beginPath(); roundRect(ctx, drawX - width/2, drawY - height, width, height, isBoss ? 15 : 10); ctx.fill();
-    ctx.fillStyle = COLORS.espresso;
-    ctx.beginPath();
-    ctx.arc(drawX - (isBoss ? 12 : 8), drawY - height + 20, isBoss ? 6 : 4, 0, Math.PI * 2);
-    ctx.arc(drawX + (isBoss ? 12 : 8), drawY - height + 20, isBoss ? 6 : 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = COLORS.espresso; ctx.lineWidth = isBoss ? 4 : 3;
-    ctx.beginPath(); ctx.arc(drawX, drawY - height + 30, isBoss ? 15 : 10, 0.3, Math.PI - 0.3); ctx.stroke();
-    if (isBoss) { ctx.font = 'bold 20px sans-serif'; ctx.fillText('👑', drawX - 12, drawY - height - 5); }
-  } else if (isLatched) {
-    ctx.fillStyle = isBoss ? 'hsl(0, 70%, 30%)' : isHeavy ? 'hsl(0, 60%, 40%)' : 'hsl(0, 50%, 55%)';
-    ctx.beginPath(); roundRect(ctx, drawX - width/2, drawY - height, width, height, isBoss ? 15 : 10); ctx.fill();
-    if (isBoss) { ctx.fillStyle = 'hsl(0, 80%, 50%)'; ctx.font = 'bold 24px sans-serif'; ctx.fillText('👑', drawX - 14, drawY - height - 20); }
-    else if (isHeavy) { ctx.fillStyle = 'hsl(45, 90%, 55%)'; ctx.font = 'bold 14px sans-serif'; ctx.fillText('⚠️', drawX - 10, drawY - height - 18); }
-    ctx.fillStyle = isBoss ? 'hsl(0, 90%, 20%)' : isHeavy ? 'hsl(0, 80%, 20%)' : 'hsl(0, 70%, 30%)';
-    const eyeR = isBoss ? 8 : isHeavy ? 6 : 5;
-    ctx.beginPath();
-    ctx.arc(drawX - (isBoss ? 12 : 8), drawY - height + 20, eyeR, 0, Math.PI * 2);
-    ctx.arc(drawX + (isBoss ? 12 : 8), drawY - height + 20, eyeR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = ctx.fillStyle as string; ctx.lineWidth = isBoss ? 4 : isHeavy ? 3 : 2;
-    ctx.beginPath();
-    ctx.moveTo(drawX - (isBoss ? 20 : 14), drawY - height + 12); ctx.lineTo(drawX - 4, drawY - height + 16);
-    ctx.moveTo(drawX + (isBoss ? 20 : 14), drawY - height + 12); ctx.lineTo(drawX + 4, drawY - height + 16);
-    ctx.stroke();
-    ctx.beginPath(); ctx.arc(drawX, drawY - height + 38, isBoss ? 10 : 6, Math.PI + 0.5, -0.5); ctx.stroke();
-    ctx.fillStyle = isBoss ? 'hsl(0, 100%, 50%)' : isHeavy ? 'hsl(0, 90%, 45%)' : 'hsl(0, 80%, 50%)';
-    ctx.font = `bold ${isBoss ? 20 : 16}px sans-serif`;
-    ctx.fillText(isBoss ? '!!!' : isHeavy ? '!!' : '!', drawX - (isBoss ? 15 : isHeavy ? 8 : 4), drawY - height - 5);
-    if (!isBoss) {
-      const hpPercent = hp / maxHp;
-      if (hpPercent < 1) {
-        const barWidth = width - 10;
-        ctx.fillStyle = COLORS.hpBarBg;
-        ctx.fillRect(drawX - barWidth/2, drawY - height - 16, barWidth, isHeavy ? 6 : 4);
-        ctx.fillStyle = isHeavy ? 'hsl(25, 80%, 50%)' : 'hsl(0, 70%, 55%)';
-        ctx.fillRect(drawX - barWidth/2, drawY - height - 16, barWidth * hpPercent, isHeavy ? 6 : 4);
-      }
-    }
-  } else {
-    const isQueued = state === 'QUEUED';
-    ctx.fillStyle = isBoss ? (isQueued ? 'hsl(220, 25%, 35%)' : 'hsl(220, 20%, 40%)') 
-      : isHeavy ? (isQueued ? 'hsl(220, 20%, 45%)' : 'hsl(220, 15%, 50%)') 
-      : (isQueued ? 'hsl(220, 15%, 55%)' : COLORS.sleepy);
-    ctx.beginPath(); roundRect(ctx, drawX - width/2, drawY - height, width, height, isBoss ? 15 : 10); ctx.fill();
-    if (isBoss) { ctx.fillStyle = 'hsl(220, 40%, 60%)'; ctx.font = 'bold 24px sans-serif'; ctx.fillText('👑', drawX - 14, drawY - height - 8); }
-    else if (isHeavy) { ctx.fillStyle = 'hsl(220, 40%, 70%)'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('⚠️', drawX - 8, drawY - height - 5); }
-    ctx.strokeStyle = isBoss ? 'hsl(220, 20%, 20%)' : isHeavy ? 'hsl(220, 15%, 30%)' : 'hsl(220, 10%, 40%)';
-    ctx.lineWidth = isBoss ? 4 : isHeavy ? 3 : 2;
-    ctx.beginPath();
-    ctx.moveTo(drawX - (isBoss ? 16 : 12), drawY - height + 20); ctx.lineTo(drawX - 4, drawY - height + 20);
-    ctx.moveTo(drawX + 4, drawY - height + 20); ctx.lineTo(drawX + (isBoss ? 16 : 12), drawY - height + 20);
-    ctx.stroke();
-    ctx.beginPath(); ctx.arc(drawX, drawY - height + 38, isBoss ? 12 : 8, Math.PI + 0.3, -0.3); ctx.stroke();
-    if (!isQueued && !isHeavy && !isBoss) {
-      ctx.fillStyle = 'hsl(220, 30%, 70%)'; ctx.font = 'bold 14px sans-serif';
-      ctx.fillText('💤', drawX - 8, drawY - height - 5);
-    }
-    if (!isBoss) {
-      const hpPercent = hp / maxHp;
-      if (hpPercent < 1) {
-        const barWidth = width - 10;
-        ctx.fillStyle = COLORS.hpBarBg;
-        ctx.fillRect(drawX - barWidth/2, drawY - height - 12, barWidth, isHeavy ? 6 : 4);
-        ctx.fillStyle = isHeavy ? 'hsl(25, 70%, 50%)' : COLORS.hpBar;
-        ctx.fillRect(drawX - barWidth/2, drawY - height - 12, barWidth * hpPercent, isHeavy ? 6 : 4);
-      }
-    }
+  const x = enemy.x;
+  const y = enemy.y;
+  const w = enemy.width;
+  const h = enemy.height;
+  
+  if (enemy.state === 'SERVED') {
+    ctx.globalAlpha = enemy.servedTimer / GAME_CONFIG.SERVED_EXIT_DURATION;
   }
+  
+  const isHeavy = enemy.kind === 'HEAVY';
+  const isBoss = enemy.kind === 'BOSS';
+  
+  ctx.fillStyle = isBoss ? 'hsl(0, 60%, 35%)' : isHeavy ? 'hsl(280, 40%, 40%)' :
+    enemy.state === 'LATCHED' ? COLORS.awake : COLORS.sleepy;
+  ctx.beginPath();
+  roundRect(ctx, x - w / 2, y - h, w, h, 8);
+  ctx.fill();
+  
+  if (isBoss) {
+    ctx.fillStyle = 'hsl(45, 90%, 55%)';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('👑', x, y - h - 5);
+  }
+  
+  if (isHeavy) {
+    ctx.strokeStyle = 'hsla(280, 60%, 60%, 0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    roundRect(ctx, x - w / 2 - 2, y - h - 2, w + 4, h + 4, 10);
+    ctx.stroke();
+  }
+  
+  const hpPercent = enemy.hp / enemy.maxHp;
+  const barWidth = w - 4;
+  const barHeight = 4;
+  const barX = x - barWidth / 2;
+  const barY = y - h - 6;
+  ctx.fillStyle = COLORS.hpBarBg;
+  roundRect(ctx, barX, barY, barWidth, barHeight, 2);
+  ctx.fill();
+  ctx.fillStyle = hpPercent > 0.5 ? COLORS.energyBar : COLORS.hpBar;
+  roundRect(ctx, barX, barY, barWidth * hpPercent, barHeight, 2);
+  ctx.fill();
+  
+  ctx.fillStyle = COLORS.espresso;
+  const eyeY = y - h * 0.6;
+  ctx.beginPath();
+  ctx.arc(x - 6, eyeY, 3, 0, Math.PI * 2);
+  ctx.arc(x + 6, eyeY, 3, 0, Math.PI * 2);
+  ctx.fill();
+  
+  if (enemy.state === 'LATCHED') {
+    ctx.fillStyle = COLORS.warmOrange;
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', x, y - h * 0.3);
+  }
+  
+  ctx.globalAlpha = 1;
 }
 
 function drawProjectile(ctx: CanvasRenderingContext2D, proj: Projectile) {
-  const { x, y, radius, isStar } = proj;
+  if (!proj.active) return;
   
-  if (isStar) {
-    // Saw blade visual
+  if (proj.isStar) {
+    // Star projectile: blue spinning star
     ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(Date.now() / 100); // spinning
-    ctx.fillStyle = 'hsl(200, 50%, 60%)';
+    ctx.translate(proj.x, proj.y);
+    ctx.rotate(starRotation * 2);
+    const r = proj.radius;
+    ctx.fillStyle = 'hsl(200, 70%, 60%)';
     ctx.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      const r = i % 2 === 0 ? radius * 1.2 : radius * 0.6;
-      if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
-      else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    for (let i = 0; i < 10; i++) {
+      const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+      const radius = i % 2 === 0 ? r : r * 0.4;
+      if (i === 0) ctx.moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+      else ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
     }
     ctx.closePath();
     ctx.fill();
     ctx.restore();
+  } else if (proj.isFoam) {
+    // Foam projectile: white/cream blob
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = 'hsl(40, 50%, 92%)';
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, proj.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'hsl(45, 40%, 96%)';
+    ctx.beginPath();
+    ctx.arc(proj.x - 1, proj.y - 1, proj.radius * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   } else {
-    // Coffee pellet projectile (scales with radius)
-    ctx.fillStyle = COLORS.mediumRoast;
-    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
-    // Highlight dot
-    ctx.fillStyle = COLORS.foam;
-    ctx.beginPath(); ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2); ctx.fill();
+    // Normal coffee projectile
+    ctx.fillStyle = COLORS.espresso;
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, proj.radius + 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = COLORS.cream;
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, proj.radius + 1, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
 function drawParticle(ctx: CanvasRenderingContext2D, particle: Particle) {
+  if (!particle.active || particle.life <= 0) return;
   const alpha = particle.life / particle.maxLife;
-  ctx.save();
   ctx.globalAlpha = alpha;
-  switch (particle.type) {
-    case 'sparkle':
-      ctx.fillStyle = COLORS.sparkle;
-      drawStar(ctx, particle.x, particle.y, 4, particle.size, particle.size * 0.5);
-      break;
-    case 'heart':
-      ctx.fillStyle = COLORS.heart;
-      ctx.font = `${particle.size * 2}px sans-serif`;
-      ctx.fillText('❤️', particle.x - particle.size, particle.y);
-      break;
-    case 'steam':
-      ctx.fillStyle = COLORS.steam;
-      ctx.beginPath(); ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2); ctx.fill();
-      break;
-    case 'confetti':
-      ctx.fillStyle = particle.color;
-      ctx.fillRect(particle.x, particle.y, particle.size, particle.size * 1.5);
-      break;
-    case 'crumble':
-      ctx.fillStyle = particle.color;
-      ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
-      break;
+  
+  if (particle.type === 'heart') {
+    ctx.fillStyle = particle.color || COLORS.heart;
+    ctx.font = `${particle.size}px sans-serif`;
+    ctx.fillText('💚', particle.x, particle.y);
+  } else if (particle.type === 'steam') {
+    ctx.fillStyle = COLORS.steam;
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (particle.type === 'confetti') {
+    ctx.fillStyle = particle.color || COLORS.sparkle;
+    ctx.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size * 0.6);
+  } else if (particle.type === 'crumble') {
+    ctx.fillStyle = particle.color || COLORS.gateCrumble;
+    ctx.beginPath();
+    roundRect(ctx, particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size, 2);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = particle.color || COLORS.sparkle;
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+    ctx.fill();
   }
-  ctx.restore();
+  ctx.globalAlpha = 1;
 }
 
 function drawTip(ctx: CanvasRenderingContext2D, tip: TipDrop) {
-  ctx.save();
+  if (!tip.active) return;
   ctx.globalAlpha = tip.opacity;
   ctx.fillStyle = COLORS.gold;
-  ctx.beginPath(); ctx.arc(tip.x, tip.y, 10, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = 'hsla(50, 100%, 80%, 0.6)';
-  ctx.beginPath(); ctx.arc(tip.x - 3, tip.y - 3, 4, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = COLORS.espresso;
-  ctx.font = 'bold 10px sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(`+${tip.value}`, tip.x, tip.y);
-  ctx.restore();
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`🪙${tip.value}`, tip.x, tip.y);
+  ctx.globalAlpha = 1;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// BOSS UI
-// ═══════════════════════════════════════════════════════════════════════
 function drawBossIncomingBanner(ctx: CanvasRenderingContext2D) {
-  const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
-  ctx.save();
-  ctx.fillStyle = 'hsla(0, 0%, 0%, 0.4)';
-  ctx.fillRect(0, CANVAS_HEIGHT / 2 - 60, CANVAS_WIDTH, 120);
-  ctx.fillStyle = 'hsla(0, 70%, 40%, 0.9)';
-  ctx.fillRect(0, CANVAS_HEIGHT / 2 - 40, CANVAS_WIDTH, 80);
-  ctx.fillStyle = 'hsl(45, 100%, 60%)';
-  ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('☕ BOSS INCOMING! ☕', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-  ctx.fillStyle = 'hsl(0, 0%, 95%)'; ctx.font = 'bold 14px sans-serif';
-  ctx.fillText('Prepare your Tonic Bombs!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 25);
-  ctx.restore();
+  ctx.fillStyle = 'hsla(0, 60%, 40%, 0.3)';
+  ctx.fillRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
 }
 
 function drawBossEdgeGlow(ctx: CanvasRenderingContext2D) {
-  const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
-  const pulse = Math.sin(Date.now() / 200) * 0.1 + 0.2;
-  const gradient = ctx.createRadialGradient(
-    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.3,
-    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_HEIGHT * 0.7);
-  gradient.addColorStop(0, 'transparent');
-  gradient.addColorStop(1, `hsla(0, 80%, 45%, ${pulse})`);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.strokeStyle = 'hsla(0, 70%, 50%, 0.3)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, GAME_CONFIG.CANVAS_WIDTH - 4, GAME_CONFIG.CANVAS_HEIGHT - 4);
 }
 
 function drawBossHpBar(ctx: CanvasRenderingContext2D, bossState: BossState) {
-  const { CANVAS_WIDTH } = GAME_CONFIG;
-  ctx.save();
-  const barWidth = CANVAS_WIDTH - 40, barHeight = 16, barX = 20, barY = 55;
-  ctx.fillStyle = 'hsla(0, 0%, 0%, 0.7)';
-  roundRect(ctx, barX - 2, barY - 2, barWidth + 4, barHeight + 4, 6); ctx.fill();
-  ctx.fillStyle = 'hsl(0, 30%, 25%)';
-  roundRect(ctx, barX, barY, barWidth, barHeight, 4); ctx.fill();
-  const hpPercent = Math.max(0, bossState.hp / bossState.maxHp);
-  ctx.fillStyle = hpPercent > 0.5 ? 'hsl(0, 70%, 50%)' : hpPercent > 0.25 ? 'hsl(30, 80%, 50%)' : 'hsl(45, 90%, 55%)';
-  roundRect(ctx, barX, barY, barWidth * hpPercent, barHeight, 4); ctx.fill();
-  ctx.fillStyle = 'hsl(45, 100%, 60%)'; ctx.font = 'bold 14px sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-  ctx.fillText('👑 BOSS 👑', CANVAS_WIDTH / 2, barY - 4);
-  ctx.fillStyle = 'hsl(0, 0%, 100%)'; ctx.font = 'bold 11px sans-serif';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(`${bossState.hp} / ${bossState.maxHp}`, CANVAS_WIDTH / 2, barY + barHeight / 2);
-  ctx.restore();
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════════════
-function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number) {
-  let rot = Math.PI / 2 * 3;
-  const step = Math.PI / spikes;
-  ctx.beginPath(); ctx.moveTo(cx, cy - outerRadius);
-  for (let i = 0; i < spikes; i++) {
-    ctx.lineTo(cx + Math.cos(rot) * outerRadius, cy + Math.sin(rot) * outerRadius); rot += step;
-    ctx.lineTo(cx + Math.cos(rot) * innerRadius, cy + Math.sin(rot) * innerRadius); rot += step;
-  }
-  ctx.lineTo(cx, cy - outerRadius); ctx.closePath(); ctx.fill();
+  // Boss HP bar is drawn in HUD overlay
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
-  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
   ctx.quadraticCurveTo(x + w, y, x + w, y + r);
   ctx.lineTo(x + w, y + h - r);
   ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);

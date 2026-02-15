@@ -1,12 +1,12 @@
 // Persistence helper for Coffee Rush progression data
-// TDS-Inspired Reboot: Phase 1 v1.1 — Schema v14 (Saw→Star rename + Flame)
+// TDS-Inspired Reboot: Phase 1 v1.1 — Schema v15 (Flame→Foam rename + per-box weapon lock)
 
-import type { GameMode, WeaponType, WeaponSlot, PurchaseEvent } from './types';
+import type { GameMode, WeaponType, WeaponSlot, PurchaseEvent, BoxWeapon } from './types';
 import { GAME_CONFIG } from './config';
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
 // PURCHASE LOG (separate localStorage key)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
 const PURCHASE_LOG_KEY = 'coffee-rush-purchase-log';
 
 export const logPurchase = (event: PurchaseEvent): void => {
@@ -38,11 +38,11 @@ export const clearPurchaseLog = (): void => {
 };
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 14; // v14: Saw→Star rename + Flame weapon
+const SAVE_VERSION = 15; // v15: Flame→Foam rename + per-box weapon lock
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// PROGRESSION DATA SCHEMA (v14)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// PROGRESSION DATA SCHEMA (v15)
+// ═══════════════════════════════════════════════════════════════════════════
 export interface ProgressionData {
   version: number;
   totalCoins: number;
@@ -65,7 +65,9 @@ export interface ProgressionData {
   starPerBox: boolean[];
   starPips: number;
   starEvoChoices: string[];
-  flamePerBox: boolean[];
+  // Per-box weapon assignment (replaces flamePerBox/starPerBox for weapon lock)
+  boxWeapons: BoxWeapon[];        // e.g. [null, 'star', 'foam'] — one weapon per box
+  foamPerBox: boolean[];           // legacy compat: which boxes have foam
   lastGameMode: GameMode;
   energy: number;
   regenAnchorTs: number | null;
@@ -75,7 +77,6 @@ export interface ProgressionData {
     backpackGold: number;
     heroCards: string[];
   };
-  // Deprecated fields needed for backward compat if any old code references them
   upgradeLevels: {
     blockCountLevel: number;
     espressoDamageLevel: number;
@@ -106,7 +107,8 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   starPerBox: [false, false, false],
   starPips: 0,
   starEvoChoices: [],
-  flamePerBox: [false, false, false],
+  boxWeapons: [null, null, null],
+  foamPerBox: [false, false, false],
   lastGameMode: 'CHAPTER',
   energy: GAME_CONFIG.ENERGY_MAX,
   regenAnchorTs: null,
@@ -122,7 +124,7 @@ export const loadProgression = (): ProgressionData => {
     if (!stored) return { ...DEFAULT_PROGRESSION };
     const parsed = JSON.parse(stored);
     if (!parsed.version || parsed.version !== SAVE_VERSION) {
-      console.info(`Save version mismatch (${parsed.version} !== ${SAVE_VERSION}), resetting progression for TDS reboot`);
+      console.info(`Save version mismatch (${parsed.version} !== ${SAVE_VERSION}), resetting progression`);
       saveProgression({ ...DEFAULT_PROGRESSION });
       return { ...DEFAULT_PROGRESSION };
     }
@@ -139,13 +141,12 @@ export const loadProgression = (): ProgressionData => {
 
 export const saveProgression = (data: ProgressionData): void => {
   try {
-    // Sync legacy fields for safety
     data.upgradeLevels = {
       blockCountLevel: data.blockCountLevel,
       espressoDamageLevel: data.damagePips,
       energyRegenLevel: data.powerPips,
     };
-    data.cargoBoxHpLevels = data.blockPips; // approx mapping
+    data.cargoBoxHpLevels = data.blockPips;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     console.warn('Failed to save progression');
@@ -375,11 +376,14 @@ export const purchaseStarForBox = (boxIndex: number, cost: number): boolean => {
   if (!current.starPerBox) current.starPerBox = [false, false, false];
   if (boxIndex < 0 || boxIndex >= current.starPerBox.length) return false;
   if (current.starPerBox[boxIndex]) return false;
+  // Per-box weapon lock: check if box already has a weapon
+  if (!current.boxWeapons) current.boxWeapons = [null, null, null];
+  if (current.boxWeapons[boxIndex] !== null) return false; // box already has a weapon
   if (current.totalCoins < cost) return false;
   const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
   current.starPerBox[boxIndex] = true;
-  // Also set legacy starUnlocked for backward compat
+  current.boxWeapons[boxIndex] = 'star';
   current.starUnlocked = current.starPerBox.some(v => v);
   saveProgression(current);
   logPurchase({ ts: Date.now(), type: 'star_unlock', target: `star_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
@@ -400,18 +404,22 @@ export const purchaseStarPip = (cost: number): boolean => {
   return true;
 };
 
-export const purchaseFlameForBox = (boxIndex: number, cost: number): boolean => {
+export const purchaseFoamForBox = (boxIndex: number, cost: number): boolean => {
   const current = loadProgression();
   if (current.bestStageReached < 3) return false; // Stage 2 Gate must be destroyed
-  if (!current.flamePerBox) current.flamePerBox = [false, false, false];
-  if (boxIndex < 0 || boxIndex >= current.flamePerBox.length) return false;
-  if (current.flamePerBox[boxIndex]) return false;
+  if (!current.foamPerBox) current.foamPerBox = [false, false, false];
+  if (!current.boxWeapons) current.boxWeapons = [null, null, null];
+  if (boxIndex < 0 || boxIndex >= current.foamPerBox.length) return false;
+  if (current.foamPerBox[boxIndex]) return false;
+  // Per-box weapon lock: check if box already has a weapon
+  if (current.boxWeapons[boxIndex] !== null) return false;
   if (current.totalCoins < cost) return false;
   const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
-  current.flamePerBox[boxIndex] = true;
+  current.foamPerBox[boxIndex] = true;
+  current.boxWeapons[boxIndex] = 'foam';
   saveProgression(current);
-  logPurchase({ ts: Date.now(), type: 'flame_unlock', target: `flame_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
+  logPurchase({ ts: Date.now(), type: 'foam_unlock', target: `foam_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 
