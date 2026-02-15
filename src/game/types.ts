@@ -28,11 +28,11 @@ export interface GateBuilding {
 // ═══════════════════════════════════════════════════════════════════════════════
 // WEAPON SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
-export type WeaponType = 'star' | 'foam' | 'minigun' | null;
-export type WeaponAbilityType = 'star_throw' | 'foam_burst' | 'bullet_storm';
+export type WeaponType = 'star' | 'brew' | 'minigun' | null;
+export type WeaponAbilityType = 'star_throw' | 'brew_burst' | 'bullet_storm';
 
 // Per-box weapon assignment: each box can hold at most one weapon
-export type BoxWeapon = 'star' | 'foam' | null;
+export type BoxWeapon = 'star' | 'brew' | null;
 
 export interface WeaponSlot {
   weaponType: WeaponType;
@@ -126,7 +126,7 @@ export interface Projectile {
   radius: number;
   pierce: boolean;
   isStar: boolean;
-  isFoam?: boolean;         // Visual: render as foam blob
+  isBrew?: boolean;         // Visual: render as brew blob
 }
 
 export interface TipDrop {
@@ -172,7 +172,7 @@ export interface GameStats {
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface PurchaseEvent {
   ts: number;
-  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'star_unlock' | 'star_pip' | 'foam_unlock';
+  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'star_unlock' | 'star_pip' | 'brew_unlock';
   target: string;
   before: string;
   after: string;
@@ -241,14 +241,14 @@ export interface RunTelemetry {
   starThrowDamageToGate: number;
   starThrowUses: number;
   
-  // Foam (Brew) telemetry
-  foamPassiveDamageDealt: number;
-  foamPassiveShotsToGate: number;
-  foamBurstDamageToEnemies: number;
-  foamBurstDamageToGate: number;
-  foamBurstUses: number;
-  foamUnlockedAt: number;
-  foamBurstTimestamps: number[];
+  // Brew telemetry
+  brewPassiveDamageDealt: number;
+  brewPassiveShotsToGate: number;
+  brewBurstDamageToEnemies: number;
+  brewBurstDamageToGate: number;
+  brewBurstUses: number;
+  brewUnlockedAt: number;
+  brewBurstTimestamps: number[];
   brewEquippedBoxIndex: number;
   brewBurstUsedDuringGate: number;
   

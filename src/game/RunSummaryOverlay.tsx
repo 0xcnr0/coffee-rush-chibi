@@ -16,7 +16,6 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
   const [continueEnabled, setContinueEnabled] = React.useState(false);
   const t = stats.telemetry;
 
-  // Safety delay: disable Continue for 1200ms after mount
   React.useEffect(() => {
     const timer = setTimeout(() => setContinueEnabled(true), 1200);
     return () => clearTimeout(timer);
@@ -99,10 +98,10 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     const bgd = t?.bombGateDamageByGate ?? [0, 0, 0, 0, 0];
     lines.push(`  G1: ${bgd[0]} | G2: ${bgd[1]} | G3: ${bgd[2]} | G4: ${bgd[3]} | G5: ${bgd[4]}`);
     lines.push(`Star Throw: ${t?.starThrowUses ?? 0} uses | Dmg to Enemies: ${t?.starThrowDamageToEnemies ?? 0} | Dmg to Gate: ${t?.starThrowDamageToGate ?? 0} | Passive: ${t?.starPassiveDamageDealt ?? 0}`);
-    lines.push(`Brew Burst: ${t?.foamBurstUses ?? 0} uses | Dmg to Enemies: ${t?.foamBurstDamageToEnemies ?? 0} | Dmg to Gate: ${t?.foamBurstDamageToGate ?? 0} | Passive: ${t?.foamPassiveDamageDealt ?? 0}`);
+    lines.push(`Brew Burst: ${t?.brewBurstUses ?? 0} uses | Dmg to Enemies: ${t?.brewBurstDamageToEnemies ?? 0} | Dmg to Gate: ${t?.brewBurstDamageToGate ?? 0} | Passive: ${t?.brewPassiveDamageDealt ?? 0}`);
     lines.push(`  Brew Box Index: ${t?.brewEquippedBoxIndex ?? -1} | Burst During Gate: ${t?.brewBurstUsedDuringGate ?? 0}`);
-    if ((t?.foamUnlockedAt ?? -1) >= 0) lines.push(`  Brew unlocked at: ${fmt(t?.foamUnlockedAt ?? 0)}s`);
-    if (t?.foamBurstTimestamps && t.foamBurstTimestamps.length > 0) lines.push(`  Brew Burst timestamps: ${t.foamBurstTimestamps.map(ts => fmt(ts, 1)).join(', ')}`);
+    if ((t?.brewUnlockedAt ?? -1) >= 0) lines.push(`  Brew unlocked at: ${fmt(t?.brewUnlockedAt ?? 0)}s`);
+    if (t?.brewBurstTimestamps && t.brewBurstTimestamps.length > 0) lines.push(`  Brew Burst timestamps: ${t.brewBurstTimestamps.map(ts => fmt(ts, 1)).join(', ')}`);
     lines.push('');
 
     // 6. PRESSURE / SURVIVAL
@@ -111,10 +110,10 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(hr);
     lines.push(`Max Latched: ${t?.maxLatchedPeak ?? 0} peak | Time at max: ${fmt(t?.timeAtMaxLatched ?? 0)}s`);
     lines.push(`Blocks Lost: ${t?.blocksLost ?? 0} | First block lost: ${t?.timeToFirstBlockLost === -1 ? 'N/A' : fmt(t?.timeToFirstBlockLost ?? 0) + 's'}`);
-    lines.push(`Bomb Uses: ${t?.tonicBombUses ?? 0} | Star Throws: ${t?.starThrowUses ?? 0} | Brew Bursts: ${t?.foamBurstUses ?? 0}`);
+    lines.push(`Bomb Uses: ${t?.tonicBombUses ?? 0} | Star Throws: ${t?.starThrowUses ?? 0} | Brew Bursts: ${t?.brewBurstUses ?? 0}`);
     lines.push('');
 
-    // 5. ECONOMY TRACE
+    // 7. ECONOMY TRACE
     lines.push(hr);
     lines.push('7. ECONOMY TRACE');
     lines.push(hr);
@@ -133,7 +132,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(`Run earned = ${t?.coinsFromKills ?? 0} + ${t?.coinsFromGateLumps ?? 0} + ${t?.clearBonusCoins ?? 0} = ${runEarned}`);
     lines.push('');
 
-    // 6. GARAGE / UPGRADE TRACE
+    // 8. GARAGE / UPGRADE TRACE
     lines.push(hr);
     lines.push('8. GARAGE / UPGRADE TRACE');
     lines.push(hr);
@@ -151,7 +150,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     }
     lines.push('');
 
-    // 7. CONFIG SNAPSHOT
+    // 9. CONFIG SNAPSHOT
     lines.push(hr);
     lines.push('9. CONFIG SNAPSHOT');
     lines.push(hr);
@@ -211,7 +210,6 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
       flexDirection: 'column',
       zIndex: 100,
     }}>
-      {/* Header */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -240,7 +238,6 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
         </button>
       </div>
 
-      {/* Scrollable content */}
       <div style={{
         flex: 1,
         overflow: 'auto',
@@ -264,7 +261,6 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
         </pre>
       </div>
 
-      {/* Continue button */}
       <div style={{
         padding: '8px 12px',
         borderTop: '1px solid rgba(255,255,255,0.15)',
