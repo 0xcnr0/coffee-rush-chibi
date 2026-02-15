@@ -1,5 +1,5 @@
 // Persistence helper for Coffee Rush progression data
-// TDS-Inspired Reboot: Phase 1 v1.1 — Schema v15 (Flame→Foam rename + per-box weapon lock)
+// TDS-Inspired Reboot: Phase 1 v1.1 — Schema v16 (Foam→Brew global rename)
 
 import type { GameMode, WeaponType, WeaponSlot, PurchaseEvent, BoxWeapon } from './types';
 import { GAME_CONFIG } from './config';
@@ -38,10 +38,10 @@ export const clearPurchaseLog = (): void => {
 };
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 15; // v15: Flame→Foam rename + per-box weapon lock
+const SAVE_VERSION = 16; // v16: Foam→Brew global rename
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PROGRESSION DATA SCHEMA (v15)
+// PROGRESSION DATA SCHEMA (v16)
 // ═══════════════════════════════════════════════════════════════════════════
 export interface ProgressionData {
   version: number;
@@ -65,9 +65,9 @@ export interface ProgressionData {
   starPerBox: boolean[];
   starPips: number;
   starEvoChoices: string[];
-  // Per-box weapon assignment (replaces flamePerBox/starPerBox for weapon lock)
-  boxWeapons: BoxWeapon[];        // e.g. [null, 'star', 'foam'] — one weapon per box
-  foamPerBox: boolean[];           // legacy compat: which boxes have foam
+  // Per-box weapon assignment
+  boxWeapons: BoxWeapon[];        // e.g. [null, 'star', 'brew'] — one weapon per box
+  brewPerBox: boolean[];           // which boxes have brew
   lastGameMode: GameMode;
   energy: number;
   regenAnchorTs: number | null;
@@ -108,7 +108,7 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   starPips: 0,
   starEvoChoices: [],
   boxWeapons: [null, null, null],
-  foamPerBox: [false, false, false],
+  brewPerBox: [false, false, false],
   lastGameMode: 'CHAPTER',
   energy: GAME_CONFIG.ENERGY_MAX,
   regenAnchorTs: null,
@@ -404,22 +404,22 @@ export const purchaseStarPip = (cost: number): boolean => {
   return true;
 };
 
-export const purchaseFoamForBox = (boxIndex: number, cost: number): boolean => {
+export const purchaseBrewForBox = (boxIndex: number, cost: number): boolean => {
   const current = loadProgression();
   if (current.bestStageReached < 3) return false; // Stage 2 Gate must be destroyed
-  if (!current.foamPerBox) current.foamPerBox = [false, false, false];
+  if (!current.brewPerBox) current.brewPerBox = [false, false, false];
   if (!current.boxWeapons) current.boxWeapons = [null, null, null];
-  if (boxIndex < 0 || boxIndex >= current.foamPerBox.length) return false;
-  if (current.foamPerBox[boxIndex]) return false;
+  if (boxIndex < 0 || boxIndex >= current.brewPerBox.length) return false;
+  if (current.brewPerBox[boxIndex]) return false;
   // Per-box weapon lock: check if box already has a weapon
   if (current.boxWeapons[boxIndex] !== null) return false;
   if (current.totalCoins < cost) return false;
   const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
-  current.foamPerBox[boxIndex] = true;
-  current.boxWeapons[boxIndex] = 'foam';
+  current.brewPerBox[boxIndex] = true;
+  current.boxWeapons[boxIndex] = 'brew';
   saveProgression(current);
-  logPurchase({ ts: Date.now(), type: 'foam_unlock', target: `foam_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
+  logPurchase({ ts: Date.now(), type: 'brew_unlock', target: `brew_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 

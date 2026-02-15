@@ -14,9 +14,9 @@ interface GameHUDProps {
   onStarThrow: () => void;
   canUseStar: boolean;
   hasStar: boolean;
-  onFoamBurst: () => void;
-  canUseFoam: boolean;
-  hasFoam: boolean;
+  onBrewBurst: () => void;
+  canUseBrew: boolean;
+  hasBrew: boolean;
   onPause: () => void;
   gameMode: GameMode;
   bossState: BossState;
@@ -29,7 +29,7 @@ interface GameHUDProps {
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived, tips, power,
   onTonicBomb, canUseBomb, onStarThrow, canUseStar, hasStar, 
-  onFoamBurst, canUseFoam, hasFoam,
+  onBrewBurst, canUseBrew, hasBrew,
   onPause,
   gameMode, bossState, bossIncomingTimer,
   playPhase, stageIndex = 1, gateBuilding,
@@ -56,7 +56,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   const skillCost = GAME_CONFIG.TONIC_BOMB_COST;
   const canUseSkill = power >= skillCost;
   const starCost = GAME_CONFIG.STAR_THROW_COST;
-  const foamCost = GAME_CONFIG.FOAM_BURST_COST;
+  const brewCost = GAME_CONFIG.BREW_BURST_COST;
   
   return (
     <>
@@ -202,16 +202,16 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </Button>
           )}
           
-          {/* Foam Burst Button */}
-          {hasFoam && (
-            <Button onClick={onFoamBurst} disabled={!canUseFoam}
+          {/* Brew Burst Button */}
+          {hasBrew && (
+            <Button onClick={onBrewBurst} disabled={!canUseBrew}
               className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
-                canUseFoam ? 'bg-amber-100 hover:bg-amber-50 text-coffee-espresso border-amber-300/50 hover:scale-105 active:scale-95' 
+                canUseBrew ? 'bg-amber-100 hover:bg-amber-50 text-coffee-espresso border-amber-300/50 hover:scale-105 active:scale-95' 
                 : 'bg-coffee-dark/60 text-coffee-cream/40 border-coffee-dark/30'}`}>
               <span className="text-2xl">🫧</span>
               <div className={`absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                canUseFoam ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
-                {foamCost}⚡
+                canUseBrew ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
+                {brewCost}⚡
               </div>
             </Button>
           )}

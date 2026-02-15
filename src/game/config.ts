@@ -27,7 +27,7 @@ export interface StageConfig {
 export const STAGES: readonly StageConfig[] = [
   { id: 1, gateHP: 300,   spawnInterval: 900,  enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 1,   gateLumpSum: 40,   heavyEvery: 0 },
   { id: 2, gateHP: 350,   spawnInterval: 800,  enemyHpMult: 1.15, enemySpeedMult: 1.05, enemyDropCoins: 2,   gateLumpSum: 80,   heavyEvery: 0 },
-  { id: 3, gateHP: 2000,  spawnInterval: 420,  enemyHpMult: 2.2,  enemySpeedMult: 1.25, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 3 },
+  { id: 3, gateHP: 2000,  spawnInterval: 700,  enemyHpMult: 2.2,  enemySpeedMult: 1.25, enemyDropCoins: 5,   gateLumpSum: 180,  heavyEvery: 3 },
   { id: 4, gateHP: 3500,  spawnInterval: 600,  enemyHpMult: 2.2,  enemySpeedMult: 1.15, enemyDropCoins: 10,  gateLumpSum: 400,  heavyEvery: 6 },
   { id: 5, gateHP: 5000,  spawnInterval: 500,  enemyHpMult: 2.8,  enemySpeedMult: 1.20, enemyDropCoins: 20,  gateLumpSum: 800,  heavyEvery: 5 },
   { id: 6, isBoss: true,  spawnInterval: 0,    enemyHpMult: 1.0,  enemySpeedMult: 1.0,  enemyDropCoins: 50,  gateLumpSum: 0,    heavyEvery: 0, bossHP: 10000, bossDropCoins: 50, clearBonus: 1500 },
@@ -217,27 +217,27 @@ export const GAME_CONFIG = {
   STAR_PER_BOX_COST: 140,
   
   // ─────────────────────────────────────────────────────────────
-  // BREW WEAPON (Foam) — kahve köpüğü topu
+  // BREW WEAPON — kahve köpüğü topu
   // ─────────────────────────────────────────────────────────────
-  // Passive Foam Cannon (sinusoidal sweeping, fires foam projectiles)
-  FOAM_PASSIVE_RANGE: 140,             // px max range (shorter than main shotgun)
-  FOAM_PASSIVE_FIRE_INTERVAL: 0.65,    // seconds between foam shots
-  FOAM_PASSIVE_DAMAGE: 6,              // damage per foam projectile
-  FOAM_PASSIVE_SPEED: 300,             // foam projectile speed (px/s)
-  FOAM_PASSIVE_GATE_CHANCE: 0.18,      // 18% chance to target gate instead of enemy
-  FOAM_SWEEP_SPEED: 2.5,              // sinusoidal sweep speed (radians/s)
-  FOAM_SWEEP_ANGLE: 35,               // degrees, total sweep arc
-  FOAM_PROJECTILE_RADIUS: 4,          // foam blob radius
-  FOAM_PROJECTILE_LIFETIME: 0.5,      // seconds before despawn
+  // Passive Brew Cannon (sinusoidal sweeping, fires brew projectiles)
+  BREW_PASSIVE_RANGE: 140,             // px max range (shorter than main shotgun)
+  BREW_PASSIVE_FIRE_INTERVAL: 0.65,    // seconds between brew shots
+  BREW_PASSIVE_DAMAGE: 6,              // damage per brew projectile
+  BREW_PASSIVE_SPEED: 300,             // brew projectile speed (px/s)
+  BREW_PASSIVE_GATE_CHANCE: 0.18,      // 18% chance to target gate instead of enemy
+  BREW_SWEEP_SPEED: 2.5,              // sinusoidal sweep speed (radians/s)
+  BREW_SWEEP_ANGLE: 35,               // degrees, total sweep arc
+  BREW_PROJECTILE_RADIUS: 4,          // brew blob radius
+  BREW_PROJECTILE_LIFETIME: 0.5,      // seconds before despawn
   
-  // Active Foam Burst (power skill — canvas-wide foam wave)
-  FOAM_BURST_COST: 7,                 // Power cost
-  FOAM_BURST_DAMAGE: 80,              // damage to each enemy hit (buffed: premium 7-Power ability)
-  FOAM_BURST_GATE_DAMAGE: 50,         // flat damage to gate (buffed: meaningful vs gate)
-  FOAM_BURST_DURATION: 2.5,           // seconds of foam wave (extended for premium feel)
+  // Active Brew Burst (power skill — canvas-wide brew wave)
+  BREW_BURST_COST: 7,                 // Power cost
+  BREW_BURST_DAMAGE: 80,              // damage to each enemy hit (buffed: premium 7-Power ability)
+  BREW_BURST_GATE_DAMAGE: 50,         // flat damage to gate (buffed: meaningful vs gate)
+  BREW_BURST_DURATION: 2.5,           // seconds of brew wave (extended for premium feel)
 
-  // Foam per-box (Garage purchase)
-  FOAM_PER_BOX_COST: 200,
+  // Brew per-box (Garage purchase)
+  BREW_PER_BOX_COST: 350,
   
   // ─────────────────────────────────────────────────────────────
   // MINIGUN (ability-only, Phase 1)

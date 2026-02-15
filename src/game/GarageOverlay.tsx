@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseFoamForBox } from './persistence';
+import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseBrewForBox } from './persistence';
 import { GAME_CONFIG } from './config';
 import { CoinIcon } from './CoinIcon';
 import { toast } from 'sonner';
@@ -24,9 +24,6 @@ const FOOTER_TABS: { id: FooterTabId; label: string; icon: typeof Swords; unlock
   { id: 'tower', label: 'Tower', icon: Castle, unlocked: false },
 ];
 
-// ═══════════════════════════════════════════════════════════════════════
-// PIP UPGRADE TILE (horizontal)
-// ═══════════════════════════════════════════════════════════════════════
 interface PipTileProps {
   name: string;
   icon: React.ReactNode;
@@ -84,9 +81,6 @@ const PipTile: React.FC<PipTileProps> = ({ name, icon, currentPips, pipsPerEvo, 
   );
 };
 
-// ═══════════════════════════════════════════════════════════════════════
-// MAIN GARAGE OVERLAY
-// ═══════════════════════════════════════════════════════════════════════
 export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount, onProgressionChange }) => {
   const [progression, setProgression] = useState(loadProgression());
   const [selectedMode, setSelectedMode] = useState<GameMode>(progression.lastGameMode || 'CHAPTER');
@@ -281,17 +275,17 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           const boxWeapons = progression.boxWeapons || [null, null, null];
           const boxWeapon = boxWeapons[boxIdx];
 
-          // Foam per-box
-          const foamPerBox = progression.foamPerBox || [false, false, false];
-          const isFoamed = foamPerBox[boxIdx] || false;
-          const canAffordFoam = progression.totalCoins >= GAME_CONFIG.FOAM_PER_BOX_COST;
-          const showFoam = progression.bestStageReached >= 3;
+          // Brew per-box
+          const brewPerBox = progression.brewPerBox || [false, false, false];
+          const isBrewed = brewPerBox[boxIdx] || false;
+          const canAffordBrew = progression.totalCoins >= GAME_CONFIG.BREW_PER_BOX_COST;
+          const showBrew = progression.bestStageReached >= 3;
           
           return (
             <div key={`weapons-${boxIdx}`} className="absolute pointer-events-auto flex gap-1"
               style={{ top: boxY, left: cartRightEdge + 6 }}>
-              {/* Star button (hidden if box has foam) */}
-              {boxWeapon !== 'foam' && (!isStarred ? (
+              {/* Star button (hidden if box has brew) */}
+              {boxWeapon !== 'brew' && (!isStarred ? (
                 <button
                   onClick={() => {
                     if (purchaseStarForBox(boxIdx, GAME_CONFIG.STAR_PER_BOX_COST)) {
@@ -333,22 +327,22 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
               ))}
 
               {/* Brew button (hidden if box has star) */}
-              {showFoam && boxWeapon !== 'star' && (
-                !isFoamed ? (
+              {showBrew && boxWeapon !== 'star' && (
+                !isBrewed ? (
                   <button
                     onClick={() => {
-                      if (purchaseFoamForBox(boxIdx, GAME_CONFIG.FOAM_PER_BOX_COST)) {
+                      if (purchaseBrewForBox(boxIdx, GAME_CONFIG.BREW_PER_BOX_COST)) {
                         setProgression(loadProgression());
                         onProgressionChange?.();
                         toast.success('Brew Equipped!', { icon: '🫧' });
                       }
                     }}
-                    disabled={!canAffordFoam}
+                    disabled={!canAffordBrew}
                     className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] transition-all duration-200
-                      ${canAffordFoam ? 'bg-coffee-dark/80 border-amber-500/50 hover:border-amber-500 active:scale-95'
+                      ${canAffordBrew ? 'bg-coffee-dark/80 border-amber-500/50 hover:border-amber-500 active:scale-95'
                       : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'}`}>
                     <span className="text-sm">🫧</span>
-                    <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.FOAM_PER_BOX_COST}</span>
+                    <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.BREW_PER_BOX_COST}</span>
                   </button>
                 ) : (
                   <div className="flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] bg-amber-900/60 border-amber-500/50">
@@ -362,56 +356,42 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         })}
       </div>
 
+      {/* Spacer */}
       <div className="flex-1" />
-
-      {/* Bottom Panel */}
-      <div className="pb-16 px-4 flex flex-col gap-2">
+      
+      {/* Bottom Section */}
+      <div className="p-3 space-y-2">
+        {/* Upgrade Row */}
         <div className="flex gap-2">
-          <PipTile
-            name="Power"
-            icon={<Zap className="w-5 h-5 text-warm-orange" />}
-            currentPips={progression.powerPips}
-            pipsPerEvo={GAME_CONFIG.POWER_PIP_PER_EVO}
-            evoCount={progression.powerEvoChoices.length}
+          <PipTile name="Power" icon={<Zap className="w-4 h-4 text-energy" />}
+            currentPips={progression.powerPips} pipsPerEvo={GAME_CONFIG.POWER_PIP_PER_EVO}
+            evoCount={progression.powerEvoChoices?.length || 0}
             cost={getPipCost(progression.powerPips, GAME_CONFIG.POWER_PIP_BASE_COST, GAME_CONFIG.POWER_PIP_COST_SCALING)}
-            coins={progression.totalCoins}
-            onPurchase={handlePowerPip}
-          />
-          <PipTile
-            name="Espresso"
-            icon={<Coffee className="w-5 h-5 text-warm-orange" />}
-            currentPips={progression.damagePips}
-            pipsPerEvo={GAME_CONFIG.DAMAGE_PIP_PER_EVO}
-            evoCount={progression.damageEvoChoices.length}
+            coins={progression.totalCoins} onPurchase={handlePowerPip} />
+          <PipTile name="Damage" icon={<Coffee className="w-4 h-4 text-warm-orange" />}
+            currentPips={progression.damagePips} pipsPerEvo={GAME_CONFIG.DAMAGE_PIP_PER_EVO}
+            evoCount={progression.damageEvoChoices?.length || 0}
             cost={getPipCost(progression.damagePips, GAME_CONFIG.DAMAGE_PIP_BASE_COST, GAME_CONFIG.DAMAGE_PIP_COST_SCALING)}
-            coins={progression.totalCoins}
-            onPurchase={handleDamagePip}
-          />
+            coins={progression.totalCoins} onPurchase={handleDamagePip} />
         </div>
         
-        {/* Star pip upgrade moved to cargo box area */}
+        {/* Play Button */}
+        <button onClick={handlePlay}
+          className="w-full bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam text-lg font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 border-2 border-warm-orange/50">
+          <Play className="w-6 h-6" />
+          BATTLE
+        </button>
         
-        {/* Per-box Star buttons rendered in the cart overlay area */}
-        
-        <div className="flex gap-2">
-          <Button onClick={handlePlay}
-            className="relative flex-1 py-5 text-lg font-bold bg-warm-orange hover:bg-warm-orange/90 text-white rounded-xl shadow-lg">
-            <Play className="w-5 h-5 mr-2" fill="currentColor" />
-            PLAY
-            <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-coffee-dark/60 rounded-md px-1.5 py-0.5">
-              <BatteryFull className="w-3 h-3 text-yellow-400" />
-              <span className="text-[10px] font-bold text-white">x1</span>
-            </div>
-          </Button>
-          <Button onClick={handleReset} variant="outline"
-            className="w-12 py-5 border-2 border-coffee-medium/50 bg-coffee-dark/60 hover:bg-coffee-dark/80 rounded-xl">
-            <RotateCcw className="w-4 h-4 text-coffee-cream/70" />
-          </Button>
-        </div>
+        {/* Reset button (small) */}
+        <button onClick={handleReset}
+          className="mx-auto flex items-center gap-1 text-[10px] text-coffee-cream/40 hover:text-coffee-cream/70 transition-colors">
+          <RotateCcw className="w-3 h-3" />
+          Reset Progress
+        </button>
       </div>
-
+      
       {/* Footer Tabs */}
-      <div className="absolute bottom-0 left-0 right-0 bg-coffee-dark/90 border-t border-coffee-medium/30">
+      <div className="bg-coffee-dark/90 border-t border-coffee-medium/30">
         <div className="flex justify-around py-2 px-1">
           {FOOTER_TABS.map((tab) => {
             const TabIcon = tab.icon;
@@ -430,35 +410,37 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
         </div>
       </div>
 
-      {/* Mode Modal */}
+      {/* Mode Selection Modal */}
       {showModeModal && (
-        <div className="absolute inset-0 bg-coffee-espresso/90 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+        <div className="absolute inset-0 bg-black/60 z-30 flex items-center justify-center animate-in fade-in duration-200"
           onClick={() => setShowModeModal(false)}>
-          <div className="bg-coffee-dark/95 rounded-2xl p-5 max-w-xs w-full mx-4 shadow-2xl border border-coffee-medium/50"
-            onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-coffee-cream text-center mb-4">Select Mode</h2>
-            <div className="flex flex-col gap-2">
-              <button onClick={() => { setSelectedMode('CHAPTER'); setShowModeModal(false); }}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                  selectedMode === 'CHAPTER' ? 'bg-warm-orange/20 border-warm-orange' : 'bg-coffee-dark/30 border-coffee-dark/50'}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${selectedMode === 'CHAPTER' ? 'bg-warm-orange' : 'bg-coffee-dark/50'}`}>
-                  {selectedMode === 'CHAPTER' && <Check className="w-4 h-4 text-coffee-foam" />}
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-coffee-cream font-semibold">☕ Dawn Rush</p>
-                  <p className="text-coffee-cream/60 text-xs">Beat the Boss to clear!</p>
-                </div>
-              </button>
-              <button className="flex items-center gap-3 p-3 rounded-xl border border-coffee-dark/30 bg-coffee-dark/20 opacity-60">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-coffee-dark/50">
-                  <Lock className="w-3 h-3 text-coffee-cream/50" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-coffee-cream/70 font-semibold">🔒 Chapter 2</p>
-                  <p className="text-coffee-cream/40 text-xs">Coming Soon...</p>
-                </div>
-              </button>
-            </div>
+          <div className="bg-coffee-dark/95 rounded-2xl p-4 max-w-xs w-full mx-4 border border-coffee-medium/50 space-y-3"
+            onClick={e => e.stopPropagation()}>
+            <h3 className="text-coffee-cream font-bold text-center">Select Mode</h3>
+            
+            <button onClick={() => { setSelectedMode('CHAPTER'); setShowModeModal(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                selectedMode === 'CHAPTER' ? 'bg-warm-orange/20 border-warm-orange' : 'bg-coffee-dark/30 border-coffee-dark/50'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center ${selectedMode === 'CHAPTER' ? 'bg-warm-orange' : 'bg-coffee-dark/50'}`}>
+                {selectedMode === 'CHAPTER' && <Check className="w-4 h-4 text-coffee-foam" />}
+              </div>
+              <div className="flex-1 text-left">
+                <div className="text-coffee-cream font-semibold text-sm">☕ Dawn Rush</div>
+                <div className="text-coffee-cream/60 text-xs">5 Gates + Boss • Chapter 1</div>
+              </div>
+            </button>
+            
+            <button onClick={() => { setSelectedMode('ENDLESS'); setShowModeModal(false); }}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                selectedMode === 'ENDLESS' ? 'bg-warm-orange/20 border-warm-orange' : 'bg-coffee-dark/30 border-coffee-dark/50'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center ${selectedMode === 'ENDLESS' ? 'bg-warm-orange' : 'bg-coffee-dark/50'}`}>
+                {selectedMode === 'ENDLESS' && <Check className="w-4 h-4 text-coffee-foam" />}
+              </div>
+              <div className="flex-1 text-left">
+                <div className="text-coffee-cream font-semibold text-sm">♾️ Endless</div>
+                <div className="text-coffee-cream/60 text-xs">Survive as long as you can</div>
+              </div>
+            </button>
           </div>
         </div>
       )}
