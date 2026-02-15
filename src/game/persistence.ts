@@ -123,6 +123,14 @@ export const loadProgression = (): ProgressionData => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return { ...DEFAULT_PROGRESSION };
     const parsed = JSON.parse(stored);
+    // v15 -> v16 migration: rename foamPerBox -> brewPerBox
+    if (parsed.version === 15) {
+      parsed.brewPerBox = parsed.foamPerBox || [false, false, false];
+      delete parsed.foamPerBox;
+      parsed.version = 16;
+      saveProgression({ ...DEFAULT_PROGRESSION, ...parsed, meta: { ...DEFAULT_PROGRESSION.meta, ...parsed.meta } });
+      return { ...DEFAULT_PROGRESSION, ...parsed, meta: { ...DEFAULT_PROGRESSION.meta, ...parsed.meta } };
+    }
     if (!parsed.version || parsed.version !== SAVE_VERSION) {
       console.info(`Save version mismatch (${parsed.version} !== ${SAVE_VERSION}), resetting progression`);
       saveProgression({ ...DEFAULT_PROGRESSION });

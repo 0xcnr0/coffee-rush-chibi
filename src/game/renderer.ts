@@ -22,8 +22,8 @@ export function drawGame(
   gateBuilding?: GateBuilding | null,
   currentTime?: number,
   hasStar?: boolean,
-  hasFoam?: boolean,
-  foamBoxIndex?: number,
+  hasBrew?: boolean,
+  brewBoxIndex?: number,
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
   const isTraveling = playPhase === 'TRAVEL' || playPhase === 'BREATHER';
@@ -57,7 +57,7 @@ export function drawGame(
   drawBarista(ctx, blocks);
   
   if (hasStar) drawStarZone(ctx, blocks);
-  if (hasFoam) drawFoamZone(ctx, blocks, foamBoxIndex);
+  if (hasBrew) drawFoamZone(ctx, blocks, brewBoxIndex);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
   projectiles.forEach(proj => drawProjectile(ctx, proj));

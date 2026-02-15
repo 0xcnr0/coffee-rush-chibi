@@ -48,8 +48,8 @@ export const GAME_CONFIG = {
   // ─────────────────────────────────────────────────────────────
   CART_X_OFFSET: 0,
   ENEMY_SCALE: 1,
-  GROUND_Y_OFFSET: 180,
-  UI_SAFE_BOTTOM_PX: 160,
+  GROUND_Y_OFFSET: 220,
+  UI_SAFE_BOTTOM_PX: 200,
   
   // ─────────────────────────────────────────────────────────────
   // CART (player tower)
