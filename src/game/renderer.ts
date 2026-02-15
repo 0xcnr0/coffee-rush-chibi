@@ -56,7 +56,7 @@ export function drawGame(
   drawCart(ctx, blocks, isTraveling || isApproaching);
   drawBarista(ctx, blocks);
   
-  if (hasStar) drawStarZone(ctx, blocks);
+  // Star passive zone circle removed — star visual on blocks is sufficient
   if (hasBrew) drawFoamZone(ctx, blocks, brewBoxIndex);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
