@@ -1,5 +1,5 @@
 // Persistence helper for Coffee Rush progression data
-// TDS-Inspired Reboot: Phase 1 v1.1 — Schema v10 (Chapter-bound pips + EVO)
+// TDS-Inspired Reboot: Phase 1 v1.1 — Schema v14 (Saw→Star rename + Flame)
 
 import type { GameMode, WeaponType, WeaponSlot, PurchaseEvent } from './types';
 import { GAME_CONFIG } from './config';
@@ -38,10 +38,10 @@ export const clearPurchaseLog = (): void => {
 };
 
 const STORAGE_KEY = 'coffee-rush-progress';
-const SAVE_VERSION = 13; // Added starPips/starEvoChoices for Star pip/EVO system
+const SAVE_VERSION = 14; // v14: Saw→Star rename + Flame weapon
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PROGRESSION DATA SCHEMA (v10)
+// PROGRESSION DATA SCHEMA (v14)
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface ProgressionData {
   version: number;
@@ -61,10 +61,11 @@ export interface ProgressionData {
   chapter1Cleared: boolean;
   bestChapter1Time: number;
   bestStageReached: number;
-  sawUnlocked: boolean;
+  starUnlocked: boolean;
   starPerBox: boolean[];
   starPips: number;
   starEvoChoices: string[];
+  flamePerBox: boolean[];
   lastGameMode: GameMode;
   energy: number;
   regenAnchorTs: number | null;
@@ -101,10 +102,11 @@ const DEFAULT_PROGRESSION: ProgressionData = {
   chapter1Cleared: false,
   bestChapter1Time: 0,
   bestStageReached: 0,
-  sawUnlocked: false,
+  starUnlocked: false,
   starPerBox: [false, false, false],
   starPips: 0,
   starEvoChoices: [],
+  flamePerBox: [false, false, false],
   lastGameMode: 'CHAPTER',
   energy: GAME_CONFIG.ENERGY_MAX,
   regenAnchorTs: null,
@@ -354,16 +356,16 @@ export const addDebugEnergy = (amount: number = 10): number => {
   return prog.energy;
 };
 
-export const purchaseSaw = (cost: number): boolean => {
+export const purchaseStar = (cost: number): boolean => {
   const current = loadProgression();
-  if (current.sawUnlocked) return false;
+  if (current.starUnlocked) return false;
   if (current.bestStageReached < 2) return false;
   if (current.totalCoins < cost) return false;
   const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
-  current.sawUnlocked = true;
+  current.starUnlocked = true;
   saveProgression(current);
-  logPurchase({ ts: Date.now(), type: 'saw_unlock', target: 'saw', before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
+  logPurchase({ ts: Date.now(), type: 'star_unlock', target: 'star', before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 
@@ -377,8 +379,8 @@ export const purchaseStarForBox = (boxIndex: number, cost: number): boolean => {
   const coinsBefore = current.totalCoins;
   current.totalCoins -= cost;
   current.starPerBox[boxIndex] = true;
-  // Also set legacy sawUnlocked for backward compat
-  current.sawUnlocked = current.starPerBox.some(v => v);
+  // Also set legacy starUnlocked for backward compat
+  current.starUnlocked = current.starPerBox.some(v => v);
   saveProgression(current);
   logPurchase({ ts: Date.now(), type: 'star_unlock', target: `star_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
@@ -395,6 +397,21 @@ export const purchaseStarPip = (cost: number): boolean => {
   current.starPips += 1;
   saveProgression(current);
   logPurchase({ ts: Date.now(), type: 'star_pip', target: 'star', before: `pips:${beforeValue}`, after: `pips:${current.starPips}`, beforeValue, afterValue: current.starPips, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
+  return true;
+};
+
+export const purchaseFlameForBox = (boxIndex: number, cost: number): boolean => {
+  const current = loadProgression();
+  if (current.bestStageReached < 3) return false; // Stage 2 Gate must be destroyed
+  if (!current.flamePerBox) current.flamePerBox = [false, false, false];
+  if (boxIndex < 0 || boxIndex >= current.flamePerBox.length) return false;
+  if (current.flamePerBox[boxIndex]) return false;
+  if (current.totalCoins < cost) return false;
+  const coinsBefore = current.totalCoins;
+  current.totalCoins -= cost;
+  current.flamePerBox[boxIndex] = true;
+  saveProgression(current);
+  logPurchase({ ts: Date.now(), type: 'flame_unlock', target: `flame_box_${boxIndex}`, before: 'locked', after: 'unlocked', beforeValue: 0, afterValue: 1, coinCost: cost, coinsBefore, coinsAfter: current.totalCoins });
   return true;
 };
 

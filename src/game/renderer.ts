@@ -56,8 +56,8 @@ export function drawGame(
   drawCart(ctx, blocks, isTraveling || isApproaching);
   drawBarista(ctx, blocks);
   
-  // Draw passive saw zone (only if unlocked)
-  if (hasSaw) drawSawZone(ctx, blocks);
+  // Draw passive star zone (only if unlocked)
+  if (hasSaw) drawStarZone(ctx, blocks);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
   projectiles.forEach(proj => drawProjectile(ctx, proj));
@@ -182,16 +182,16 @@ function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, cur
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// PASSIVE SAW ZONE (visual)
+// PASSIVE STAR ZONE (visual)
 // ═══════════════════════════════════════════════════════════════════════
-function drawSawZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
+function drawStarZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   const activeBlocks = blocks.filter(b => !b.destroyed);
   if (activeBlocks.length === 0) return;
   
-  const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.SAW_PASSIVE_RADIUS * 0.5;
+  const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.STAR_PASSIVE_RADIUS * 0.5;
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   const sawCenterY = groundY - 60;
-  const radius = GAME_CONFIG.SAW_PASSIVE_RADIUS;
+  const radius = GAME_CONFIG.STAR_PASSIVE_RADIUS;
   
   // Faint danger zone circle
   ctx.save();
@@ -453,9 +453,9 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy) {
 }
 
 function drawProjectile(ctx: CanvasRenderingContext2D, proj: Projectile) {
-  const { x, y, radius, isSaw } = proj;
+  const { x, y, radius, isStar } = proj;
   
-  if (isSaw) {
+  if (isStar) {
     // Saw blade visual
     ctx.save();
     ctx.translate(x, y);

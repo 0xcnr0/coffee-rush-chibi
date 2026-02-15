@@ -64,7 +64,7 @@ const createProjectile = (id: number): Projectile => ({
   active: false,
   radius: GAME_CONFIG.PROJECTILE_RADIUS,
   pierce: false,
-  isSaw: false,
+  isStar: false,
 });
 
 const createTip = (id: number): TipDrop => ({
@@ -212,12 +212,17 @@ export const CoffeeRushGame: React.FC = () => {
   const hudAccumulatorRef = useRef(0);
   const fpsRef = useRef(60);
   
-  // Saw weapon state
-  const lastSawAttackRef = useRef(-999);
-  const hasSawRef = useRef(false);
-  const sawPassiveTickRef = useRef(0);
+  // Star weapon state
+  const lastStarAttackRef = useRef(-999);
+  const hasStarRef = useRef(false);
+  const starPassiveTickRef = useRef(0);
   const starDamageMultRef = useRef(1);
-  const sawTelemetryRef = useRef({ passiveDamage: 0, throwDamageEnemies: 0, throwDamageGate: 0, throwUses: 0 });
+  const starTelemetryRef = useRef({ passiveDamage: 0, throwDamageEnemies: 0, throwDamageGate: 0, throwUses: 0 });
+  
+  // Flame weapon state
+  const hasFlameRef = useRef(false);
+  const flamePassiveTickRef = useRef(0);
+  const flameTelemetryRef = useRef({ passiveDamage: 0, burstDamageEnemies: 0, burstDamageGate: 0, burstUses: 0, unlockedAt: -1, burstTimestamps: [] as number[] });
   
   // Telemetry
   const telemetryRef = useRef({
@@ -287,17 +292,22 @@ export const CoffeeRushGame: React.FC = () => {
     powerRegenMultiplierRef.current = powerRegenMult;
     
     // Check for star weapon (purchased from Garage, per-box)
-    hasSawRef.current = progression.starPerBox?.some(v => v) ?? progression.sawUnlocked;
+    hasStarRef.current = progression.starPerBox?.some(v => v) ?? progression.starUnlocked;
     starDamageMultRef.current = 1 + (progression.starPips ?? 0) * GAME_CONFIG.STAR_DAMAGE_BONUS_PER_PIP;
+    
+    // Check for flame weapon (purchased from Garage, per-box)
+    hasFlameRef.current = progression.flamePerBox?.some(v => v) ?? false;
     
     // Reset all refs
     latchedCountRef.current = 0;
     screenShakeRef.current = { x: 0, y: 0, duration: 0 };
     lastAttackRef.current = -999;
     lastSpawnRef.current = -999;
-    lastSawAttackRef.current = -999;
-    sawPassiveTickRef.current = 0;
-    sawTelemetryRef.current = { passiveDamage: 0, throwDamageEnemies: 0, throwDamageGate: 0, throwUses: 0 };
+    lastStarAttackRef.current = -999;
+    starPassiveTickRef.current = 0;
+    starTelemetryRef.current = { passiveDamage: 0, throwDamageEnemies: 0, throwDamageGate: 0, throwUses: 0 };
+    flamePassiveTickRef.current = 0;
+    flameTelemetryRef.current = { passiveDamage: 0, burstDamageEnemies: 0, burstDamageGate: 0, burstUses: 0, unlockedAt: -1, burstTimestamps: [] };
     powerRef.current = 0;
     timeRef.current = 0;
     tipsRef.current = 0;
@@ -468,11 +478,18 @@ export const CoffeeRushGame: React.FC = () => {
       totalBreatherTime: perStageTimersRef.current.breather.reduce((a, b) => a + b, 0),
       enemiesSpawned: { ...t.enemiesSpawned },
       enemiesKilled: { ...t.enemiesKilled },
-      // Saw telemetry
-      sawPassiveDamageDealt: sawTelemetryRef.current.passiveDamage,
-      sawThrowDamageToEnemies: sawTelemetryRef.current.throwDamageEnemies,
-      sawThrowDamageToGate: sawTelemetryRef.current.throwDamageGate,
-      sawThrowUses: sawTelemetryRef.current.throwUses,
+      // Star telemetry
+      starPassiveDamageDealt: starTelemetryRef.current.passiveDamage,
+      starThrowDamageToEnemies: starTelemetryRef.current.throwDamageEnemies,
+      starThrowDamageToGate: starTelemetryRef.current.throwDamageGate,
+      starThrowUses: starTelemetryRef.current.throwUses,
+      // Flame telemetry
+      flamePassiveDamageDealt: flameTelemetryRef.current.passiveDamage,
+      flameBurstDamageToEnemies: flameTelemetryRef.current.burstDamageEnemies,
+      flameBurstDamageToGate: flameTelemetryRef.current.burstDamageGate,
+      flameBurstUses: flameTelemetryRef.current.burstUses,
+      flameUnlockedAt: flameTelemetryRef.current.unlockedAt,
+      flameBurstTimestamps: [...flameTelemetryRef.current.burstTimestamps],
       // Economy
       coinsStart: coinsStartRef.current,
       coinsEnd: 0,
@@ -628,7 +645,7 @@ export const CoffeeRushGame: React.FC = () => {
     enemy.queuePosition = 0;
   }, [enemyPool]);
   
-  const fireProjectile = useCallback((targetEnemy: Enemy, pierce = false, isSaw = false) => {
+  const fireProjectile = useCallback((targetEnemy: Enemy, pierce = false, isStar = false) => {
     const proj = projectilePool.acquire();
     if (!proj) return;
     
@@ -641,13 +658,13 @@ export const CoffeeRushGame: React.FC = () => {
     proj.targetX = targetEnemy.x;
     proj.targetY = targetEnemy.y - targetEnemy.height / 2;
     const stressMultiplier = isStressTest ? 0.4 : 1;
-    proj.damage = Math.floor((isSaw ? GAME_CONFIG.SAW_DAMAGE : GAME_CONFIG.PROJECTILE_DAMAGE) * damageMultiplierRef.current * stressMultiplier);
+    proj.damage = Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current * stressMultiplier);
     proj.pierce = pierce;
-    proj.isSaw = isSaw;
+    proj.isStar = isStar;
   }, [projectilePool, isStressTest]);
   
   // Fire projectile at raw coordinates (for shotgun/burst spread)
-  const fireProjectileAt = useCallback((targetX: number, targetY: number, customDamage?: number, pierce = false, isSaw = false) => {
+  const fireProjectileAt = useCallback((targetX: number, targetY: number, customDamage?: number, pierce = false, isStar = false) => {
     const proj = projectilePool.acquire();
     if (!proj) return;
     
@@ -663,7 +680,7 @@ export const CoffeeRushGame: React.FC = () => {
     const stressMultiplier = isStressTest ? 0.4 : 1;
     proj.damage = customDamage ?? Math.floor(GAME_CONFIG.PROJECTILE_DAMAGE * damageMultiplierRef.current * stressMultiplier);
     proj.pierce = pierce;
-    proj.isSaw = isSaw;
+    proj.isStar = isStar;
   }, [projectilePool, isStressTest]);
   
   const spawnParticles = useCallback((x: number, y: number, type: Particle['type'], count: number) => {
@@ -762,15 +779,15 @@ export const CoffeeRushGame: React.FC = () => {
   }, [enemyPool, spawnParticles]);
   
   // ═══════════════════════════════════════════════════════════════════════
-  // SAW THROW (piercing power skill)
+  // STAR THROW (piercing power skill)
   // ═══════════════════════════════════════════════════════════════════════
-  const handleSawThrow = useCallback(() => {
-    if (!hasSawRef.current) return;
-    if (powerRef.current < GAME_CONFIG.SAW_THROW_COST) return;
+  const handleStarThrow = useCallback(() => {
+    if (!hasStarRef.current) return;
+    if (powerRef.current < GAME_CONFIG.STAR_THROW_COST) return;
     
-    powerRef.current -= GAME_CONFIG.SAW_THROW_COST;
+    powerRef.current -= GAME_CONFIG.STAR_THROW_COST;
     setPower(powerRef.current);
-    sawTelemetryRef.current.throwUses++;
+    starTelemetryRef.current.throwUses++;
     
     const activeBlocks = blocksRef.current.filter(b => !b.destroyed);
     if (activeBlocks.length === 0) return;
@@ -781,15 +798,71 @@ export const CoffeeRushGame: React.FC = () => {
     
     const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
     proj.x = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
-    proj.y = groundY - 30; // ground level so it hits walking enemies
-    proj.targetX = GAME_CONFIG.CANVAS_WIDTH + 100; // fly straight right
-    proj.targetY = proj.y; // straight line
-    proj.speed = GAME_CONFIG.SAW_THROW_SPEED;
-    proj.damage = Math.floor(GAME_CONFIG.SAW_THROW_DAMAGE * damageMultiplierRef.current * starDamageMultRef.current);
-    proj.radius = GAME_CONFIG.SAW_THROW_RADIUS;
+    proj.y = groundY - 30;
+    proj.targetX = GAME_CONFIG.CANVAS_WIDTH + 100;
+    proj.targetY = proj.y;
+    proj.speed = GAME_CONFIG.STAR_THROW_SPEED;
+    proj.damage = Math.floor(GAME_CONFIG.STAR_THROW_DAMAGE * damageMultiplierRef.current * starDamageMultRef.current);
+    proj.radius = GAME_CONFIG.STAR_THROW_RADIUS;
     proj.pierce = true;
-    proj.isSaw = true;
+    proj.isStar = true;
   }, [projectilePool]);
+  
+  // ═══════════════════════════════════════════════════════════════════════
+  // FLAME BURST (AoE power skill)
+  // ═══════════════════════════════════════════════════════════════════════
+  const handleFlameBurst = useCallback(() => {
+    if (!hasFlameRef.current) return;
+    if (powerRef.current < GAME_CONFIG.FLAME_THROW_COST) return;
+    
+    powerRef.current -= GAME_CONFIG.FLAME_THROW_COST;
+    setPower(powerRef.current);
+    flameTelemetryRef.current.burstUses++;
+    flameTelemetryRef.current.burstTimestamps.push(timeRef.current);
+    
+    screenShakeRef.current = { x: 0, y: 0, duration: 0.3 };
+    
+    const burstX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + 60;
+    const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+    const burstY = groundY - 40;
+    
+    spawnParticles(burstX, burstY, 'confetti', 15);
+    spawnParticles(burstX, burstY, 'steam', 8);
+    
+    // Damage enemies in AoE
+    enemyPool.getActive().forEach(enemy => {
+      if (enemy.state === 'SERVED' || enemy.isServed) return;
+      const dx = enemy.x - burstX;
+      const dy = (enemy.y - enemy.height / 2) - burstY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < GAME_CONFIG.FLAME_THROW_RADIUS) {
+        enemy.hp -= GAME_CONFIG.FLAME_THROW_DAMAGE;
+        flameTelemetryRef.current.burstDamageEnemies += GAME_CONFIG.FLAME_THROW_DAMAGE;
+        spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 2);
+        if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
+          latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+        }
+      }
+    });
+    
+    // Damage gate (50% mult)
+    const gate = gateBuildingRef.current;
+    if (gate && !gate.isDestroyed) {
+      const gdx = gate.x + gate.width / 2 - burstX;
+      const gdy = gate.y + gate.height / 2 - burstY;
+      const gDist = Math.sqrt(gdx * gdx + gdy * gdy);
+      if (gDist < GAME_CONFIG.FLAME_THROW_RADIUS + gate.width) {
+        const gateDmg = Math.floor(GAME_CONFIG.FLAME_THROW_DAMAGE * GAME_CONFIG.FLAME_GATE_DAMAGE_MULT);
+        gate.hp -= gateDmg;
+        flameTelemetryRef.current.burstDamageGate += gateDmg;
+        const si = stageIndexRef.current - 1;
+        if (si >= 0 && si < 5) {
+          gateDamageDealtRef.current[si] += gateDmg;
+        }
+        spawnParticles(gate.x + gate.width / 2, gate.y, 'sparkle', 4);
+      }
+    }
+  }, [enemyPool, spawnParticles]);
   
   // ═══════════════════════════════════════════════════════════════════════
   // EVO CHOICE HANDLER
@@ -881,7 +954,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime, hasSawRef.current);
+        deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current);
       return;
     }
     
@@ -1057,7 +1130,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime, hasSawRef.current);
+        deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current);
       return;
     }
     
@@ -1094,54 +1167,7 @@ export const CoffeeRushGame: React.FC = () => {
       }
     }
     
-    // ═══════════════════════════════════════════════════════════════════
-    // GATE CLEANUP (victory pulse after gate destruction)
-    // ═══════════════════════════════════════════════════════════════════
-    if (gateCleanupTimerRef.current > 0) {
-      gateCleanupTimerRef.current -= deltaTime;
-      
-      // Fade remaining enemies
-      enemyPool.getActive().forEach(enemy => {
-        if (enemy.state !== 'SERVED' && !enemy.isServed) {
-          enemy.hp = 0;
-          enemy.state = 'SERVED';
-          enemy.isServed = true;
-          enemy.servedTimer = 0.3;
-        }
-      });
-      
-      if (gateCleanupTimerRef.current <= 0) {
-        // Gate clear complete — show EVO_PICK if applicable, else travel
-        // For Phase 1, we go directly to travel (EVO popups triggered from Garage)
-        // Simple: award lump sum and advance
-        const si = stageIndexRef.current;
-        if (si >= 5) {
-          // After Stage 5 gate, go to boss
-          stageIndexRef.current = 6;
-          setStageIndex(6);
-          travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
-          playPhaseRef.current = 'TRAVEL';
-          setPlayPhase('TRAVEL');
-        } else {
-          stageIndexRef.current = si + 1;
-          setStageIndex(si + 1);
-          travelTimerRef.current = GAME_CONFIG.TRAVEL_DURATION;
-          playPhaseRef.current = 'TRAVEL';
-          setPlayPhase('TRAVEL');
-        }
-        
-        gateBuildingRef.current = null;
-        setGateBuildingState(null);
-      }
-      
-      // Skip rest of sim during cleanup
-      ctx.clearRect(0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
-      drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
-        tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
-        bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime, hasSawRef.current);
-      return;
-    }
+    // (Duplicate gate cleanup block removed — VICTORY phase handles all post-gate transitions)
     
     // ═══════════════════════════════════════════════════════════════════
     // BOSS SPAWN LOGIC
@@ -1445,11 +1471,11 @@ export const CoffeeRushGame: React.FC = () => {
     // ═══════════════════════════════════════════════════════════════════
     // PASSIVE SAW (melee zone - only if unlocked)
     // ═══════════════════════════════════════════════════════════════════
-    if (hasSawRef.current) {
-      sawPassiveTickRef.current -= deltaTime;
-      if (sawPassiveTickRef.current <= 0) {
-        sawPassiveTickRef.current = GAME_CONFIG.SAW_PASSIVE_TICK_INTERVAL;
-        const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.SAW_PASSIVE_RADIUS * 0.5;
+    if (hasStarRef.current) {
+      starPassiveTickRef.current -= deltaTime;
+      if (starPassiveTickRef.current <= 0) {
+        starPassiveTickRef.current = GAME_CONFIG.STAR_PASSIVE_TICK_INTERVAL;
+        const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.STAR_PASSIVE_RADIUS * 0.5;
         const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
         const sawCenterY = groundY - 60;
         
@@ -1459,13 +1485,46 @@ export const CoffeeRushGame: React.FC = () => {
           const dx = ex - sawCenterX;
           const dy = ey - sawCenterY;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < GAME_CONFIG.SAW_PASSIVE_RADIUS) {
-            const starDmg = Math.floor(GAME_CONFIG.SAW_PASSIVE_TICK_DAMAGE * starDamageMultRef.current);
+          if (dist < GAME_CONFIG.STAR_PASSIVE_RADIUS) {
+            const starDmg = Math.floor(GAME_CONFIG.STAR_PASSIVE_TICK_DAMAGE * starDamageMultRef.current);
             enemy.hp -= starDmg;
-            sawTelemetryRef.current.passiveDamage += starDmg;
+            starTelemetryRef.current.passiveDamage += starDmg;
             spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 1);
             if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
               latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+            }
+          }
+        });
+      }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // PASSIVE FLAME (cone zone - only if unlocked)
+    // ═══════════════════════════════════════════════════════════════════
+    if (hasFlameRef.current) {
+      flamePassiveTickRef.current -= deltaTime;
+      if (flamePassiveTickRef.current <= 0) {
+        flamePassiveTickRef.current = GAME_CONFIG.FLAME_PASSIVE_TICK_INTERVAL;
+        const flameCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.FLAME_PASSIVE_RADIUS * 0.4;
+        const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+        const flameCenterY = groundY - 50;
+        
+        enemies.forEach(enemy => {
+          const ex = enemy.x;
+          const ey = enemy.y - enemy.height / 2;
+          const dx = ex - flameCenterX;
+          const dy = ey - flameCenterY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          // Cone check: enemy must be in front (dx > 0) and within cone angle
+          if (dist < GAME_CONFIG.FLAME_PASSIVE_RADIUS && dx > 0) {
+            const angle = Math.abs(Math.atan2(dy, dx)) * (180 / Math.PI);
+            if (angle < GAME_CONFIG.FLAME_PASSIVE_CONE_ANGLE / 2) {
+              enemy.hp -= GAME_CONFIG.FLAME_PASSIVE_TICK_DAMAGE;
+              flameTelemetryRef.current.passiveDamage += GAME_CONFIG.FLAME_PASSIVE_TICK_DAMAGE;
+              spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 1);
+              if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
+                latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
+              }
             }
           }
         });
@@ -1500,7 +1559,7 @@ export const CoffeeRushGame: React.FC = () => {
           enemy.hp -= proj.damage;
           shotsHitRef.current++;
           shotsToEnemiesRef.current++;
-          if (proj.isSaw) sawTelemetryRef.current.throwDamageEnemies += proj.damage;
+          if (proj.isStar) starTelemetryRef.current.throwDamageEnemies += proj.damage;
           spawnParticles(proj.x, proj.y, 'sparkle', 3);
           hitEnemy = true;
           if (!proj.pierce) {
@@ -1516,19 +1575,19 @@ export const CoffeeRushGame: React.FC = () => {
         const g = gateBuildingRef.current;
         if (g && !g.isDestroyed && !(proj as any)._hitGate && playPhaseRef.current !== 'APPROACH') {
           // Star Throw: guaranteed gate hit (no positional check needed)
-          const isSawPierce = proj.isSaw && proj.pierce;
+          const isStarPierce = proj.isStar && proj.pierce;
           const positionHit = proj.x >= g.x && proj.x <= g.x + g.width &&
               proj.y >= g.y && proj.y <= g.y + g.height;
           
-          if (isSawPierce || positionHit) {
+          if (isStarPierce || positionHit) {
             g.hp -= proj.damage;
             g.lastHitTime = timeRef.current;
-            if (proj.pierce) (proj as any)._hitGate = true; // prevent re-hit
+            if (proj.pierce) (proj as any)._hitGate = true;
             const si = stageIndexRef.current - 1;
             if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += proj.damage;
-            if (proj.isSaw) sawTelemetryRef.current.throwDamageGate += proj.damage;
+            if (proj.isStar) starTelemetryRef.current.throwDamageGate += proj.damage;
             shotsToGateRef.current++;
-            spawnParticles(isSawPierce ? g.x : proj.x, isSawPierce ? g.y + g.height / 2 : proj.y, 'sparkle', 3);
+            spawnParticles(isStarPierce ? g.x : proj.x, isStarPierce ? g.y + g.height / 2 : proj.y, 'sparkle', 3);
             if (!proj.pierce) {
               projectilePool.release(proj);
               return;
@@ -1703,7 +1762,7 @@ export const CoffeeRushGame: React.FC = () => {
     drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
       tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
       bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-      deltaTime, gateBuildingRef.current, currentTime, hasSawRef.current);
+      deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current);
   }, [
     enemyPool, projectilePool, tipPool, particlePool,
     spawnEnemy, fireProjectile, spawnParticles, spawnTip,
@@ -1760,9 +1819,12 @@ export const CoffeeRushGame: React.FC = () => {
             power={power}
             onTonicBomb={handleTonicBomb}
             canUseBomb={canUseBomb}
-            onSawThrow={handleSawThrow}
-            canUseSaw={hasSawRef.current && powerRef.current >= GAME_CONFIG.SAW_THROW_COST}
-            hasSaw={hasSawRef.current}
+            onStarThrow={handleStarThrow}
+            canUseStar={hasStarRef.current && powerRef.current >= GAME_CONFIG.STAR_THROW_COST}
+            hasStar={hasStarRef.current}
+            onFlameBurst={handleFlameBurst}
+            canUseFlame={hasFlameRef.current && powerRef.current >= GAME_CONFIG.FLAME_THROW_COST}
+            hasFlame={hasFlameRef.current}
             onPause={handlePause}
             gameMode={gameMode}
             bossState={bossState}
