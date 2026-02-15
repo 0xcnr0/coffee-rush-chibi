@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseFlameForBox } from './persistence';
+import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseFoamForBox } from './persistence';
 import { GAME_CONFIG } from './config';
 import { toast } from 'sonner';
 import type { GameMode } from './types';
@@ -276,11 +276,11 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           const starIsMaxed = starEvoCount >= starMaxEvos;
           const starPipsInTier = progression.starPips % GAME_CONFIG.STAR_PIP_PER_EVO;
 
-          // Flame per-box
-          const flamePerBox = progression.flamePerBox || [false, false, false];
-          const isFlamed = flamePerBox[boxIdx] || false;
-          const canAffordFlame = progression.totalCoins >= GAME_CONFIG.FLAME_PER_BOX_COST;
-          const showFlame = progression.bestStageReached >= 3;
+          // Foam per-box
+          const foamPerBox = progression.foamPerBox || [false, false, false];
+          const isFoamed = foamPerBox[boxIdx] || false;
+          const canAffordFoam = progression.totalCoins >= GAME_CONFIG.FOAM_PER_BOX_COST;
+          const showFoam = progression.bestStageReached >= 3;
           
           return (
             <div key={`weapons-${boxIdx}`} className="absolute pointer-events-auto flex gap-1"
@@ -327,28 +327,28 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
                 </div>
               )}
 
-              {/* Flame button (only visible when bestStageReached >= 3) */}
-              {showFlame && (
-                !isFlamed ? (
+              {/* Foam button (only visible when bestStageReached >= 3) */}
+              {showFoam && (
+                !isFoamed ? (
                   <button
                     onClick={() => {
-                      if (purchaseFlameForBox(boxIdx, GAME_CONFIG.FLAME_PER_BOX_COST)) {
+                      if (purchaseFoamForBox(boxIdx, GAME_CONFIG.FOAM_PER_BOX_COST)) {
                         setProgression(loadProgression());
                         onProgressionChange?.();
-                        toast.success('Flame Equipped!', { icon: '🔥' });
+                        toast.success('Foam Equipped!', { icon: '🧴' });
                       }
                     }}
-                    disabled={!canAffordFlame}
+                    disabled={!canAffordFoam}
                     className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] transition-all duration-200
-                      ${canAffordFlame ? 'bg-coffee-dark/80 border-orange-500/50 hover:border-orange-500 active:scale-95'
+                      ${canAffordFoam ? 'bg-coffee-dark/80 border-amber-500/50 hover:border-amber-500 active:scale-95'
                       : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'}`}>
-                    <span className="text-sm">🔥</span>
-                    <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.FLAME_PER_BOX_COST}</span>
+                    <span className="text-sm">🧴</span>
+                    <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.FOAM_PER_BOX_COST}</span>
                   </button>
                 ) : (
-                  <div className="flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] bg-orange-900/60 border-orange-500/50">
-                    <span className="text-sm">🔥</span>
-                    <Check className="w-2.5 h-2.5 text-orange-400 mt-0.5" />
+                  <div className="flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] bg-amber-900/60 border-amber-500/50">
+                    <span className="text-sm">🧴</span>
+                    <Check className="w-2.5 h-2.5 text-amber-400 mt-0.5" />
                   </div>
                 )
               )}
