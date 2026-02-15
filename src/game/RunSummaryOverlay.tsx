@@ -99,9 +99,9 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     const bgd = t?.bombGateDamageByGate ?? [0, 0, 0, 0, 0];
     lines.push(`  G1: ${bgd[0]} | G2: ${bgd[1]} | G3: ${bgd[2]} | G4: ${bgd[3]} | G5: ${bgd[4]}`);
     lines.push(`Star Throw: ${t?.starThrowUses ?? 0} uses | Dmg to Enemies: ${t?.starThrowDamageToEnemies ?? 0} | Dmg to Gate: ${t?.starThrowDamageToGate ?? 0} | Passive: ${t?.starPassiveDamageDealt ?? 0}`);
-    lines.push(`Foam Burst: ${t?.foamBurstUses ?? 0} uses | Dmg to Enemies: ${t?.foamBurstDamageToEnemies ?? 0} | Dmg to Gate: ${t?.foamBurstDamageToGate ?? 0} | Passive: ${t?.foamPassiveDamageDealt ?? 0}`);
-    if ((t?.foamUnlockedAt ?? -1) >= 0) lines.push(`  Foam unlocked at: ${fmt(t?.foamUnlockedAt ?? 0)}s`);
-    if (t?.foamBurstTimestamps && t.foamBurstTimestamps.length > 0) lines.push(`  Burst timestamps: ${t.foamBurstTimestamps.map(ts => fmt(ts, 1)).join(', ')}`);
+    lines.push(`Brew Burst: ${t?.foamBurstUses ?? 0} uses | Dmg to Enemies: ${t?.foamBurstDamageToEnemies ?? 0} | Dmg to Gate: ${t?.foamBurstDamageToGate ?? 0} | Passive: ${t?.foamPassiveDamageDealt ?? 0}`);
+    if ((t?.foamUnlockedAt ?? -1) >= 0) lines.push(`  Brew unlocked at: ${fmt(t?.foamUnlockedAt ?? 0)}s`);
+    if (t?.foamBurstTimestamps && t.foamBurstTimestamps.length > 0) lines.push(`  Brew Burst timestamps: ${t.foamBurstTimestamps.map(ts => fmt(ts, 1)).join(', ')}`);
     lines.push('');
 
     // 6. PRESSURE / SURVIVAL
@@ -110,7 +110,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(hr);
     lines.push(`Max Latched: ${t?.maxLatchedPeak ?? 0} peak | Time at max: ${fmt(t?.timeAtMaxLatched ?? 0)}s`);
     lines.push(`Blocks Lost: ${t?.blocksLost ?? 0} | First block lost: ${t?.timeToFirstBlockLost === -1 ? 'N/A' : fmt(t?.timeToFirstBlockLost ?? 0) + 's'}`);
-    lines.push(`Bomb Uses: ${t?.tonicBombUses ?? 0} | Star Throws: ${t?.starThrowUses ?? 0} | Foam Bursts: ${t?.foamBurstUses ?? 0}`);
+    lines.push(`Bomb Uses: ${t?.tonicBombUses ?? 0} | Star Throws: ${t?.starThrowUses ?? 0} | Brew Bursts: ${t?.foamBurstUses ?? 0}`);
     lines.push('');
 
     // 5. ECONOMY TRACE

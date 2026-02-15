@@ -207,7 +207,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
               className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
                 canUseFoam ? 'bg-amber-100 hover:bg-amber-50 text-coffee-espresso border-amber-300/50 hover:scale-105 active:scale-95' 
                 : 'bg-coffee-dark/60 text-coffee-cream/40 border-coffee-dark/30'}`}>
-              <span className="text-2xl">🧴</span>
+              <span className="text-2xl">🫧</span>
               <div className={`absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                 canUseFoam ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
                 {foamCost}⚡

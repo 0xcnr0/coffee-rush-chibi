@@ -217,7 +217,7 @@ export const GAME_CONFIG = {
   STAR_PER_BOX_COST: 140,
   
   // ─────────────────────────────────────────────────────────────
-  // FOAM WEAPON (Weapon 2 — coffee foam cannon)
+  // BREW WEAPON (Foam) — coffee foam cannon
   // ─────────────────────────────────────────────────────────────
   // Passive Foam Cannon (sinusoidal sweeping, fires foam projectiles)
   FOAM_PASSIVE_RANGE: 140,             // px max range (shorter than main shotgun)
