@@ -375,19 +375,19 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
             coins={progression.totalCoins} onPurchase={handleDamagePip} />
         </div>
         
-        {/* Play Button */}
-        <button onClick={handlePlay}
-          className="w-full bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam text-lg font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 border-2 border-warm-orange/50">
-          <Play className="w-6 h-6" />
-          BATTLE
-        </button>
-        
-        {/* Reset button (small) */}
-        <button onClick={handleReset}
-          className="mx-auto flex items-center gap-1 text-[10px] text-coffee-cream/40 hover:text-coffee-cream/70 transition-colors">
-          <RotateCcw className="w-3 h-3" />
-          Reset Progress
-        </button>
+        {/* Play + Reset row */}
+        <div className="flex gap-2 items-center">
+          <button onClick={handlePlay}
+            className="flex-1 bg-warm-orange hover:bg-warm-orange/90 text-coffee-foam text-lg font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 border-2 border-warm-orange/50">
+            <Play className="w-6 h-6" />
+            BATTLE
+          </button>
+          <button onClick={handleReset}
+            className="flex items-center gap-1 text-[10px] text-coffee-cream/40 hover:text-coffee-cream/70 transition-colors">
+            <RotateCcw className="w-3 h-3" />
+            Reset Progress
+          </button>
+        </div>
       </div>
       
       {/* Footer Tabs */}
