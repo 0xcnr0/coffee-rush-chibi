@@ -297,9 +297,9 @@ export const CoffeeRushGame: React.FC = () => {
     hasStarRef.current = progression.starPerBox?.some(v => v) ?? progression.starUnlocked;
     starDamageMultRef.current = 1 + (progression.starPips ?? 0) * GAME_CONFIG.STAR_DAMAGE_BONUS_PER_PIP;
     
-    // Check for foam weapon (purchased from Garage, per-box)
-    hasFoamRef.current = progression.foamPerBox?.some(v => v) ?? false;
-    foamBoxIndexRef.current = progression.foamPerBox?.findIndex(v => v) ?? -1;
+    // Check for brew weapon (purchased from Garage, per-box)
+    hasFoamRef.current = progression.brewPerBox?.some(v => v) ?? false;
+    foamBoxIndexRef.current = progression.brewPerBox?.findIndex(v => v) ?? -1;
     
     // Reset all refs
     latchedCountRef.current = 0;
@@ -487,14 +487,14 @@ export const CoffeeRushGame: React.FC = () => {
       starThrowDamageToEnemies: starTelemetryRef.current.throwDamageEnemies,
       starThrowDamageToGate: starTelemetryRef.current.throwDamageGate,
       starThrowUses: starTelemetryRef.current.throwUses,
-      // Foam (Brew) telemetry
-      foamPassiveDamageDealt: foamTelemetryRef.current.passiveDamage,
-      foamPassiveShotsToGate: foamTelemetryRef.current.passiveShotsToGate,
-      foamBurstDamageToEnemies: foamTelemetryRef.current.burstDamageEnemies,
-      foamBurstDamageToGate: foamTelemetryRef.current.burstDamageGate,
-      foamBurstUses: foamTelemetryRef.current.burstUses,
-      foamUnlockedAt: foamTelemetryRef.current.unlockedAt,
-      foamBurstTimestamps: [...foamTelemetryRef.current.burstTimestamps],
+      // Brew telemetry
+      brewPassiveDamageDealt: foamTelemetryRef.current.passiveDamage,
+      brewPassiveShotsToGate: foamTelemetryRef.current.passiveShotsToGate,
+      brewBurstDamageToEnemies: foamTelemetryRef.current.burstDamageEnemies,
+      brewBurstDamageToGate: foamTelemetryRef.current.burstDamageGate,
+      brewBurstUses: foamTelemetryRef.current.burstUses,
+      brewUnlockedAt: foamTelemetryRef.current.unlockedAt,
+      brewBurstTimestamps: [...foamTelemetryRef.current.burstTimestamps],
       brewEquippedBoxIndex: foamBoxIndexRef.current,
       brewBurstUsedDuringGate: foamTelemetryRef.current.burstUsedDuringGate,
       // Economy
@@ -826,9 +826,9 @@ export const CoffeeRushGame: React.FC = () => {
       hasFoamRef.current = false;
       return;
     }
-    if (powerRef.current < GAME_CONFIG.FOAM_BURST_COST) return;
+    if (powerRef.current < GAME_CONFIG.BREW_BURST_COST) return;
     
-    powerRef.current -= GAME_CONFIG.FOAM_BURST_COST;
+    powerRef.current -= GAME_CONFIG.BREW_BURST_COST;
     setPower(powerRef.current);
     foamTelemetryRef.current.burstUses++;
     foamTelemetryRef.current.burstTimestamps.push(timeRef.current);
@@ -851,8 +851,8 @@ export const CoffeeRushGame: React.FC = () => {
     // Damage ALL enemies on screen
     enemyPool.getActive().forEach(enemy => {
       if (enemy.state === 'SERVED' || enemy.isServed) return;
-      enemy.hp -= GAME_CONFIG.FOAM_BURST_DAMAGE;
-      foamTelemetryRef.current.burstDamageEnemies += GAME_CONFIG.FOAM_BURST_DAMAGE;
+      enemy.hp -= GAME_CONFIG.BREW_BURST_DAMAGE;
+      foamTelemetryRef.current.burstDamageEnemies += GAME_CONFIG.BREW_BURST_DAMAGE;
       spawnParticles(enemy.x, enemy.y - enemy.height / 2, 'sparkle', 2);
       if (enemy.hp <= 0 && enemy.state === 'LATCHED') {
         latchedCountRef.current = Math.max(0, latchedCountRef.current - 1);
@@ -862,11 +862,11 @@ export const CoffeeRushGame: React.FC = () => {
     // Damage gate (flat damage)
     const gate = gateBuildingRef.current;
     if (gate && !gate.isDestroyed) {
-      gate.hp -= GAME_CONFIG.FOAM_BURST_GATE_DAMAGE;
-      foamTelemetryRef.current.burstDamageGate += GAME_CONFIG.FOAM_BURST_GATE_DAMAGE;
+      gate.hp -= GAME_CONFIG.BREW_BURST_GATE_DAMAGE;
+      foamTelemetryRef.current.burstDamageGate += GAME_CONFIG.BREW_BURST_GATE_DAMAGE;
       const si = stageIndexRef.current - 1;
       if (si >= 0 && si < 5) {
-        gateDamageDealtRef.current[si] += GAME_CONFIG.FOAM_BURST_GATE_DAMAGE;
+        gateDamageDealtRef.current[si] += GAME_CONFIG.BREW_BURST_GATE_DAMAGE;
       }
       spawnParticles(gate.x + gate.width / 2, gate.y, 'sparkle', 4);
     }
@@ -1519,10 +1519,10 @@ export const CoffeeRushGame: React.FC = () => {
     
     if (hasFoamRef.current) {
       foamPassiveTickRef.current -= deltaTime;
-      foamSweepRef.current += GAME_CONFIG.FOAM_SWEEP_SPEED * deltaTime;
+      foamSweepRef.current += GAME_CONFIG.BREW_SWEEP_SPEED * deltaTime;
       
       if (foamPassiveTickRef.current <= 0) {
-        foamPassiveTickRef.current = GAME_CONFIG.FOAM_PASSIVE_FIRE_INTERVAL;
+        foamPassiveTickRef.current = GAME_CONFIG.BREW_PASSIVE_FIRE_INTERVAL;
         
         const cartFrontX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
         // Anchor foam origin to equipped box VISUAL Y position (matches drawCart rendering)
@@ -1541,11 +1541,11 @@ export const CoffeeRushGame: React.FC = () => {
         } else {
           originY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET - 50;
         }
-        const sweepHalf = (GAME_CONFIG.FOAM_SWEEP_ANGLE / 2) * (Math.PI / 180);
+        const sweepHalf = (GAME_CONFIG.BREW_SWEEP_ANGLE / 2) * (Math.PI / 180);
         const currentAngle = Math.sin(foamSweepRef.current) * sweepHalf;
         
         // Decide target: ~18% chance gate, rest enemy
-        const targetGate = Math.random() < GAME_CONFIG.FOAM_PASSIVE_GATE_CHANCE;
+        const targetGate = Math.random() < GAME_CONFIG.BREW_PASSIVE_GATE_CHANCE;
         const gate = gateBuildingRef.current;
         
         let targetX: number;
@@ -1559,7 +1559,7 @@ export const CoffeeRushGame: React.FC = () => {
           // Pick a random enemy in range
           const inRange = enemies.filter(e => {
             const dx = e.x - cartFrontX;
-            return dx > 0 && dx < GAME_CONFIG.FOAM_PASSIVE_RANGE;
+            return dx > 0 && dx < GAME_CONFIG.BREW_PASSIVE_RANGE;
           });
           if (inRange.length > 0) {
             const target = inRange[Math.floor(Math.random() * inRange.length)];
@@ -1567,13 +1567,13 @@ export const CoffeeRushGame: React.FC = () => {
             targetY = target.y - target.height / 2;
           } else {
             // Fire in sweep direction
-            targetX = cartFrontX + Math.cos(currentAngle) * GAME_CONFIG.FOAM_PASSIVE_RANGE;
-            targetY = originY + Math.sin(currentAngle) * GAME_CONFIG.FOAM_PASSIVE_RANGE;
+            targetX = cartFrontX + Math.cos(currentAngle) * GAME_CONFIG.BREW_PASSIVE_RANGE;
+            targetY = originY + Math.sin(currentAngle) * GAME_CONFIG.BREW_PASSIVE_RANGE;
           }
         } else {
           // No targets, fire in sweep direction
-          targetX = cartFrontX + Math.cos(currentAngle) * GAME_CONFIG.FOAM_PASSIVE_RANGE;
-          targetY = originY + Math.sin(currentAngle) * GAME_CONFIG.FOAM_PASSIVE_RANGE;
+          targetX = cartFrontX + Math.cos(currentAngle) * GAME_CONFIG.BREW_PASSIVE_RANGE;
+          targetY = originY + Math.sin(currentAngle) * GAME_CONFIG.BREW_PASSIVE_RANGE;
         }
         
         // Fire foam projectile
@@ -1583,12 +1583,12 @@ export const CoffeeRushGame: React.FC = () => {
           proj.y = originY;
           proj.targetX = targetX;
           proj.targetY = targetY;
-          proj.speed = GAME_CONFIG.FOAM_PASSIVE_SPEED;
-          proj.damage = GAME_CONFIG.FOAM_PASSIVE_DAMAGE;
-          proj.radius = GAME_CONFIG.FOAM_PROJECTILE_RADIUS;
+          proj.speed = GAME_CONFIG.BREW_PASSIVE_SPEED;
+          proj.damage = GAME_CONFIG.BREW_PASSIVE_DAMAGE;
+          proj.radius = GAME_CONFIG.BREW_PROJECTILE_RADIUS;
           proj.pierce = false;
           proj.isStar = false;
-          (proj as any).isFoam = true;
+          proj.isBrew = true;
         }
       }
     }
@@ -1622,7 +1622,7 @@ export const CoffeeRushGame: React.FC = () => {
           shotsHitRef.current++;
           shotsToEnemiesRef.current++;
           if (proj.isStar) starTelemetryRef.current.throwDamageEnemies += proj.damage;
-          if ((proj as any).isFoam) foamTelemetryRef.current.passiveDamage += proj.damage;
+          if (proj.isBrew) foamTelemetryRef.current.passiveDamage += proj.damage;
           spawnParticles(proj.x, proj.y, 'sparkle', 3);
           hitEnemy = true;
           if (!proj.pierce) {
@@ -1649,7 +1649,7 @@ export const CoffeeRushGame: React.FC = () => {
             const si = stageIndexRef.current - 1;
             if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += proj.damage;
             if (proj.isStar) starTelemetryRef.current.throwDamageGate += proj.damage;
-            if ((proj as any).isFoam) foamTelemetryRef.current.passiveShotsToGate++;
+            if (proj.isBrew) foamTelemetryRef.current.passiveShotsToGate++;
             shotsToGateRef.current++;
             spawnParticles(isStarPierce ? g.x : proj.x, isStarPierce ? g.y + g.height / 2 : proj.y, 'sparkle', 3);
             if (!proj.pierce) {
@@ -1886,9 +1886,9 @@ export const CoffeeRushGame: React.FC = () => {
             onStarThrow={handleStarThrow}
             canUseStar={hasStarRef.current && powerRef.current >= GAME_CONFIG.STAR_THROW_COST}
             hasStar={hasStarRef.current}
-            onFoamBurst={handleFoamBurst}
-            canUseFoam={hasFoamRef.current && powerRef.current >= GAME_CONFIG.FOAM_BURST_COST}
-            hasFoam={hasFoamRef.current}
+            onBrewBurst={handleFoamBurst}
+            canUseBrew={hasFoamRef.current && powerRef.current >= GAME_CONFIG.BREW_BURST_COST}
+            hasBrew={hasFoamRef.current}
             onPause={handlePause}
             gameMode={gameMode}
             bossState={bossState}

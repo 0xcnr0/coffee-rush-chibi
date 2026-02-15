@@ -244,11 +244,11 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBo
   const boxIndex = foamBlock.id - 1;
   const visualBlockY = chassisY - (boxIndex + 1) * boxHeight;
   const cannonOriginY = visualBlockY + boxHeight / 2;
-  const range = GAME_CONFIG.FOAM_PASSIVE_RANGE;
+  const range = GAME_CONFIG.BREW_PASSIVE_RANGE;
   
   // Update sweep angle
-  foamSweepAngle += GAME_CONFIG.FOAM_SWEEP_SPEED * 0.016;
-  const sweepHalf = (GAME_CONFIG.FOAM_SWEEP_ANGLE / 2) * (Math.PI / 180);
+  foamSweepAngle += GAME_CONFIG.BREW_SWEEP_SPEED * 0.016;
+  const sweepHalf = (GAME_CONFIG.BREW_SWEEP_ANGLE / 2) * (Math.PI / 180);
   const currentAngle = Math.sin(foamSweepAngle) * sweepHalf;
   
   // Draw sweeping beam indicator (thick, bright for visibility)
@@ -547,7 +547,7 @@ function drawProjectile(ctx: CanvasRenderingContext2D, proj: Projectile) {
     ctx.closePath();
     ctx.fill();
     ctx.restore();
-  } else if (proj.isFoam) {
+  } else if (proj.isBrew) {
     // Brew projectile: large bright cream/white blob with glow
     ctx.save();
     ctx.globalAlpha = 1.0;
