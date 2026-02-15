@@ -4,12 +4,10 @@
 export type GameState = 'MENU' | 'PLAY' | 'END';
 export type GameMode = 'ENDLESS' | 'CHAPTER';
 
-// Phase 1 v1.1: Renamed phases for TDS-style gate flow
-// SIEGE replaces FIGHT, EVO_PICK replaces PICK (PickOverlay disabled)
 export type PlayPhase = 'TRAVEL' | 'SIEGE' | 'EVO_PICK' | 'BOSS' | 'APPROACH' | 'VICTORY' | 'BREATHER';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// GATE BUILDING (HP-based objective)
+// GATE BUILDING
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface GateBuilding {
   hp: number;
@@ -19,19 +17,22 @@ export interface GateBuilding {
   width: number;
   height: number;
   isDestroyed: boolean;
-  stageIndex: number;        // 1-5 (no gate for boss stage 6)
+  stageIndex: number;
   breathingActive: boolean;
   breathingTimer: number;
-  crossedThresholds: number[];  // track which HP% thresholds triggered breathing
-  crumbleTimer: number;         // cleanup animation timer after destruction
-  lastHitTime: number;          // timestamp of last bullet hit (for flash effect)
+  crossedThresholds: number[];
+  crumbleTimer: number;
+  lastHitTime: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // WEAPON SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
-export type WeaponType = 'star' | 'flame' | 'minigun' | null;
-export type WeaponAbilityType = 'star_throw' | 'flame_burst' | 'bullet_storm';
+export type WeaponType = 'star' | 'foam' | 'minigun' | null;
+export type WeaponAbilityType = 'star_throw' | 'foam_burst' | 'bullet_storm';
+
+// Per-box weapon assignment: each box can hold at most one weapon
+export type BoxWeapon = 'star' | 'foam' | null;
 
 export interface WeaponSlot {
   weaponType: WeaponType;
@@ -53,9 +54,9 @@ export interface WeaponInfo {
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface PipProgress {
   currentPips: number;
-  maxPips: number;       // pips per EVO tier
-  evoTier: number;       // current EVO tier (0 = no EVO yet)
-  evoChoices: string[];  // IDs of chosen traits
+  maxPips: number;
+  evoTier: number;
+  evoChoices: string[];
 }
 
 export interface EvoTrait {
@@ -123,8 +124,9 @@ export interface Projectile {
   damage: number;
   active: boolean;
   radius: number;
-  pierce: boolean;          // Pierce projectiles pass through enemies
-  isStar: boolean;          // Visual: render as star blade
+  pierce: boolean;
+  isStar: boolean;
+  isFoam?: boolean;         // Visual: render as foam blob
 }
 
 export interface TipDrop {
@@ -166,16 +168,16 @@ export interface GameStats {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PURCHASE EVENT LOG (Garage upgrade trace)
+// PURCHASE EVENT LOG
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface PurchaseEvent {
   ts: number;
-  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'star_unlock' | 'star_pip' | 'flame_unlock';
-  target: string;           // e.g. "block_0", "weapon_1", "power", "damage"
-  before: string;           // human-readable
-  after: string;            // human-readable
-  beforeValue: number;      // numeric for analysis
-  afterValue: number;       // numeric for analysis
+  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'star_unlock' | 'star_pip' | 'foam_unlock';
+  target: string;
+  before: string;
+  after: string;
+  beforeValue: number;
+  afterValue: number;
   coinCost: number;
   coinsBefore: number;
   coinsAfter: number;
@@ -239,26 +241,27 @@ export interface RunTelemetry {
   starThrowDamageToGate: number;
   starThrowUses: number;
   
-  // Flame telemetry
-  flamePassiveDamageDealt: number;
-  flameBurstDamageToEnemies: number;
-  flameBurstDamageToGate: number;
-  flameBurstUses: number;
-  flameUnlockedAt: number;          // seconds into run when first purchased (-1 if not)
-  flameBurstTimestamps: number[];   // array of run-time seconds for each burst use
+  // Foam telemetry
+  foamPassiveDamageDealt: number;
+  foamPassiveShotsToGate: number;
+  foamBurstDamageToEnemies: number;
+  foamBurstDamageToGate: number;
+  foamBurstUses: number;
+  foamUnlockedAt: number;
+  foamBurstTimestamps: number[];
   
   // Phase timing (global totals)
   phaseAtDeath: PlayPhase | null;
-  deathStage: number;           // which stage the player died in
+  deathStage: number;
   timeInTravel: number;
   timeInSiege: number;
   timeInEvoPick: number;
   timeInBoss: number;
   
-  // Per-stage phase timing breakdown (index 0 = Stage 1, up to 4 = Stage 5)
-  travelTimeByStage: number[];    // seconds in TRAVEL per stage
-  siegeTimeByStage: number[];     // seconds in SIEGE per stage
-  breatherTimeByStage: number[];  // seconds in BREATHER per stage
+  // Per-stage phase timing breakdown
+  travelTimeByStage: number[];
+  siegeTimeByStage: number[];
+  breatherTimeByStage: number[];
   totalTravelTime: number;
   totalSiegeTime: number;
   totalBreatherTime: number;
@@ -291,7 +294,7 @@ export interface BossState {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// UPGRADE INFO (for UI display)
+// UPGRADE INFO
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface UpgradeInfo {
   key: string;

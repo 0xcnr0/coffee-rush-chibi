@@ -90,33 +90,33 @@ export const GAME_CONFIG = {
   TONIC_BOMB_COST: 3,
   TONIC_BOMB_RADIUS: 110,
   TONIC_BOMB_DAMAGE: 28,
-  POWER_POOL_SOFT_CAP: 999,       // Uncapped power pool
-  POWER_START_REGEN: 0.20,         // Power/second base regen
+  POWER_POOL_SOFT_CAP: 999,
+  POWER_START_REGEN: 0.20,
   MAX_BOMB_CHARGES: 3,
   
   // ─────────────────────────────────────────────────────────────
   // GATE BUILDING SYSTEM (TDS-style HP objectives)
   // ─────────────────────────────────────────────────────────────
-  GATE_BUILDING_X_OFFSET: 60,     // pixels from right edge of canvas
+  GATE_BUILDING_X_OFFSET: 60,
   GATE_BUILDING_WIDTH: 50,
   GATE_BUILDING_HEIGHT: 160,
   GATE_BREATHING_THRESHOLDS: [0.75, 0.50, 0.25] as readonly number[],
-  GATE_BREATHING_SLOWDOWN_DURATION: 1.0,  // seconds
-  GATE_BREATHING_SPAWN_MULT: 1.5,         // spawn interval multiplied during breathing
-  GATE_CLEANUP_DURATION: 0.8,             // seconds for victory pulse + enemy fade
+  GATE_BREATHING_SLOWDOWN_DURATION: 1.0,
+  GATE_BREATHING_SPAWN_MULT: 1.5,
+  GATE_CLEANUP_DURATION: 0.8,
   
-  // Post-Victory Breather (pacing window between gates)
-  POST_VICTORY_BREATHER_DURATION: 4.0,    // seconds of running before next TRAVEL
-  BREATHER_SPAWN_REDUCTION: 0.40,         // spawn at 40% rate (60% reduction)
+  // Post-Victory Breather
+  POST_VICTORY_BREATHER_DURATION: 4.0,
+  BREATHER_SPAWN_REDUCTION: 0.40,
   
   // ─────────────────────────────────────────────────────────────
-  // TRAVEL (purely visual transition)
+  // TRAVEL
   // ─────────────────────────────────────────────────────────────
-  TRAVEL_DURATION: 1.2,           // seconds (short, skippable)
+  TRAVEL_DURATION: 1.2,
   TRAVEL_DESPAWN_DELAY: 0.5,
   
   // ─────────────────────────────────────────────────────────────
-  // TIPS & REWARDS (stage-based exponential)
+  // TIPS & REWARDS
   // ─────────────────────────────────────────────────────────────
   TIP_FLOAT_SPEED: 80,
   
@@ -127,7 +127,7 @@ export const GAME_CONFIG = {
   SERVED_EXIT_SPEED: 200,
   
   // ─────────────────────────────────────────────────────────────
-  // LATCHED ENEMY SYSTEM (TDS-style panic)
+  // LATCHED ENEMY SYSTEM
   // ─────────────────────────────────────────────────────────────
   MAX_LATCHED_ENEMIES: 5,
   LATCHED_TICK_INTERVAL: 0.5,
@@ -140,43 +140,41 @@ export const GAME_CONFIG = {
   MAX_PARTICLES: 100,
   
   // ─────────────────────────────────────────────────────────────
-  // STAMINA SYSTEM (Energy - gates play sessions)
+  // STAMINA SYSTEM (Energy)
   // ─────────────────────────────────────────────────────────────
   ENERGY_MAX: 10,
   ENERGY_REGEN_MS: 1800000,
   
   // ─────────────────────────────────────────────────────────────
-  // PIP / EVO UPGRADE SYSTEM (Phase 1)
+  // PIP / EVO UPGRADE SYSTEM
   // ─────────────────────────────────────────────────────────────
-  // Block upgrades: 3 pips → EVO choice, 2 EVOs → MAX
   BLOCK_PIP_PER_EVO: 3,
   BLOCK_MAX_EVOS: 2,
-  BLOCK_PIP_BASE_COST: 30,        // cost for first pip
-  BLOCK_PIP_COST_SCALING: 1.4,    // cost multiplier per pip
+  BLOCK_PIP_BASE_COST: 30,
+  BLOCK_PIP_COST_SCALING: 1.4,
   
-  // Weapon upgrades: 5 pips → EVO choice, repeating
   WEAPON_PIP_PER_EVO: 5,
   WEAPON_PIP_BASE_COST: 40,
   WEAPON_PIP_COST_SCALING: 1.3,
   
-  // Star weapon upgrades: 5 pips → EVO, max E2 for Chapter 1 (10 pips total)
+  // Star weapon upgrades
   STAR_PIP_PER_EVO: 5,
   STAR_PIP_BASE_COST: 250,
   STAR_PIP_COST_SCALING: 1.35,
-  STAR_MAX_EVOS_CH1: 2,             // Chapter 1 cap: E2 (10 pips)
-  STAR_DAMAGE_BONUS_PER_PIP: 0.10,  // +10% passive & throw damage per pip
+  STAR_MAX_EVOS_CH1: 2,
+  STAR_DAMAGE_BONUS_PER_PIP: 0.10,
   
   // Power regen upgrade pips
   POWER_PIP_PER_EVO: 3,
   POWER_PIP_BASE_COST: 35,
   POWER_PIP_COST_SCALING: 1.4,
-  POWER_REGEN_BONUS_PER_PIP: 0.15,  // +15% per pip
+  POWER_REGEN_BONUS_PER_PIP: 0.15,
   
   // Damage upgrade pips
   DAMAGE_PIP_PER_EVO: 3,
   DAMAGE_PIP_BASE_COST: 40,
   DAMAGE_PIP_COST_SCALING: 1.4,
-  DAMAGE_BONUS_PER_PIP: 0.12,       // +12% per pip
+  DAMAGE_BONUS_PER_PIP: 0.12,
   
   // Block count (cargo boxes)
   BLOCK_COUNT_MAX_LEVEL: 3,
@@ -191,7 +189,7 @@ export const GAME_CONFIG = {
   HEAVY_SIZE_MULT: 1.15,
   
   // ─────────────────────────────────────────────────────────────
-  // BOSS (Phase 1: uses STAGES[5].bossHP)
+  // BOSS
   // ─────────────────────────────────────────────────────────────
   BOSS_SPEED_MULT: 0.6,
   BOSS_SIZE_MULT: 1.4,
@@ -201,135 +199,126 @@ export const GAME_CONFIG = {
   BOSS_INCOMING_BANNER_DURATION: 1.5,
   
   // ─────────────────────────────────────────────────────────────
-  // WEAPON ABILITIES (Phase 1: Star full, Flame full, Minigun ability-only)
+  // WEAPON ABILITIES (Star + Foam + Minigun ability-only)
   // ─────────────────────────────────────────────────────────────
   // Passive Star (melee zone)
-  STAR_PASSIVE_RADIUS: 65,          // px from cart front
-  STAR_PASSIVE_TICK_INTERVAL: 0.40, // seconds between ticks
-  STAR_PASSIVE_TICK_DAMAGE: 2,      // damage per tick per enemy
+  STAR_PASSIVE_RADIUS: 65,
+  STAR_PASSIVE_TICK_INTERVAL: 0.40,
+  STAR_PASSIVE_TICK_DAMAGE: 2,
   
   // Active Star Throw (power skill)
-  STAR_THROW_COST: 5,               // Power cost
-  STAR_THROW_DAMAGE: 80,            // damage per enemy hit
-  STAR_THROW_SPEED: 260,            // px/s
-  STAR_THROW_LIFETIME: 0.9,         // seconds before despawn
-  STAR_THROW_RADIUS: 12,            // projectile hitbox radius
+  STAR_THROW_COST: 5,
+  STAR_THROW_DAMAGE: 80,
+  STAR_THROW_SPEED: 260,
+  STAR_THROW_LIFETIME: 0.9,
+  STAR_THROW_RADIUS: 12,
   
   // Star per-box (Garage purchase)
-  STAR_PER_BOX_COST: 140,           // coins to unlock star per cargo box
+  STAR_PER_BOX_COST: 140,
   
   // ─────────────────────────────────────────────────────────────
-  // FLAME WEAPON (Weapon 2)
+  // FOAM WEAPON (Weapon 2 — coffee foam cannon)
   // ─────────────────────────────────────────────────────────────
-  // Passive Flame (cone zone in front of cart)
-  FLAME_PASSIVE_RADIUS: 55,           // px from cart front
-  FLAME_PASSIVE_CONE_ANGLE: 45,       // degrees, cone width
-  FLAME_PASSIVE_TICK_INTERVAL: 0.35,  // seconds between ticks
-  FLAME_PASSIVE_TICK_DAMAGE: 3,       // damage per tick per enemy
+  // Passive Foam Cannon (sinusoidal sweeping, fires foam projectiles)
+  FOAM_PASSIVE_RANGE: 140,             // px max range (shorter than main shotgun)
+  FOAM_PASSIVE_FIRE_INTERVAL: 0.65,    // seconds between foam shots
+  FOAM_PASSIVE_DAMAGE: 6,              // damage per foam projectile
+  FOAM_PASSIVE_SPEED: 300,             // foam projectile speed (px/s)
+  FOAM_PASSIVE_GATE_CHANCE: 0.18,      // 18% chance to target gate instead of enemy
+  FOAM_SWEEP_SPEED: 2.5,              // sinusoidal sweep speed (radians/s)
+  FOAM_SWEEP_ANGLE: 35,               // degrees, total sweep arc
+  FOAM_PROJECTILE_RADIUS: 4,          // foam blob radius
+  FOAM_PROJECTILE_LIFETIME: 0.5,      // seconds before despawn
   
-  // Active Flame Burst (power skill)
-  FLAME_THROW_COST: 7,              // Power cost
-  FLAME_THROW_DAMAGE: 20,           // AoE burst damage
-  FLAME_THROW_RADIUS: 120,          // burst AoE radius
-  FLAME_GATE_DAMAGE_MULT: 0.5,      // gate damage = 50% of burst damage
+  // Active Foam Burst (power skill — canvas-wide foam wave)
+  FOAM_BURST_COST: 7,                 // Power cost
+  FOAM_BURST_DAMAGE: 18,              // damage to each enemy hit
+  FOAM_BURST_GATE_DAMAGE: 10,         // flat damage to gate
+  FOAM_BURST_DURATION: 1.8,           // seconds of foam wave
   
-  // Flame per-box (Garage purchase)
-  FLAME_PER_BOX_COST: 200,          // coins to unlock flame per cargo box
+  // Foam per-box (Garage purchase)
+  FOAM_PER_BOX_COST: 200,
   
   // ─────────────────────────────────────────────────────────────
   // MINIGUN (ability-only, Phase 1)
   // ─────────────────────────────────────────────────────────────
-  MINIGUN_ABILITY_COST: 10,       // Power cost for Bullet Storm
-  MINIGUN_BURST_COUNT: 15,        // projectiles in burst
-  MINIGUN_BURST_DURATION: 2.0,    // seconds for full burst
+  MINIGUN_ABILITY_COST: 10,
+  MINIGUN_BURST_COUNT: 15,
+  MINIGUN_BURST_DURATION: 2.0,
   
   // ─────────────────────────────────────────────────────────────
-  // WEAPON FIRING MODE (A/B: 'single' | 'shotgun')
+  // WEAPON FIRING MODE
   // ─────────────────────────────────────────────────────────────
   WEAPON_MODE: 'shotgun' as 'single' | 'shotgun',
   SHOTGUN_PELLETS: 6,
-  SHOTGUN_SPREAD_DEG: 22,           // total cone in degrees (TDS-wide)
+  SHOTGUN_SPREAD_DEG: 22,
   SHOTGUN_SPREAD_DEG_MIN: 16,
   SHOTGUN_SPREAD_DEG_MAX: 32,
-  SHOTGUN_SPREAD_DISTANCE_SCALE: 0.35, // spread widens with distance
-  MUZZLE_Y_OFFSET: 20,                // px down from topBlock.y → chassis-level shots
+  SHOTGUN_SPREAD_DISTANCE_SCALE: 0.35,
+  MUZZLE_Y_OFFSET: 20,
   SHOTGUN_DAMAGE_SPLIT: 'weighted_center' as 'equal' | 'weighted_center',
   
   // ─────────────────────────────────────────────────────────────
-  // AIM VARIATION (TDS-style jitter + smart target selection)
+  // AIM VARIATION
   // ─────────────────────────────────────────────────────────────
-  AIM_Y_JITTER: 10,                 // px random Y offset per burst
-  AIM_Y_TILT: -2,                   // slight upward tilt (negative = up)
-  CROWDING_THRESHOLD: 6,            // enemies near cart = "crowded"
-  CROWDING_RANGE: 220,              // px from cart to count crowding
-  // Target mode weights: [front, mid, back, gate]
+  AIM_Y_JITTER: 10,
+  AIM_Y_TILT: -2,
+  CROWDING_THRESHOLD: 6,
+  CROWDING_RANGE: 220,
   TARGET_WEIGHTS_CROWDED: [0.55, 0.20, 0.05, 0.20] as readonly number[],
   TARGET_WEIGHTS_NORMAL:  [0.40, 0.20, 0.15, 0.25] as readonly number[],
   
   // ─────────────────────────────────────────────────────────────
   // CHAPTER PERSISTENCE
   // ─────────────────────────────────────────────────────────────
-  CHAPTER_RESET_ENABLED: false,   // Feature flag for Chapter 2 reset (not active now)
+  CHAPTER_RESET_ENABLED: false,
   
   // ─────────────────────────────────────────────────────────────
-  // TDS LOOP (generalized across all stages)
+  // TDS LOOP
   // ─────────────────────────────────────────────────────────────
-  APPROACH_DURATION: 1.0,               // gate slide-in time (all stages)
-  GATE_START_X: 500,                    // off-screen right start position
-  STAGE1_WAVE_SIZE: 3,                  // enemies per wave during siege (Stage 1 only)
-  STAGE1_WAVE_BREATHER: 1.0,           // seconds pause between waves (Stage 1 only)
-  STAGE2_WAVE_SIZE: 3,                  // enemies per wave during siege (Stage 2)
-  STAGE2_WAVE_BREATHER: 0.8,           // seconds pause between waves (Stage 2)
+  APPROACH_DURATION: 1.0,
+  GATE_START_X: 500,
+  STAGE1_WAVE_SIZE: 3,
+  STAGE1_WAVE_BREATHER: 1.0,
+  STAGE2_WAVE_SIZE: 3,
+  STAGE2_WAVE_BREATHER: 0.8,
 } as const;
 
-// Per-stage travel duration (seconds) — Stage 1: 10s runner, Stage 2: 10s balanced, Stage 3+: death-wall travel
+// Per-stage travel duration (seconds)
 export const TRAVEL_DURATION_BY_STAGE = [10, 10, 16, 18, 20] as const;
 
 // Mini-rush config (Stage 2+ travel only)
-// A burst of faster spawning mid-travel to create pressure spikes
 export const MINI_RUSH_CONFIG = {
-  ENABLED_FROM_STAGE: 3,        // mini-rush starts from stage 3 travel (death wall)
-  DURATION: 5.0,                // seconds of ~3x spawn rate
-  SPAWN_MULT: 0.35,             // spawn interval multiplied (0.35 = ~3x faster)
-  START_RATIO: 0.25,            // starts at 25% through travel (earlier pressure)
+  ENABLED_FROM_STAGE: 3,
+  DURATION: 5.0,
+  SPAWN_MULT: 0.35,
+  START_RATIO: 0.25,
 } as const;
 
 // Per-stage bomb silence duration (seconds) during SIEGE
 export const BOMB_SILENCE_BY_STAGE = [1.5, 1.0, 0.6, 0.6, 0.6] as const;
 
-// Per-stage latched tick damage multiplier (Stage 3+ death wall pressure)
-// Stage 1-2: normal (1.0x), Stage 3+: 1.75x (4 → 7 effective damage)
+// Per-stage latched tick damage multiplier
 export const LATCH_DAMAGE_MULT_BY_STAGE = [1.0, 1.0, 1.75, 1.75, 1.75] as const;
 
 // Colors (HSL values matching index.css)
 export const COLORS = {
-  // Coffee palette
   espresso: 'hsl(25, 50%, 20%)',
   darkRoast: 'hsl(25, 45%, 30%)',
   mediumRoast: 'hsl(30, 50%, 45%)',
   lightRoast: 'hsl(35, 55%, 60%)',
   cream: 'hsl(40, 60%, 85%)',
   foam: 'hsl(45, 50%, 95%)',
-  
-  // Accent
   warmOrange: 'hsl(25, 80%, 55%)',
   gold: 'hsl(45, 90%, 55%)',
-  
-  // UI
   energyBar: 'hsl(145, 60%, 45%)',
   hpBar: 'hsl(0, 70%, 55%)',
   hpBarBg: 'hsl(0, 20%, 30%)',
-  
-  // Enemy states
   sleepy: 'hsl(220, 10%, 60%)',
   awake: 'hsl(35, 70%, 60%)',
-  
-  // Effects
   sparkle: 'hsl(50, 100%, 70%)',
   heart: 'hsl(350, 80%, 60%)',
   steam: 'hsl(0, 0%, 90%)',
-  
-  // Gate Building
   gateBase: 'hsl(0, 40%, 35%)',
   gateDamaged: 'hsl(0, 50%, 45%)',
   gateCrumble: 'hsl(25, 30%, 50%)',

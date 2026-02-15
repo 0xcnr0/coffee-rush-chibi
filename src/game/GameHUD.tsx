@@ -13,9 +13,9 @@ interface GameHUDProps {
   onStarThrow: () => void;
   canUseStar: boolean;
   hasStar: boolean;
-  onFlameBurst: () => void;
-  canUseFlame: boolean;
-  hasFlame: boolean;
+  onFoamBurst: () => void;
+  canUseFoam: boolean;
+  hasFoam: boolean;
   onPause: () => void;
   gameMode: GameMode;
   bossState: BossState;
@@ -28,7 +28,7 @@ interface GameHUDProps {
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived, tips, power,
   onTonicBomb, canUseBomb, onStarThrow, canUseStar, hasStar, 
-  onFlameBurst, canUseFlame, hasFlame,
+  onFoamBurst, canUseFoam, hasFoam,
   onPause,
   gameMode, bossState, bossIncomingTimer,
   playPhase, stageIndex = 1, gateBuilding,
@@ -36,7 +36,6 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   const [gateClearedStage, setGateClearedStage] = React.useState<number | null>(null);
   const gateClearedTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // Show "Gate Cleared" banner when entering VICTORY phase
   const prevPhaseRef = React.useRef<PlayPhase | undefined>(undefined);
   React.useEffect(() => {
     if (playPhase === 'VICTORY' && prevPhaseRef.current !== 'VICTORY') {
@@ -45,8 +44,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       gateClearedTimerRef.current = setTimeout(() => setGateClearedStage(null), 2000);
     }
     prevPhaseRef.current = playPhase;
-    
   }, [playPhase, stageIndex]);
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -56,8 +55,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   const skillCost = GAME_CONFIG.TONIC_BOMB_COST;
   const canUseSkill = power >= skillCost;
   const starCost = GAME_CONFIG.STAR_THROW_COST;
-  const flameCost = GAME_CONFIG.FLAME_THROW_COST;
-  const totalStages = STAGES.length;
+  const foamCost = GAME_CONFIG.FOAM_BURST_COST;
   
   return (
     <>
@@ -99,7 +97,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       
       {/* Top Bar */}
       <div className={`absolute top-0 left-0 right-0 flex flex-col gap-2 p-3 z-10 ${bossState.isActive ? 'bg-red-900/20' : ''}`}>
-        {/* Stage Progress Bar (6 segments) */}
+        {/* Stage Progress Bar */}
         <div className="flex flex-col gap-1 px-1">
           <div className="flex gap-1">
             {STAGES.map((stage, i) => {
@@ -134,7 +132,6 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             })}
           </div>
           
-          {/* Phase badge */}
           {playPhase === 'SIEGE' && !bossState.isActive && (
             <div className="flex justify-center">
               <span className="bg-warm-orange/80 text-coffee-foam px-2 py-0.5 rounded-full text-[10px] font-bold">
@@ -173,7 +170,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
         </div>
       </div>
       
-      {/* Bottom Bar - Power + Skill */}
+      {/* Bottom Bar - Power + Skills */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10 bg-gradient-to-t from-coffee-espresso/80 to-transparent">
         <div className="flex items-center gap-3">
           <Button onClick={onPause} variant="ghost" size="icon"
@@ -181,7 +178,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             <Pause className="w-6 h-6" />
           </Button>
           
-          {/* Power (numeric, uncapped) */}
+          {/* Power */}
           <div className="flex-1 bg-coffee-dark/80 rounded-xl p-2 border border-coffee-medium/30">
             <div className="flex items-center gap-2">
               <span className="text-lg">⚡</span>
@@ -190,7 +187,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
           
-          {/* Star Throw Button (only if unlocked) */}
+          {/* Star Throw Button */}
           {hasStar && (
             <Button onClick={onStarThrow} disabled={!canUseStar}
               className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
@@ -204,16 +201,16 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </Button>
           )}
           
-          {/* Flame Burst Button (only if unlocked) */}
-          {hasFlame && (
-            <Button onClick={onFlameBurst} disabled={!canUseFlame}
+          {/* Foam Burst Button */}
+          {hasFoam && (
+            <Button onClick={onFoamBurst} disabled={!canUseFoam}
               className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
-                canUseFlame ? 'bg-orange-600 hover:bg-orange-500 text-coffee-foam border-orange-400/50 hover:scale-105 active:scale-95' 
+                canUseFoam ? 'bg-amber-100 hover:bg-amber-50 text-coffee-espresso border-amber-300/50 hover:scale-105 active:scale-95' 
                 : 'bg-coffee-dark/60 text-coffee-cream/40 border-coffee-dark/30'}`}>
-              <span className="text-2xl">🔥</span>
+              <span className="text-2xl">🧴</span>
               <div className={`absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                canUseFlame ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
-                {flameCost}⚡
+                canUseFoam ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
+                {foamCost}⚡
               </div>
             </Button>
           )}
