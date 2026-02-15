@@ -241,7 +241,7 @@ export interface RunTelemetry {
   starThrowDamageToGate: number;
   starThrowUses: number;
   
-  // Foam telemetry
+  // Foam (Brew) telemetry
   foamPassiveDamageDealt: number;
   foamPassiveShotsToGate: number;
   foamBurstDamageToEnemies: number;
@@ -249,6 +249,8 @@ export interface RunTelemetry {
   foamBurstUses: number;
   foamUnlockedAt: number;
   foamBurstTimestamps: number[];
+  brewEquippedBoxIndex: number;
+  brewBurstUsedDuringGate: number;
   
   // Phase timing (global totals)
   phaseAtDeath: PlayPhase | null;

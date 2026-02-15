@@ -100,6 +100,7 @@ export const RunSummaryOverlay: React.FC<RunSummaryOverlayProps> = ({ stats, pur
     lines.push(`  G1: ${bgd[0]} | G2: ${bgd[1]} | G3: ${bgd[2]} | G4: ${bgd[3]} | G5: ${bgd[4]}`);
     lines.push(`Star Throw: ${t?.starThrowUses ?? 0} uses | Dmg to Enemies: ${t?.starThrowDamageToEnemies ?? 0} | Dmg to Gate: ${t?.starThrowDamageToGate ?? 0} | Passive: ${t?.starPassiveDamageDealt ?? 0}`);
     lines.push(`Brew Burst: ${t?.foamBurstUses ?? 0} uses | Dmg to Enemies: ${t?.foamBurstDamageToEnemies ?? 0} | Dmg to Gate: ${t?.foamBurstDamageToGate ?? 0} | Passive: ${t?.foamPassiveDamageDealt ?? 0}`);
+    lines.push(`  Brew Box Index: ${t?.brewEquippedBoxIndex ?? -1} | Burst During Gate: ${t?.brewBurstUsedDuringGate ?? 0}`);
     if ((t?.foamUnlockedAt ?? -1) >= 0) lines.push(`  Brew unlocked at: ${fmt(t?.foamUnlockedAt ?? 0)}s`);
     if (t?.foamBurstTimestamps && t.foamBurstTimestamps.length > 0) lines.push(`  Brew Burst timestamps: ${t.foamBurstTimestamps.map(ts => fmt(ts, 1)).join(', ')}`);
     lines.push('');

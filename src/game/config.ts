@@ -217,7 +217,7 @@ export const GAME_CONFIG = {
   STAR_PER_BOX_COST: 140,
   
   // ─────────────────────────────────────────────────────────────
-  // BREW WEAPON (Foam) — coffee foam cannon
+  // BREW WEAPON (Foam) — kahve köpüğü topu
   // ─────────────────────────────────────────────────────────────
   // Passive Foam Cannon (sinusoidal sweeping, fires foam projectiles)
   FOAM_PASSIVE_RANGE: 140,             // px max range (shorter than main shotgun)
@@ -232,9 +232,9 @@ export const GAME_CONFIG = {
   
   // Active Foam Burst (power skill — canvas-wide foam wave)
   FOAM_BURST_COST: 7,                 // Power cost
-  FOAM_BURST_DAMAGE: 18,              // damage to each enemy hit
-  FOAM_BURST_GATE_DAMAGE: 10,         // flat damage to gate
-  FOAM_BURST_DURATION: 1.8,           // seconds of foam wave
+  FOAM_BURST_DAMAGE: 55,              // damage to each enemy hit (buffed: premium 7-Power ability)
+  FOAM_BURST_GATE_DAMAGE: 35,         // flat damage to gate (buffed: meaningful vs gate)
+  FOAM_BURST_DURATION: 2.2,           // seconds of foam wave (extended for premium feel)
   
   // Foam per-box (Garage purchase)
   FOAM_PER_BOX_COST: 200,

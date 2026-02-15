@@ -23,6 +23,7 @@ export function drawGame(
   currentTime?: number,
   hasStar?: boolean,
   hasFoam?: boolean,
+  foamBoxIndex?: number,
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
   const isTraveling = playPhase === 'TRAVEL' || playPhase === 'BREATHER';
@@ -56,7 +57,7 @@ export function drawGame(
   drawBarista(ctx, blocks);
   
   if (hasStar) drawStarZone(ctx, blocks);
-  if (hasFoam) drawFoamZone(ctx, blocks);
+  if (hasFoam) drawFoamZone(ctx, blocks, foamBoxIndex);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
   projectiles.forEach(proj => drawProjectile(ctx, proj));
@@ -224,13 +225,18 @@ let foamSweepAngle = 0;
 let foamParticleTimer = 0;
 const foamParticles: { x: number; y: number; life: number; vx: number; vy: number; size: number }[] = [];
 
-function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
+function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBoxIndex?: number) {
   const activeBlocks = blocks.filter(b => !b.destroyed);
   if (activeBlocks.length === 0) return;
   
   const cartFrontX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
-  const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
-  const cannonOriginY = groundY - 60;
+  // Anchor to equipped box Y position
+  const foamBlock = foamBoxIndex !== undefined && foamBoxIndex >= 0
+    ? blocks.find(b => b.id === foamBoxIndex + 1 && !b.destroyed)
+    : null;
+  const cannonOriginY = foamBlock 
+    ? foamBlock.y + foamBlock.height / 2 
+    : GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET - 60;
   const range = GAME_CONFIG.FOAM_PASSIVE_RANGE;
   
   // Update sweep angle
@@ -238,45 +244,45 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   const sweepHalf = (GAME_CONFIG.FOAM_SWEEP_ANGLE / 2) * (Math.PI / 180);
   const currentAngle = Math.sin(foamSweepAngle) * sweepHalf;
   
-  // Draw sweeping beam indicator (faint)
+  // Draw sweeping beam indicator (more visible)
   ctx.save();
-  ctx.globalAlpha = 0.06;
-  ctx.fillStyle = 'hsl(45, 50%, 95%)';
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = 'hsl(40, 60%, 90%)';
   ctx.beginPath();
   ctx.moveTo(cartFrontX, cannonOriginY);
   const beamEndX = cartFrontX + Math.cos(currentAngle) * range;
   const beamEndY = cannonOriginY + Math.sin(currentAngle) * range;
-  // Narrow beam width
-  const perpX = -Math.sin(currentAngle) * 15;
-  const perpY = Math.cos(currentAngle) * 15;
+  // Wider beam for visibility
+  const perpX = -Math.sin(currentAngle) * 22;
+  const perpY = Math.cos(currentAngle) * 22;
   ctx.lineTo(beamEndX + perpX, beamEndY + perpY);
   ctx.lineTo(beamEndX - perpX, beamEndY - perpY);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
   
-  // Range indicator (very faint arc)
+  // Range indicator arc (more visible)
   ctx.save();
-  ctx.globalAlpha = 0.04;
+  ctx.globalAlpha = 0.12;
   ctx.strokeStyle = 'hsl(40, 60%, 85%)';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(cartFrontX, cannonOriginY, range, -sweepHalf, sweepHalf);
   ctx.stroke();
   ctx.restore();
   
-  // Foam particles (cream/white blobs)
+  // Foam particles (cream/white blobs — denser, larger)
   foamParticleTimer += 0.016;
-  if (foamParticleTimer > 0.12 && foamParticles.length < 6) {
+  if (foamParticleTimer > 0.07 && foamParticles.length < 12) {
     foamParticleTimer = 0;
-    const dist = Math.random() * range * 0.6 + 15;
+    const dist = Math.random() * range * 0.7 + 10;
     foamParticles.push({
       x: cartFrontX + Math.cos(currentAngle) * dist,
       y: cannonOriginY + Math.sin(currentAngle) * dist,
-      life: 0.8,
-      vx: Math.cos(currentAngle) * 15,
-      vy: -8 - Math.random() * 12,
-      size: 3 + Math.random() * 3,
+      life: 1.0,
+      vx: Math.cos(currentAngle) * 20,
+      vy: -10 - Math.random() * 15,
+      size: 4 + Math.random() * 5,
     });
   }
   
@@ -289,8 +295,8 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
     if (p.life <= 0) { foamParticles.splice(i, 1); continue; }
     
     ctx.save();
-    ctx.globalAlpha = p.life * 0.5;
-    ctx.fillStyle = `hsl(40, ${30 + (1 - p.life) * 30}%, ${90 - (1 - p.life) * 10}%)`;
+    ctx.globalAlpha = p.life * 0.8;
+    ctx.fillStyle = `hsl(40, ${40 + (1 - p.life) * 30}%, ${92 - (1 - p.life) * 10}%)`;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fill();
@@ -530,16 +536,23 @@ function drawProjectile(ctx: CanvasRenderingContext2D, proj: Projectile) {
     ctx.fill();
     ctx.restore();
   } else if (proj.isFoam) {
-    // Foam projectile: white/cream blob
+    // Brew projectile: bright cream/white blob with glow
     ctx.save();
-    ctx.globalAlpha = 0.8;
-    ctx.fillStyle = 'hsl(40, 50%, 92%)';
+    ctx.globalAlpha = 0.95;
+    // Outer glow
+    ctx.fillStyle = 'hsla(40, 50%, 85%, 0.4)';
     ctx.beginPath();
-    ctx.arc(proj.x, proj.y, proj.radius, 0, Math.PI * 2);
+    ctx.arc(proj.x, proj.y, proj.radius * 2.5, 0, Math.PI * 2);
     ctx.fill();
+    // Main blob
+    ctx.fillStyle = 'hsl(38, 55%, 88%)';
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, proj.radius * 1.4, 0, Math.PI * 2);
+    ctx.fill();
+    // Inner highlight
     ctx.fillStyle = 'hsl(45, 40%, 96%)';
     ctx.beginPath();
-    ctx.arc(proj.x - 1, proj.y - 1, proj.radius * 0.5, 0, Math.PI * 2);
+    ctx.arc(proj.x - 1, proj.y - 1, proj.radius * 0.6, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   } else {
