@@ -30,8 +30,8 @@ export interface GateBuilding {
 // ═══════════════════════════════════════════════════════════════════════════════
 // WEAPON SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
-export type WeaponType = 'saw' | 'flame' | 'minigun' | null;
-export type WeaponAbilityType = 'saw_line' | 'flame_burst' | 'bullet_storm';
+export type WeaponType = 'star' | 'flame' | 'minigun' | null;
+export type WeaponAbilityType = 'star_throw' | 'flame_burst' | 'bullet_storm';
 
 export interface WeaponSlot {
   weaponType: WeaponType;
@@ -124,7 +124,7 @@ export interface Projectile {
   active: boolean;
   radius: number;
   pierce: boolean;          // Pierce projectiles pass through enemies
-  isSaw: boolean;           // Visual: render as saw blade
+  isStar: boolean;          // Visual: render as star blade
 }
 
 export interface TipDrop {
@@ -170,7 +170,7 @@ export interface GameStats {
 // ═══════════════════════════════════════════════════════════════════════════════
 export interface PurchaseEvent {
   ts: number;
-  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'saw_unlock' | 'star_unlock' | 'star_pip';
+  type: 'power_pip' | 'damage_pip' | 'cargo_box' | 'block_pip' | 'weapon_pip' | 'select_weapon' | 'evo_choice' | 'star_unlock' | 'star_pip' | 'flame_unlock';
   target: string;           // e.g. "block_0", "weapon_1", "power", "damage"
   before: string;           // human-readable
   after: string;            // human-readable
@@ -233,11 +233,19 @@ export interface RunTelemetry {
   // Target mode telemetry
   targetModeCounts: { front: number; mid: number; back: number; gate: number };
   
-  // Saw telemetry
-  sawPassiveDamageDealt: number;
-  sawThrowDamageToEnemies: number;
-  sawThrowDamageToGate: number;
-  sawThrowUses: number;
+  // Star telemetry
+  starPassiveDamageDealt: number;
+  starThrowDamageToEnemies: number;
+  starThrowDamageToGate: number;
+  starThrowUses: number;
+  
+  // Flame telemetry
+  flamePassiveDamageDealt: number;
+  flameBurstDamageToEnemies: number;
+  flameBurstDamageToGate: number;
+  flameBurstUses: number;
+  flameUnlockedAt: number;          // seconds into run when first purchased (-1 if not)
+  flameBurstTimestamps: number[];   // array of run-time seconds for each burst use
   
   // Phase timing (global totals)
   phaseAtDeath: PlayPhase | null;

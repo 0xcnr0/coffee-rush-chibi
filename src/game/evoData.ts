@@ -65,23 +65,23 @@ export const BLOCK_EVO_TIERS: EvoTrait[][] = [BLOCK_EVO_1, BLOCK_EVO_2];
 // Weapon upgrade cycle: 5 pips → EVO popup (2 choices), repeating
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Saw weapon EVOs
-export const SAW_EVO_1: EvoTrait[] = [
+// Star weapon EVOs
+export const STAR_EVO_WEAPON: EvoTrait[] = [
   {
-    id: 'saw_extra_proj',
+    id: 'star_extra_proj',
     name: 'Twin Blades',
-    icon: '🪚',
-    description: '+1 Saw projectile',
+    icon: '⭐',
+    description: '+1 Star projectile',
     category: 'weapon',
     effects: [
       { type: 'projectile_count', value: 1 },
     ],
   },
   {
-    id: 'saw_cheap_ability',
-    name: 'Efficient Grind',
+    id: 'star_cheap_ability',
+    name: 'Efficient Throw',
     icon: '⚡',
-    description: '-25% Saw Line cost',
+    description: '-25% Star Throw cost',
     category: 'weapon',
     effects: [
       { type: 'ability_cost_mult', value: 0.75 },
@@ -89,7 +89,7 @@ export const SAW_EVO_1: EvoTrait[] = [
   },
 ];
 
-// Flame weapon EVOs (ability-only in Phase 1)
+// Flame weapon EVOs
 export const FLAME_EVO_1: EvoTrait[] = [
   {
     id: 'flame_wide',
@@ -139,7 +139,7 @@ export const MINIGUN_EVO_1: EvoTrait[] = [
 
 // Map weapon type to EVO tiers
 export const WEAPON_EVO_TIERS: Record<string, EvoTrait[][]> = {
-  saw: [SAW_EVO_1],
+  star: [STAR_EVO_WEAPON],
   flame: [FLAME_EVO_1],
   minigun: [MINIGUN_EVO_1],
 };

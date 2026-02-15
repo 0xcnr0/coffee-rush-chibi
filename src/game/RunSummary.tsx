@@ -118,11 +118,11 @@ export const RunSummary: React.FC<RunSummaryProps> = ({ telemetry, timeSurvived 
             <div>Latched: <span className="text-warm-orange">{telemetry.maxLatchedPeak}</span></div>
             <div>Bombs Used: {telemetry.tonicBombUses}</div>
             
-            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Saw</div>
-            <div>Passive: <span className="text-sky-400">{telemetry.sawPassiveDamageDealt}</span></div>
-            <div>Throws: <span className="text-sky-400">{telemetry.sawThrowUses}</span></div>
-            <div>Throw→Enemy: {telemetry.sawThrowDamageToEnemies}</div>
-            <div>Throw→Gate: {telemetry.sawThrowDamageToGate}</div>
+            <div className="col-span-2 text-coffee-light/60 text-[10px] uppercase mt-2">Star</div>
+            <div>Passive: <span className="text-sky-400">{telemetry.starPassiveDamageDealt}</span></div>
+            <div>Throws: <span className="text-sky-400">{telemetry.starThrowUses}</span></div>
+            <div>Throw→Enemy: {telemetry.starThrowDamageToEnemies}</div>
+            <div>Throw→Gate: {telemetry.starThrowDamageToGate}</div>
             
             <div className="col-span-2 text-coffee-light/40 text-[9px] mt-2 text-center border-t border-coffee-light/10 pt-1">
               🔧 BOSS_HP={bossHP} | BOMB={GAME_CONFIG.TONIC_BOMB_COST}

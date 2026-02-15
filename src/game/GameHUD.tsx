@@ -10,9 +10,12 @@ interface GameHUDProps {
   power: number;
   onTonicBomb: () => void;
   canUseBomb: boolean;
-  onSawThrow: () => void;
-  canUseSaw: boolean;
-  hasSaw: boolean;
+  onStarThrow: () => void;
+  canUseStar: boolean;
+  hasStar: boolean;
+  onFlameBurst: () => void;
+  canUseFlame: boolean;
+  hasFlame: boolean;
   onPause: () => void;
   gameMode: GameMode;
   bossState: BossState;
@@ -24,7 +27,9 @@ interface GameHUDProps {
 
 export const GameHUD: React.FC<GameHUDProps> = ({
   timeSurvived, tips, power,
-  onTonicBomb, canUseBomb, onSawThrow, canUseSaw, hasSaw, onPause,
+  onTonicBomb, canUseBomb, onStarThrow, canUseStar, hasStar, 
+  onFlameBurst, canUseFlame, hasFlame,
+  onPause,
   gameMode, bossState, bossIncomingTimer,
   playPhase, stageIndex = 1, gateBuilding,
 }) => {
@@ -50,7 +55,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({
 
   const skillCost = GAME_CONFIG.TONIC_BOMB_COST;
   const canUseSkill = power >= skillCost;
-  const sawCost = GAME_CONFIG.SAW_THROW_COST;
+  const starCost = GAME_CONFIG.STAR_THROW_COST;
+  const flameCost = GAME_CONFIG.FLAME_THROW_COST;
   const totalStages = STAGES.length;
   
   return (
@@ -184,16 +190,30 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </div>
           </div>
           
-          {/* Saw Throw Button (only if unlocked) */}
-          {hasSaw && (
-            <Button onClick={onSawThrow} disabled={!canUseSaw}
+          {/* Star Throw Button (only if unlocked) */}
+          {hasStar && (
+            <Button onClick={onStarThrow} disabled={!canUseStar}
               className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
-                canUseSaw ? 'bg-sky-600 hover:bg-sky-500 text-coffee-foam border-sky-400/50 hover:scale-105 active:scale-95' 
+                canUseStar ? 'bg-sky-600 hover:bg-sky-500 text-coffee-foam border-sky-400/50 hover:scale-105 active:scale-95' 
                 : 'bg-coffee-dark/60 text-coffee-cream/40 border-coffee-dark/30'}`}>
               <span className="text-2xl">⭐</span>
               <div className={`absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                canUseSaw ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
-                {sawCost}⚡
+                canUseStar ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
+                {starCost}⚡
+              </div>
+            </Button>
+          )}
+          
+          {/* Flame Burst Button (only if unlocked) */}
+          {hasFlame && (
+            <Button onClick={onFlameBurst} disabled={!canUseFlame}
+              className={`relative h-16 w-16 rounded-xl text-lg font-bold shadow-lg transition-all border-2 ${
+                canUseFlame ? 'bg-orange-600 hover:bg-orange-500 text-coffee-foam border-orange-400/50 hover:scale-105 active:scale-95' 
+                : 'bg-coffee-dark/60 text-coffee-cream/40 border-coffee-dark/30'}`}>
+              <span className="text-2xl">🔥</span>
+              <div className={`absolute -top-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                canUseFlame ? 'bg-energy text-coffee-espresso' : 'bg-coffee-dark/60 text-coffee-cream/40'}`}>
+                {flameCost}⚡
               </div>
             </Button>
           )}

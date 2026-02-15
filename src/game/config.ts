@@ -201,34 +201,44 @@ export const GAME_CONFIG = {
   BOSS_INCOMING_BANNER_DURATION: 1.5,
   
   // ─────────────────────────────────────────────────────────────
-  // WEAPON ABILITIES (Phase 1: Saw full, Flame+Minigun ability-only)
+  // WEAPON ABILITIES (Phase 1: Star full, Flame full, Minigun ability-only)
   // ─────────────────────────────────────────────────────────────
-  // Passive Saw (melee zone)
-  SAW_PASSIVE_RADIUS: 65,          // px from cart front
-  SAW_PASSIVE_TICK_INTERVAL: 0.40, // seconds between ticks (nerfed from 0.25)
-  SAW_PASSIVE_TICK_DAMAGE: 2,      // damage per tick per enemy (nerfed from 5)
+  // Passive Star (melee zone)
+  STAR_PASSIVE_RADIUS: 65,          // px from cart front
+  STAR_PASSIVE_TICK_INTERVAL: 0.40, // seconds between ticks
+  STAR_PASSIVE_TICK_DAMAGE: 2,      // damage per tick per enemy
   
-  // Active Saw Throw (power skill)
-  SAW_THROW_COST: 5,               // Power cost
-  SAW_THROW_DAMAGE: 80,            // damage per enemy hit (buffed from 50 for faster gate kills)
-  SAW_THROW_SPEED: 260,            // px/s (buffed for gate reach)
-  SAW_THROW_LIFETIME: 0.9,         // seconds before despawn (buffed for range)
-  SAW_THROW_RADIUS: 12,            // projectile hitbox radius
+  // Active Star Throw (power skill)
+  STAR_THROW_COST: 5,               // Power cost
+  STAR_THROW_DAMAGE: 80,            // damage per enemy hit
+  STAR_THROW_SPEED: 260,            // px/s
+  STAR_THROW_LIFETIME: 0.9,         // seconds before despawn
+  STAR_THROW_RADIUS: 12,            // projectile hitbox radius
   
   // Star per-box (Garage purchase)
-  STAR_PER_BOX_COST: 140,          // coins to unlock star per cargo box
-  SAW_UNLOCK_COST: 140,            // legacy alias
+  STAR_PER_BOX_COST: 140,           // coins to unlock star per cargo box
   
-  // Legacy (kept for compatibility)
-  SAW_FIRE_RATE: 1200,
-  SAW_DAMAGE: 8,
-  SAW_ABILITY_COST: 4,
-  SAW_ABILITY_DAMAGE: 25,
+  // ─────────────────────────────────────────────────────────────
+  // FLAME WEAPON (Weapon 2)
+  // ─────────────────────────────────────────────────────────────
+  // Passive Flame (cone zone in front of cart)
+  FLAME_PASSIVE_RADIUS: 55,           // px from cart front
+  FLAME_PASSIVE_CONE_ANGLE: 45,       // degrees, cone width
+  FLAME_PASSIVE_TICK_INTERVAL: 0.35,  // seconds between ticks
+  FLAME_PASSIVE_TICK_DAMAGE: 3,       // damage per tick per enemy
   
-  FLAME_ABILITY_COST: 7,          // Power cost for Flame Burst
-  FLAME_ABILITY_DAMAGE: 20,       // damage to all enemies on screen
-  FLAME_GATE_DAMAGE_MULT: 0.5,   // partial gate damage (50%)
+  // Active Flame Burst (power skill)
+  FLAME_THROW_COST: 7,              // Power cost
+  FLAME_THROW_DAMAGE: 20,           // AoE burst damage
+  FLAME_THROW_RADIUS: 120,          // burst AoE radius
+  FLAME_GATE_DAMAGE_MULT: 0.5,      // gate damage = 50% of burst damage
   
+  // Flame per-box (Garage purchase)
+  FLAME_PER_BOX_COST: 200,          // coins to unlock flame per cargo box
+  
+  // ─────────────────────────────────────────────────────────────
+  // MINIGUN (ability-only, Phase 1)
+  // ─────────────────────────────────────────────────────────────
   MINIGUN_ABILITY_COST: 10,       // Power cost for Bullet Storm
   MINIGUN_BURST_COUNT: 15,        // projectiles in burst
   MINIGUN_BURST_DURATION: 2.0,    // seconds for full burst
