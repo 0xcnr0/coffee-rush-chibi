@@ -276,6 +276,10 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           const starIsMaxed = starEvoCount >= starMaxEvos;
           const starPipsInTier = progression.starPips % GAME_CONFIG.STAR_PIP_PER_EVO;
 
+          // Per-box weapon lock
+          const boxWeapons = progression.boxWeapons || [null, null, null];
+          const boxWeapon = boxWeapons[boxIdx];
+
           // Foam per-box
           const foamPerBox = progression.foamPerBox || [false, false, false];
           const isFoamed = foamPerBox[boxIdx] || false;
@@ -285,8 +289,8 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           return (
             <div key={`weapons-${boxIdx}`} className="absolute pointer-events-auto flex gap-1"
               style={{ top: boxY, left: cartRightEdge + 6 }}>
-              {/* Star button */}
-              {!isStarred ? (
+              {/* Star button (hidden if box has foam) */}
+              {boxWeapon !== 'foam' && (!isStarred ? (
                 <button
                   onClick={() => {
                     if (purchaseStarForBox(boxIdx, GAME_CONFIG.STAR_PER_BOX_COST)) {
@@ -325,29 +329,29 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
                   <Star className="w-3.5 h-3.5 text-sky-400 fill-sky-400" />
                   <Check className="w-2.5 h-2.5 text-sky-400 mt-0.5" />
                 </div>
-              )}
+              ))}
 
-              {/* Foam button (only visible when bestStageReached >= 3) */}
-              {showFoam && (
+              {/* Brew button (hidden if box has star) */}
+              {showFoam && boxWeapon !== 'star' && (
                 !isFoamed ? (
                   <button
                     onClick={() => {
                       if (purchaseFoamForBox(boxIdx, GAME_CONFIG.FOAM_PER_BOX_COST)) {
                         setProgression(loadProgression());
                         onProgressionChange?.();
-                        toast.success('Foam Equipped!', { icon: '🧴' });
+                        toast.success('Brew Equipped!', { icon: '🫧' });
                       }
                     }}
                     disabled={!canAffordFoam}
                     className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] transition-all duration-200
                       ${canAffordFoam ? 'bg-coffee-dark/80 border-amber-500/50 hover:border-amber-500 active:scale-95'
                       : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'}`}>
-                    <span className="text-sm">🧴</span>
+                    <span className="text-sm">🫧</span>
                     <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.FOAM_PER_BOX_COST}</span>
                   </button>
                 ) : (
                   <div className="flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] bg-amber-900/60 border-amber-500/50">
-                    <span className="text-sm">🧴</span>
+                    <span className="text-sm">🫧</span>
                     <Check className="w-2.5 h-2.5 text-amber-400 mt-0.5" />
                   </div>
                 )

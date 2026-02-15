@@ -1584,6 +1584,7 @@ export const CoffeeRushGame: React.FC = () => {
           shotsHitRef.current++;
           shotsToEnemiesRef.current++;
           if (proj.isStar) starTelemetryRef.current.throwDamageEnemies += proj.damage;
+          if ((proj as any).isFoam) foamTelemetryRef.current.passiveDamage += proj.damage;
           spawnParticles(proj.x, proj.y, 'sparkle', 3);
           hitEnemy = true;
           if (!proj.pierce) {
@@ -1610,6 +1611,7 @@ export const CoffeeRushGame: React.FC = () => {
             const si = stageIndexRef.current - 1;
             if (si >= 0 && si < 5) gateDamageDealtRef.current[si] += proj.damage;
             if (proj.isStar) starTelemetryRef.current.throwDamageGate += proj.damage;
+            if ((proj as any).isFoam) foamTelemetryRef.current.passiveShotsToGate++;
             shotsToGateRef.current++;
             spawnParticles(isStarPierce ? g.x : proj.x, isStarPierce ? g.y + g.height / 2 : proj.y, 'sparkle', 3);
             if (!proj.pierce) {
