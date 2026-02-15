@@ -1,33 +1,33 @@
 
-## BATTLE + Reset Yan Yana Duzeltmesi
 
-### Sorun
-Eski ekran goruntusunde BATTLE butonu ve Reset Progress ayni satirda yan yana duruyordu. Simdi BATTLE `w-full` (tam genislik) olarak tek basina bir satir kapliyor, Reset de altinda ayri satirda gorunuyor. Bu yuzden alt bolum gereksiz yere asagi uzuyor.
+## Stage 3 TRAVEL Mini-Rush Suresi Kisaltmasi
 
-### Cozum
-`src/game/GarageOverlay.tsx` dosyasinda (satir 378-390 civari):
+### Degisiklik
+`src/game/config.ts` dosyasinda tek bir deger degisecek:
 
-Suanki yapi:
-```text
-<button "w-full ...">BATTLE</button>    <!-- tam genislik -->
-<button>Reset Progress</button>          <!-- altinda ayri satir -->
+```
+MINI_RUSH_CONFIG.DURATION: 5.0 → 2.5
 ```
 
-Yeni yapi:
-```text
-<div className="flex gap-2 items-center">
-  <button className="flex-1 ...">BATTLE</button>   <!-- genisler ama tam degil -->
-  <button>Reset Progress</button>                    <!-- yaninda kucuk kalir -->
-</div>
-```
+### Etki
+- Mini-Rush spike'i 5 saniyeden 2.5 saniyeye iner
+- Spawn interval, yogunluk (SPAWN_MULT: 0.35), baslangic zamani (START_RATIO: 0.25) ve SIEGE davranisi aynen kalir
+- Stage 3 TRAVEL'da toplam spawn sayisi azalir cunku yogun faz yariya duser
+- Oyuncunun Gate3'e ulasma sansi artar
 
 ### Teknik Detay
 
-**Dosya:** `src/game/GarageOverlay.tsx` (satir 378-390)
+**Dosya:** `src/game/config.ts` (satir ~188)
 
-- BATTLE butonundan `w-full` kaldirilacak, yerine `flex-1` konacak
-- Reset butonu ayri satirdan cikarilip BATTLE ile ayni `flex row` icine alinacak
-- Reset butonundaki `mx-auto` kaldirilacak (artik yan yana oldugu icin gereksiz)
-- Butun bu iki buton bir `<div className="flex gap-2 items-center">` icine sarilacak
+Mevcut:
+```
+DURATION: 5.0,
+```
 
-Tek dosya, tek bolge degisikligi. Baska dosyaya dokunulmayacak.
+Yeni:
+```
+DURATION: 2.5,
+```
+
+Tek sabit, tek dosya. Baska hicbir seye dokunulmayacak.
+
