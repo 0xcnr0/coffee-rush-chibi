@@ -236,7 +236,7 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBo
     : null;
   // If the equipped box is destroyed, don't draw foam zone
   if (!foamBlock) return;
-  const cannonOriginY = foamBlock.y + foamBlock.height / 2;
+  const cannonOriginY = foamBlock.y + foamBlock.height * 0.75;
   const range = GAME_CONFIG.FOAM_PASSIVE_RANGE;
   
   // Update sweep angle
