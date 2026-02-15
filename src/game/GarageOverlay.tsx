@@ -275,12 +275,18 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           const starEvoCount = progression.starEvoChoices?.length || 0;
           const starIsMaxed = starEvoCount >= starMaxEvos;
           const starPipsInTier = progression.starPips % GAME_CONFIG.STAR_PIP_PER_EVO;
+
+          // Flame per-box
+          const flamePerBox = progression.flamePerBox || [false, false, false];
+          const isFlamed = flamePerBox[boxIdx] || false;
+          const canAffordFlame = progression.totalCoins >= GAME_CONFIG.FLAME_PER_BOX_COST;
+          const showFlame = progression.bestStageReached >= 3;
           
           return (
-            <div key={`star-${boxIdx}`} className="absolute pointer-events-auto"
+            <div key={`weapons-${boxIdx}`} className="absolute pointer-events-auto flex gap-1"
               style={{ top: boxY, left: cartRightEdge + 6 }}>
+              {/* Star button */}
               {!isStarred ? (
-                /* Star purchase button */
                 <button
                   onClick={() => {
                     if (purchaseStarForBox(boxIdx, GAME_CONFIG.STAR_PER_BOX_COST)) {
@@ -297,7 +303,6 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
                   <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.STAR_PER_BOX_COST}</span>
                 </button>
               ) : hasAnyStar && boxIdx === 0 ? (
-                /* Star pip upgrade button (only on first starred box to avoid duplicates) */
                 <button
                   onClick={handleStarPip}
                   disabled={starIsMaxed || progression.totalCoins < starPipCost}
@@ -316,11 +321,36 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
                     : <span className="text-[7px] mt-0.5 text-gold">🪙{starPipCost}</span>}
                 </button>
               ) : (
-                /* Already starred, not the upgrade slot */
                 <div className="flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] bg-sky-900/60 border-sky-500/50">
                   <Star className="w-3.5 h-3.5 text-sky-400 fill-sky-400" />
                   <Check className="w-2.5 h-2.5 text-sky-400 mt-0.5" />
                 </div>
+              )}
+
+              {/* Flame button (only visible when bestStageReached >= 3) */}
+              {showFlame && (
+                !isFlamed ? (
+                  <button
+                    onClick={() => {
+                      if (purchaseFlameForBox(boxIdx, GAME_CONFIG.FLAME_PER_BOX_COST)) {
+                        setProgression(loadProgression());
+                        onProgressionChange?.();
+                        toast.success('Flame Equipped!', { icon: '🔥' });
+                      }
+                    }}
+                    disabled={!canAffordFlame}
+                    className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] transition-all duration-200
+                      ${canAffordFlame ? 'bg-coffee-dark/80 border-orange-500/50 hover:border-orange-500 active:scale-95'
+                      : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'}`}>
+                    <span className="text-sm">🔥</span>
+                    <span className="text-[7px] mt-0.5 text-gold">🪙{GAME_CONFIG.FLAME_PER_BOX_COST}</span>
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[38px] bg-orange-900/60 border-orange-500/50">
+                    <span className="text-sm">🔥</span>
+                    <Check className="w-2.5 h-2.5 text-orange-400 mt-0.5" />
+                  </div>
+                )
               )}
             </div>
           );

@@ -954,7 +954,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current);
+        deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current, hasFlameRef.current);
       return;
     }
     
@@ -1130,7 +1130,7 @@ export const CoffeeRushGame: React.FC = () => {
       drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
         tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
         bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-        deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current);
+        deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current, hasFlameRef.current);
       return;
     }
     
@@ -1762,7 +1762,7 @@ export const CoffeeRushGame: React.FC = () => {
     drawGame(ctx, blocks, enemyPool.getActive(), projectilePool.getActive(),
       tipPool.getActive(), particlePool.getActive(), screenShakeRef.current,
       bossStateRef.current, bossIncomingRef.current, playPhaseRef.current,
-      deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current);
+      deltaTime, gateBuildingRef.current, currentTime, hasStarRef.current, hasFlameRef.current);
   }, [
     enemyPool, projectilePool, tipPool, particlePool,
     spawnEnemy, fireProjectile, spawnParticles, spawnTip,

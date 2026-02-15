@@ -21,7 +21,8 @@ export function drawGame(
   deltaTime?: number,
   gateBuilding?: GateBuilding | null,
   currentTime?: number,
-  hasSaw?: boolean,
+  hasStar?: boolean,
+  hasFlame?: boolean,
 ) {
   const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
   const isTraveling = playPhase === 'TRAVEL' || playPhase === 'BREATHER';
@@ -57,7 +58,9 @@ export function drawGame(
   drawBarista(ctx, blocks);
   
   // Draw passive star zone (only if unlocked)
-  if (hasSaw) drawStarZone(ctx, blocks);
+  if (hasStar) drawStarZone(ctx, blocks);
+  // Draw passive flame zone (only if unlocked)
+  if (hasFlame) drawFlameZone(ctx, blocks);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
   projectiles.forEach(proj => drawProjectile(ctx, proj));
@@ -225,6 +228,85 @@ function drawStarZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   ctx.arc(0, 0, 5, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PASSIVE FLAME ZONE (cone visual)
+// ═══════════════════════════════════════════════════════════════════════
+let flameParticleTimer = 0;
+const flameParticles: { x: number; y: number; life: number; vx: number; vy: number; size: number }[] = [];
+
+function drawFlameZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
+  const activeBlocks = blocks.filter(b => !b.destroyed);
+  if (activeBlocks.length === 0) return;
+  
+  const cartFrontX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
+  const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+  const coneOriginY = groundY - 60;
+  const radius = GAME_CONFIG.FLAME_PASSIVE_RADIUS;
+  const halfAngle = (GAME_CONFIG.FLAME_PASSIVE_CONE_ANGLE / 2) * (Math.PI / 180);
+  
+  // Cone fill (orange/red gradient)
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.beginPath();
+  ctx.moveTo(cartFrontX, coneOriginY);
+  ctx.arc(cartFrontX, coneOriginY, radius, -halfAngle, halfAngle);
+  ctx.closePath();
+  const gradient = ctx.createRadialGradient(cartFrontX, coneOriginY, 0, cartFrontX, coneOriginY, radius);
+  gradient.addColorStop(0, 'hsl(30, 100%, 55%)');
+  gradient.addColorStop(0.6, 'hsl(15, 90%, 50%)');
+  gradient.addColorStop(1, 'hsl(0, 80%, 40%)');
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  ctx.restore();
+  
+  // Cone border glow
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.strokeStyle = 'hsl(25, 90%, 55%)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cartFrontX, coneOriginY);
+  ctx.arc(cartFrontX, coneOriginY, radius, -halfAngle, halfAngle);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+  
+  // Simple flame particles
+  flameParticleTimer += 0.016; // ~60fps assumed
+  if (flameParticleTimer > 0.08 && flameParticles.length < 8) {
+    flameParticleTimer = 0;
+    const angle = (Math.random() - 0.5) * GAME_CONFIG.FLAME_PASSIVE_CONE_ANGLE * (Math.PI / 180);
+    const dist = Math.random() * radius * 0.7 + 10;
+    flameParticles.push({
+      x: cartFrontX + Math.cos(angle) * dist,
+      y: coneOriginY + Math.sin(angle) * dist,
+      life: 1.0,
+      vx: Math.cos(angle) * 20,
+      vy: -15 - Math.random() * 20,
+      size: 3 + Math.random() * 4,
+    });
+  }
+  
+  // Update & draw particles
+  for (let i = flameParticles.length - 1; i >= 0; i--) {
+    const p = flameParticles[i];
+    p.life -= 0.03;
+    p.x += p.vx * 0.016;
+    p.y += p.vy * 0.016;
+    p.size *= 0.97;
+    if (p.life <= 0) { flameParticles.splice(i, 1); continue; }
+    
+    ctx.save();
+    ctx.globalAlpha = p.life * 0.6;
+    const hue = 30 + (1 - p.life) * 20; // orange → red as fading
+    ctx.fillStyle = `hsl(${hue}, 90%, 55%)`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
