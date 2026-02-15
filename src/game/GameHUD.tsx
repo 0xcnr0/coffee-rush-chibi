@@ -2,6 +2,7 @@ import React from 'react';
 import { Clock, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GAME_CONFIG, STAGES } from './config';
+import { CoinIcon } from './CoinIcon';
 import type { GameMode, BossState, PlayPhase, GateBuilding } from './types';
 
 interface GameHUDProps {
@@ -164,7 +165,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
           </div>
           
           <div className="flex items-center gap-2 bg-coffee-dark/80 rounded-lg px-3 py-2">
-            <span className="text-lg">🪙</span>
+            <CoinIcon size={20} />
             <span className="text-lg font-bold text-gold">{tips}</span>
           </div>
         </div>

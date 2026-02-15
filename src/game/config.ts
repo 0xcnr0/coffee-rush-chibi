@@ -232,10 +232,10 @@ export const GAME_CONFIG = {
   
   // Active Foam Burst (power skill — canvas-wide foam wave)
   FOAM_BURST_COST: 7,                 // Power cost
-  FOAM_BURST_DAMAGE: 55,              // damage to each enemy hit (buffed: premium 7-Power ability)
-  FOAM_BURST_GATE_DAMAGE: 35,         // flat damage to gate (buffed: meaningful vs gate)
-  FOAM_BURST_DURATION: 2.2,           // seconds of foam wave (extended for premium feel)
-  
+  FOAM_BURST_DAMAGE: 80,              // damage to each enemy hit (buffed: premium 7-Power ability)
+  FOAM_BURST_GATE_DAMAGE: 50,         // flat damage to gate (buffed: meaningful vs gate)
+  FOAM_BURST_DURATION: 2.5,           // seconds of foam wave (extended for premium feel)
+
   // Foam per-box (Garage purchase)
   FOAM_PER_BOX_COST: 200,
   

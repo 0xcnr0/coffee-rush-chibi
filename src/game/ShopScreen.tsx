@@ -1,5 +1,6 @@
 import React from 'react';
 import { Zap, Package, Sparkles, Lock } from 'lucide-react';
+import { CoinIcon } from './CoinIcon';
 
 interface ShopScreenProps {
   onBack: () => void;
@@ -28,7 +29,7 @@ const SHOP_ITEMS: ShopItem[] = [
     id: 'bean_pack_small',
     name: 'Bean Pack (50)',
     description: 'Get 50 bonus beans',
-    icon: <span className="text-xl">🪙</span>,
+    icon: <CoinIcon size={20} />,
     price: 99,
     comingSoon: true,
   },
@@ -57,7 +58,7 @@ export const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, totalCoins }) =>
       <div className="px-4 py-3 flex items-center justify-between border-b border-coffee-medium/30">
         <h1 className="text-xl font-bold text-coffee-cream">🛒 Shop</h1>
         <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-3 py-1.5">
-          <span className="text-sm">🪙</span>
+          <CoinIcon size={16} />
           <span className="text-gold font-bold text-sm">{totalCoins}</span>
         </div>
       </div>
