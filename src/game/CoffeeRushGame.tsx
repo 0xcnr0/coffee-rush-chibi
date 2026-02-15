@@ -1530,7 +1530,7 @@ export const CoffeeRushGame: React.FC = () => {
           ? blocksRef.current.find(b => b.id === foamBoxIndexRef.current + 1 && !b.destroyed)
           : null;
         const originY = foamBlock 
-          ? foamBlock.y + foamBlock.height * 0.75
+          ? foamBlock.y + foamBlock.height / 2
           : GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET - 50;
         const sweepHalf = (GAME_CONFIG.FOAM_SWEEP_ANGLE / 2) * (Math.PI / 180);
         const currentAngle = Math.sin(foamSweepRef.current) * sweepHalf;
