@@ -3,6 +3,7 @@ import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, 
 import { Button } from '@/components/ui/button';
 import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseFoamForBox } from './persistence';
 import { GAME_CONFIG } from './config';
+import { CoinIcon } from './CoinIcon';
 import { toast } from 'sonner';
 import type { GameMode } from './types';
 import { ShopScreen } from './ShopScreen';
@@ -75,7 +76,7 @@ const PipTile: React.FC<PipTileProps> = ({ name, icon, currentPips, pipsPerEvo, 
         </div>
       ) : (
         <div className="flex items-center gap-0.5">
-          <span className="text-sm">🪙</span>
+          <CoinIcon size={16} />
           <span className={`text-sm font-bold ${canAfford ? 'text-gold' : 'text-coffee-cream/50'}`}>{cost}</span>
         </div>
       )}
@@ -227,7 +228,7 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
                 className="ml-1 px-1.5 py-0.5 text-[9px] font-bold bg-energy/20 hover:bg-energy/40 text-energy rounded transition-colors">+10</button>
             </div>
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
-              <span className="text-sm">🪙</span>
+              <CoinIcon size={16} />
               <span className="text-gold font-bold text-xs">{progression.totalCoins}</span>
             </div>
           </div>

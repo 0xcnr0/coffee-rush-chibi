@@ -821,7 +821,7 @@ export const CoffeeRushGame: React.FC = () => {
   const handleFoamBurst = useCallback(() => {
     if (!hasFoamRef.current) return;
     // If equipped box is destroyed, disable foam entirely
-    const foamBlock = blocksRef.current.find(b => b.id === foamBoxIndexRef.current);
+    const foamBlock = blocksRef.current.find(b => b.id === foamBoxIndexRef.current + 1);
     if (!foamBlock || foamBlock.destroyed) {
       hasFoamRef.current = false;
       return;
@@ -843,9 +843,9 @@ export const CoffeeRushGame: React.FC = () => {
     
     const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
     
-    // Spawn foam wave particles across the road (denser for premium feel)
-    for (let px = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH; px < GAME_CONFIG.CANVAS_WIDTH; px += 18) {
-      spawnParticles(px, groundY - 30 + (Math.random() - 0.5) * 25, 'steam', 4);
+    // Spawn foam wave particles across the road (dense, bright for premium feel)
+    for (let px = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH; px < GAME_CONFIG.CANVAS_WIDTH; px += 12) {
+      spawnParticles(px, groundY - 30 + (Math.random() - 0.5) * 30, 'steam', 6);
     }
     
     // Damage ALL enemies on screen
@@ -1511,7 +1511,7 @@ export const CoffeeRushGame: React.FC = () => {
     // ═══════════════════════════════════════════════════════════════════
     // Check if foam's equipped box is destroyed — if so, disable foam
     if (hasFoamRef.current) {
-      const equippedFoamBlock = blocksRef.current.find(b => b.id === foamBoxIndexRef.current);
+      const equippedFoamBlock = blocksRef.current.find(b => b.id === foamBoxIndexRef.current + 1);
       if (!equippedFoamBlock || equippedFoamBlock.destroyed) {
         hasFoamRef.current = false;
       }
@@ -1527,7 +1527,7 @@ export const CoffeeRushGame: React.FC = () => {
         const cartFrontX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
         // Anchor foam origin to equipped box Y position
         const foamBlock = foamBoxIndexRef.current >= 0 
-          ? blocksRef.current.find(b => b.id === foamBoxIndexRef.current && !b.destroyed)
+          ? blocksRef.current.find(b => b.id === foamBoxIndexRef.current + 1 && !b.destroyed)
           : null;
         const originY = foamBlock 
           ? foamBlock.y + foamBlock.height / 2 

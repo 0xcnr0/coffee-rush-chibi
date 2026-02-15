@@ -232,7 +232,7 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBo
   const cartFrontX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
   // Anchor to equipped box Y position
   const foamBlock = foamBoxIndex !== undefined && foamBoxIndex >= 0
-    ? blocks.find(b => b.id === foamBoxIndex && !b.destroyed)
+    ? blocks.find(b => b.id === foamBoxIndex + 1 && !b.destroyed)
     : null;
   // If the equipped box is destroyed, don't draw foam zone
   if (!foamBlock) return;
@@ -244,59 +244,64 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBo
   const sweepHalf = (GAME_CONFIG.FOAM_SWEEP_ANGLE / 2) * (Math.PI / 180);
   const currentAngle = Math.sin(foamSweepAngle) * sweepHalf;
   
-  // Draw sweeping beam indicator (more visible)
+  // Draw sweeping beam indicator (thick, bright for visibility)
   ctx.save();
-  ctx.globalAlpha = 0.18;
-  ctx.fillStyle = 'hsl(40, 60%, 90%)';
+  ctx.globalAlpha = 0.30;
+  ctx.fillStyle = 'hsl(38, 65%, 85%)';
   ctx.beginPath();
   ctx.moveTo(cartFrontX, cannonOriginY);
   const beamEndX = cartFrontX + Math.cos(currentAngle) * range;
   const beamEndY = cannonOriginY + Math.sin(currentAngle) * range;
-  // Wider beam for visibility
-  const perpX = -Math.sin(currentAngle) * 22;
-  const perpY = Math.cos(currentAngle) * 22;
+  const perpX = -Math.sin(currentAngle) * 28;
+  const perpY = Math.cos(currentAngle) * 28;
   ctx.lineTo(beamEndX + perpX, beamEndY + perpY);
   ctx.lineTo(beamEndX - perpX, beamEndY - perpY);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
   
-  // Range indicator arc (more visible)
+  // Range indicator arc (brighter)
   ctx.save();
-  ctx.globalAlpha = 0.12;
-  ctx.strokeStyle = 'hsl(40, 60%, 85%)';
-  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.20;
+  ctx.strokeStyle = 'hsl(38, 65%, 80%)';
+  ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.arc(cartFrontX, cannonOriginY, range, -sweepHalf, sweepHalf);
   ctx.stroke();
   ctx.restore();
   
-  // Foam particles (cream/white blobs — denser, larger)
+  // Foam particles (denser, brighter, larger blobs)
   foamParticleTimer += 0.016;
-  if (foamParticleTimer > 0.07 && foamParticles.length < 12) {
+  if (foamParticleTimer > 0.05 && foamParticles.length < 18) {
     foamParticleTimer = 0;
     const dist = Math.random() * range * 0.7 + 10;
     foamParticles.push({
       x: cartFrontX + Math.cos(currentAngle) * dist,
       y: cannonOriginY + Math.sin(currentAngle) * dist,
       life: 1.0,
-      vx: Math.cos(currentAngle) * 20,
-      vy: -10 - Math.random() * 15,
-      size: 4 + Math.random() * 5,
+      vx: Math.cos(currentAngle) * 25,
+      vy: -12 - Math.random() * 18,
+      size: 5 + Math.random() * 6,
     });
   }
   
   for (let i = foamParticles.length - 1; i >= 0; i--) {
     const p = foamParticles[i];
-    p.life -= 0.025;
+    p.life -= 0.022;
     p.x += p.vx * 0.016;
     p.y += p.vy * 0.016;
-    p.size *= 0.98;
+    p.size *= 0.985;
     if (p.life <= 0) { foamParticles.splice(i, 1); continue; }
     
     ctx.save();
-    ctx.globalAlpha = p.life * 0.8;
-    ctx.fillStyle = `hsl(40, ${40 + (1 - p.life) * 30}%, ${92 - (1 - p.life) * 10}%)`;
+    ctx.globalAlpha = p.life * 0.9;
+    // Outer glow
+    ctx.fillStyle = `hsla(38, 50%, 90%, ${p.life * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Main blob
+    ctx.fillStyle = `hsl(40, ${45 + (1 - p.life) * 25}%, ${94 - (1 - p.life) * 8}%)`;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fill();
@@ -536,23 +541,23 @@ function drawProjectile(ctx: CanvasRenderingContext2D, proj: Projectile) {
     ctx.fill();
     ctx.restore();
   } else if (proj.isFoam) {
-    // Brew projectile: bright cream/white blob with glow
+    // Brew projectile: large bright cream/white blob with glow
     ctx.save();
-    ctx.globalAlpha = 0.95;
-    // Outer glow
-    ctx.fillStyle = 'hsla(40, 50%, 85%, 0.4)';
+    ctx.globalAlpha = 1.0;
+    // Outer glow (bigger)
+    ctx.fillStyle = 'hsla(38, 55%, 88%, 0.5)';
     ctx.beginPath();
-    ctx.arc(proj.x, proj.y, proj.radius * 2.5, 0, Math.PI * 2);
+    ctx.arc(proj.x, proj.y, proj.radius * 3.5, 0, Math.PI * 2);
     ctx.fill();
-    // Main blob
-    ctx.fillStyle = 'hsl(38, 55%, 88%)';
+    // Main blob (bigger, brighter)
+    ctx.fillStyle = 'hsl(40, 60%, 90%)';
     ctx.beginPath();
-    ctx.arc(proj.x, proj.y, proj.radius * 1.4, 0, Math.PI * 2);
+    ctx.arc(proj.x, proj.y, proj.radius * 2.0, 0, Math.PI * 2);
     ctx.fill();
     // Inner highlight
-    ctx.fillStyle = 'hsl(45, 40%, 96%)';
+    ctx.fillStyle = 'hsl(45, 50%, 97%)';
     ctx.beginPath();
-    ctx.arc(proj.x - 1, proj.y - 1, proj.radius * 0.6, 0, Math.PI * 2);
+    ctx.arc(proj.x - 1, proj.y - 1, proj.radius * 0.9, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   } else {
@@ -602,10 +607,27 @@ function drawParticle(ctx: CanvasRenderingContext2D, particle: Particle) {
 function drawTip(ctx: CanvasRenderingContext2D, tip: TipDrop) {
   if (!tip.active) return;
   ctx.globalAlpha = tip.opacity;
+  // Gold coin circle
+  const cx = tip.x - 8;
+  const cy = tip.y - 6;
+  const r = 7;
+  ctx.fillStyle = 'hsl(43, 80%, 50%)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'hsl(45, 90%, 62%)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'hsla(50, 100%, 85%, 0.6)';
+  ctx.beginPath();
+  ctx.arc(cx - 2, cy - 2, r * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  // Value text
   ctx.fillStyle = COLORS.gold;
-  ctx.font = 'bold 16px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(`🪙${tip.value}`, tip.x, tip.y);
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${tip.value}`, tip.x + 2, tip.y);
   ctx.globalAlpha = 1;
 }
 

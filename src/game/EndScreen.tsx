@@ -3,6 +3,7 @@ import { Clock, Coffee, Users, Home, Trophy, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { loadProgression } from './persistence';
 import { STAGES } from './config';
+import { CoinIcon } from './CoinIcon';
 import type { GameStats, GameMode } from './types';
 
 interface EndScreenProps {
@@ -68,7 +69,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({ stats, onPlayAgain, onHome
         
         <div className="bg-gold/30 border border-gold/50 rounded-xl p-3 w-full max-w-xs mb-3 animate-pop-in">
           <div className="flex items-center justify-center gap-3">
-            <span className="text-xl">🪙</span>
+            <CoinIcon size={24} />
             <div className="text-center">
               <div className="text-xl font-bold text-gold">+{stats.coinsEarned}</div>
               <div className="text-[10px] text-coffee-cream/70">(Kills + Gates + Clear Bonus)</div>
@@ -123,7 +124,7 @@ export const EndScreen: React.FC<EndScreenProps> = ({ stats, onPlayAgain, onHome
           <div className="text-xs text-coffee-light">Served</div>
         </div>
         <div className="bg-coffee-dark/50 rounded-xl p-3 text-center animate-pop-in">
-          <span className="text-lg block mb-1">🪙</span>
+          <CoinIcon size={24} className="block mb-1 mx-auto" />
           <div className="text-xl font-bold text-secondary">+{stats.coinsEarned}</div>
           <div className="text-xs text-coffee-light">Coins</div>
         </div>
