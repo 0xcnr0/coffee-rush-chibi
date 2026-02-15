@@ -820,6 +820,12 @@ export const CoffeeRushGame: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════════════
   const handleFoamBurst = useCallback(() => {
     if (!hasFoamRef.current) return;
+    // If equipped box is destroyed, disable foam entirely
+    const foamBlock = blocksRef.current.find(b => b.id === foamBoxIndexRef.current);
+    if (!foamBlock || foamBlock.destroyed) {
+      hasFoamRef.current = false;
+      return;
+    }
     if (powerRef.current < GAME_CONFIG.FOAM_BURST_COST) return;
     
     powerRef.current -= GAME_CONFIG.FOAM_BURST_COST;
@@ -1503,6 +1509,14 @@ export const CoffeeRushGame: React.FC = () => {
     // ═══════════════════════════════════════════════════════════════════
     // PASSIVE FOAM CANNON (sinusoidal sweeping, fires foam projectiles)
     // ═══════════════════════════════════════════════════════════════════
+    // Check if foam's equipped box is destroyed — if so, disable foam
+    if (hasFoamRef.current) {
+      const equippedFoamBlock = blocksRef.current.find(b => b.id === foamBoxIndexRef.current);
+      if (!equippedFoamBlock || equippedFoamBlock.destroyed) {
+        hasFoamRef.current = false;
+      }
+    }
+    
     if (hasFoamRef.current) {
       foamPassiveTickRef.current -= deltaTime;
       foamSweepRef.current += GAME_CONFIG.FOAM_SWEEP_SPEED * deltaTime;
@@ -1513,7 +1527,7 @@ export const CoffeeRushGame: React.FC = () => {
         const cartFrontX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
         // Anchor foam origin to equipped box Y position
         const foamBlock = foamBoxIndexRef.current >= 0 
-          ? blocksRef.current.find(b => b.id === foamBoxIndexRef.current + 1 && !b.destroyed)
+          ? blocksRef.current.find(b => b.id === foamBoxIndexRef.current && !b.destroyed)
           : null;
         const originY = foamBlock 
           ? foamBlock.y + foamBlock.height / 2 
