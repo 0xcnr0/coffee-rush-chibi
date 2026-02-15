@@ -1,52 +1,33 @@
 
-
-## Garage Gorunus Duzeltmesi
+## BATTLE + Reset Yan Yana Duzeltmesi
 
 ### Sorun
-Ekran goruntusunde goruldugu gibi, Power/Damage upgrade butonlari ile BATTLE/Reset butonlari arasindaki pozisyon kaymis. Bunun iki sebebi var:
-
-1. **Save version 15'ten 16'ya atlayinca tum ilerleme silindi** — Foam-to-Brew rename sirasinda `SAVE_VERSION` arttirildi ama eski save'i donusturecek migration kodu yazilmadi. Oyuncu sifirdan baslamis gibi gorunuyor (0 coin, 0 cargo box).
-
-2. **Cart (araba) alt UI'nin ustune biniyor** — `GROUND_Y_OFFSET: 180` degeri ile cart, Power/Damage tile'larinin oldugu alana iniyor. Bu yuzden butonlar birbirine karisiyor.
+Eski ekran goruntusunde BATTLE butonu ve Reset Progress ayni satirda yan yana duruyordu. Simdi BATTLE `w-full` (tam genislik) olarak tek basina bir satir kapliyor, Reset de altinda ayri satirda gorunuyor. Bu yuzden alt bolum gereksiz yere asagi uzuyor.
 
 ### Cozum
+`src/game/GarageOverlay.tsx` dosyasinda (satir 378-390 civari):
 
-#### 1. Save Migration (persistence.ts)
-`loadProgression()` fonksiyonunda version mismatch kontrolunden once v15 save'leri tespit edip v16'ya donustur:
-- `foamPerBox` alanini `brewPerBox` olarak rename et
-- `version`'i 16 yap ve kaydet
-- Boylece oyuncunun coin'leri, upgrade'leri ve ilerlemesi korunur
-
-#### 2. Layout Duzeltmesi (config.ts)
-- `GROUND_Y_OFFSET`: 180 --> 220 (cart'i yukari tasir, alt butonlarla cakismayi onler)
-- `UI_SAFE_BOTTOM_PX`: 160 --> 200 (uyumlu kalsin)
-
-#### 3. Renderer parametre temizligi (renderer.ts)
-- `hasFoam` parametresini `hasBrew` olarak guncelle (zaten config'te BREW_ olarak degistirildi ama fonksiyon imzasinda kalmis olabilir)
-
----
-
-### Teknik Detaylar
-
-**persistence.ts** - `loadProgression()` icinde su ekleme yapilacak:
+Suanki yapi:
 ```text
-if (parsed.version === 15) {
-  // v15 -> v16 migration: rename foamPerBox -> brewPerBox
-  parsed.brewPerBox = parsed.foamPerBox || [false, false, false];
-  delete parsed.foamPerBox;
-  parsed.version = 16;
-  saveProgression(parsed);
-  return { ...DEFAULT_PROGRESSION, ...parsed };
-}
+<button "w-full ...">BATTLE</button>    <!-- tam genislik -->
+<button>Reset Progress</button>          <!-- altinda ayri satir -->
 ```
 
-**config.ts** - Iki sabit degisecek:
+Yeni yapi:
 ```text
-GROUND_Y_OFFSET: 180 -> 220
-UI_SAFE_BOTTOM_PX: 160 -> 200
+<div className="flex gap-2 items-center">
+  <button className="flex-1 ...">BATTLE</button>   <!-- genisler ama tam degil -->
+  <button>Reset Progress</button>                    <!-- yaninda kucuk kalir -->
+</div>
 ```
 
-**renderer.ts** - Fonksiyon imzasindaki `hasFoam`/`foamBoxIndex` parametreleri `hasBrew`/`brewBoxIndex` olarak guncellenecek (tutarlilik icin).
+### Teknik Detay
 
-Bu uc degisiklik sonrasi garage'da cart yukari oturacak, alt butonlar duzgun siralanacak ve eski save verileri korunacak.
+**Dosya:** `src/game/GarageOverlay.tsx` (satir 378-390)
 
+- BATTLE butonundan `w-full` kaldirilacak, yerine `flex-1` konacak
+- Reset butonu ayri satirdan cikarilip BATTLE ile ayni `flex row` icine alinacak
+- Reset butonundaki `mx-auto` kaldirilacak (artik yan yana oldugu icin gereksiz)
+- Butun bu iki buton bir `<div className="flex gap-2 items-center">` icine sarilacak
+
+Tek dosya, tek bolge degisikligi. Baska dosyaya dokunulmayacak.
