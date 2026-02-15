@@ -1,45 +1,52 @@
 
 
-# Fix: Brew Box Origin + Destroy-on-Box-Death
+## Garage Gorunus Duzeltmesi
 
-## Problem Summary
+### Sorun
+Ekran goruntusunde goruldugu gibi, Power/Damage upgrade butonlari ile BATTLE/Reset butonlari arasindaki pozisyon kaymis. Bunun iki sebebi var:
 
-Two bugs are causing Brew to misbehave:
+1. **Save version 15'ten 16'ya atlayinca tum ilerleme silindi** — Foam-to-Brew rename sirasinda `SAVE_VERSION` arttirildi ama eski save'i donusturecek migration kodu yazilmadi. Oyuncu sifirdan baslamis gibi gorunuyor (0 coin, 0 cargo box).
 
-1. **Wrong box lookup (off-by-one)**: The code looks for `block.id === foamBoxIndex + 1`, but blocks are created with `id: i` (0-indexed). So if Brew is on box 0, it searches for block id 1 (the wrong box). This is why Brew appears to fire from the wrong position.
+2. **Cart (araba) alt UI'nin ustune biniyor** — `GROUND_Y_OFFSET: 180` degeri ile cart, Power/Damage tile'larinin oldugu alana iniyor. Bu yuzden butonlar birbirine karisiyor.
 
-2. **Brew keeps firing after its box is destroyed**: Neither the passive cannon nor the burst checks whether the equipped box has been destroyed. Star has the same gap, but the user specifically wants Brew to stop when its box dies.
+### Cozum
 
-## Changes
+#### 1. Save Migration (persistence.ts)
+`loadProgression()` fonksiyonunda version mismatch kontrolunden once v15 save'leri tespit edip v16'ya donustur:
+- `foamPerBox` alanini `brewPerBox` olarak rename et
+- `version`'i 16 yap ve kaydet
+- Boylece oyuncunun coin'leri, upgrade'leri ve ilerlemesi korunur
 
-### File 1: `src/game/CoffeeRushGame.tsx`
+#### 2. Layout Duzeltmesi (config.ts)
+- `GROUND_Y_OFFSET`: 180 --> 220 (cart'i yukari tasir, alt butonlarla cakismayi onler)
+- `UI_SAFE_BOTTOM_PX`: 160 --> 200 (uyumlu kalsin)
 
-**A) Fix block ID lookup in passive cannon (line 1516)**
-- Change `b.id === foamBoxIndexRef.current + 1` to `b.id === foamBoxIndexRef.current`
+#### 3. Renderer parametre temizligi (renderer.ts)
+- `hasFoam` parametresini `hasBrew` olarak guncelle (zaten config'te BREW_ olarak degistirildi ama fonksiyon imzasinda kalmis olabilir)
 
-**B) Stop foam when equipped box is destroyed (line 1506)**
-- Before the existing `if (hasFoamRef.current)` passive block, add a runtime check:
-  - Look up the foam block: `blocksRef.current.find(b => b.id === foamBoxIndexRef.current)`
-  - If that block is destroyed (`block.destroyed === true`), set `hasFoamRef.current = false` and skip all foam logic
-- This ensures both passive firing and burst button disable when the box dies
+---
 
-**C) Add same guard to `handleFoamBurst` (line 821-822)**
-- After the `if (!hasFoamRef.current) return;` check, also verify the equipped block is not destroyed
-- If destroyed, return early (no burst)
+### Teknik Detaylar
 
-### File 2: `src/game/renderer.ts`
+**persistence.ts** - `loadProgression()` icinde su ekleme yapilacak:
+```text
+if (parsed.version === 15) {
+  // v15 -> v16 migration: rename foamPerBox -> brewPerBox
+  parsed.brewPerBox = parsed.foamPerBox || [false, false, false];
+  delete parsed.foamPerBox;
+  parsed.version = 16;
+  saveProgression(parsed);
+  return { ...DEFAULT_PROGRESSION, ...parsed };
+}
+```
 
-**A) Fix block ID lookup in drawFoamZone (line 235)**
-- Change `b.id === foamBoxIndex + 1` to `b.id === foamBoxIndex`
+**config.ts** - Iki sabit degisecek:
+```text
+GROUND_Y_OFFSET: 180 -> 220
+UI_SAFE_BOTTOM_PX: 160 -> 200
+```
 
-**B) If the foam block is destroyed, skip drawing the foam zone entirely**
-- The existing `if (!foamBlock)` fallback draws at a default Y — instead, return early when the specific block is destroyed
+**renderer.ts** - Fonksiyon imzasindaki `hasFoam`/`foamBoxIndex` parametreleri `hasBrew`/`brewBoxIndex` olarak guncellenecek (tutarlilik icin).
 
-## What This Fixes
+Bu uc degisiklik sonrasi garage'da cart yukari oturacak, alt butonlar duzgun siralanacak ve eski save verileri korunacak.
 
-- Brew passive cannon will originate from the correct box (the one you purchased it on)
-- When that box's HP hits 0, Brew stops firing and the burst button becomes unusable
-- Visual foam zone also anchors to the correct box and disappears when it dies
-
-## NOT Touched
-- Gate HP, spawn logic, travel durations, Star mechanics, EVO system, economy values
