@@ -1,55 +1,65 @@
 
 
-# Gate2 HP Artisi + Flame Garage UI Tamamlama
+# 3 Fixes: Foam -> Brew Rename, Weapon Lock UI, Passive Telemetry Bug
 
-## Degisiklik 1: Gate2 HP 320 -> 350
+## Fix 1: Rename "Foam" to "Brew" + Icon Change (🧴 -> 🫧)
 
-**Dosya:** `config.ts` satir 29
+All internal code keeps `foam`/`FOAM` naming (config constants, persistence fields, telemetry keys) -- only user-facing strings and emoji change. This avoids another full rename and save version bump.
 
-Tek deger degisikligi: `gateHP: 320` -> `gateHP: 350`
+### Changes:
+- **GameHUD.tsx**: Change `🧴` to `🫧` on the burst button (line 210)
+- **GarageOverlay.tsx**: Change `🧴` to `🫧` on purchase buttons and equipped indicators (lines 338, 345, 350). Change toast message from "Foam Equipped!" to "Brew Equipped!" (line 338)
+- **RunSummaryOverlay.tsx**: Change display label from "Foam Burst" / "Foam" to "Brew Burst" / "Brew" in the telemetry output (line 102-104)
+- **config.ts**: Update comment headers from "FOAM WEAPON" to "BREW WEAPON (Foam)" for clarity (lines 220-221)
 
-Baska hicbir degere dokunulmaz. GATE_HP_RATIOS dizisi zaten referans olarak tutuluyor, gercek HP degerleri STAGES dizisinde dogrudan tanimli.
-
-**Beklenen etki:** Run7 verisine gore G2'de 24s'de 270/320 hasar verilmis. 350 HP ile tahmini siege suresi ~28-30s olacak, G1 ile tutarli hissiyat.
-
----
-
-## Degisiklik 2: GarageOverlay'a Flame Satin Alma Butonlari
-
-**Dosya:** `GarageOverlay.tsx`
-
-`purchaseFlameForBox` zaten import edilmis ama UI render kodu eksik. Star butonlarinin yanina ayni tasarimda Flame butonlari eklenecek:
-
-- Sadece `bestStageReached >= 3` ise gorunur (Stage 2 Gate yikilmis olmali)
-- Her kargo kutusu icin ayri satin alma (Star modeli ile ayni)
-- Emoji: fire emojisi, renk: turuncu tema (bg-orange-600)
-- Fiyat: 200 coin (GAME_CONFIG.FLAME_PER_BOX_COST)
-- Satin alinca toast: "Flame Equipped!"
-- Pozisyon: Star butonunun saginda, ayni satir, ayni boyut
+No persistence or config constant rename needed -- only UI labels and emoji.
 
 ---
 
-## Degisiklik 3: drawFlameZone (renderer.ts)
+## Fix 2: Weapon Lock UI in GarageOverlay
 
-Flame pasif alaninin gorsel temsili eksik. `drawStarZone` ile ayni yapiyi takip eden `drawFlameZone` fonksiyonu:
+**Problem:** Star button shows even when Foam is already equipped on that box, and vice versa. The persistence layer (`boxWeapons`) correctly blocks double-purchase, but the UI still renders both buttons.
 
-- Turuncu/kirmizi renk paleti (Star'in mavi/beyaz temasina karsi)
-- Kon seklinde gorsel (FLAME_PASSIVE_CONE_ANGLE: 45 derece, on tarafa)
-- Basit alev parcacik animasyonu
-- `drawStarZone` cagrildigi her yerde kosullu olarak `drawFlameZone` da cagrilacak
+**Solution:** In the per-box weapon rendering loop (GarageOverlay.tsx lines 265-357), read `boxWeapons[boxIdx]` and:
+- If `boxWeapons[boxIdx] === 'star'`: show only Star (equipped/upgrade), hide Brew button
+- If `boxWeapons[boxIdx] === 'foam'`: show only Brew (equipped), hide Star button  
+- If `boxWeapons[boxIdx] === null`: show both Star and Brew purchase buttons (if unlock conditions met)
+
+### Changes:
+- **GarageOverlay.tsx** (lines 265-357): Add `boxWeapon` variable from `progression.boxWeapons`, wrap Star button render in `boxWeapon !== 'foam'` check, wrap Foam button render in `boxWeapon !== 'star'` check
 
 ---
 
-## Dokunulmayacaklar
-- Gate1 HP (300) — degismez
-- Gate3-5 HP — degismez
-- Stage1/Stage2 spawn — degismez
-- Star guaranteed gate hit — degismez
-- EVO sistemi — degismez
-- Travel sureleri — degismez
+## Fix 3: Brew Passive Telemetry Bug (foamPassiveDamageDealt = 0)
 
-## Uygulama Sirasi
-1. `config.ts` — Gate2 HP: 320 -> 350
-2. `renderer.ts` — drawFlameZone ekleme
-3. `GarageOverlay.tsx` — Flame satin alma butonlari
+**Root Cause:** In `CoffeeRushGame.tsx` projectile hit detection (lines 1582-1592), when a foam projectile hits an enemy, there is no `isFoam` check to increment `foamTelemetryRef.current.passiveDamage`. Only `isStar` is checked (line 1586). Same issue for gate hits (line 1612) -- foam gate hits are not tracked in foam telemetry.
+
+### Changes:
+- **CoffeeRushGame.tsx line 1586** (enemy hit): Add foam tracking after star check:
+  ```
+  if ((proj as any).isFoam) foamTelemetryRef.current.passiveDamage += proj.damage;
+  ```
+- **CoffeeRushGame.tsx line 1612** (gate hit): Add foam tracking after star check:
+  ```
+  if ((proj as any).isFoam) foamTelemetryRef.current.passiveShotsToGate++;
+  ```
+
+Note: `isFoam` is already defined as optional on the `Projectile` interface and set via `(proj as any).isFoam = true` in the passive cannon code. The `as any` cast is kept for now since `isFoam` is optional.
+
+---
+
+## Files Affected
+1. `src/game/GameHUD.tsx` -- emoji change only
+2. `src/game/GarageOverlay.tsx` -- emoji + label change + weapon lock UI logic
+3. `src/game/RunSummaryOverlay.tsx` -- display label change
+4. `src/game/CoffeeRushGame.tsx` -- foam telemetry tracking in projectile hits
+5. `src/game/config.ts` -- comment update only
+
+## NOT Touched
+- Gate HP values
+- Travel durations  
+- Star logic
+- EVO system
+- Persistence schema / SAVE_VERSION
+- Config constant names (stay as FOAM_*)
 
