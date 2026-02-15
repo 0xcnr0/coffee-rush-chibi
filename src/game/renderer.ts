@@ -236,7 +236,14 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBo
     : null;
   // If the equipped box is destroyed, don't draw foam zone
   if (!foamBlock) return;
-  const cannonOriginY = foamBlock.y + foamBlock.height / 2;
+  // Use visual Y position (matching drawCart rendering)
+  const chassisHeight = Math.floor(GAME_CONFIG.BLOCK_HEIGHT * 0.4);
+  const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+  const chassisY = groundY - 30 - chassisHeight;
+  const boxHeight = GAME_CONFIG.BLOCK_HEIGHT - 4;
+  const boxIndex = foamBlock.id - 1;
+  const visualBlockY = chassisY - (boxIndex + 1) * boxHeight;
+  const cannonOriginY = visualBlockY + boxHeight / 2;
   const range = GAME_CONFIG.FOAM_PASSIVE_RANGE;
   
   // Update sweep angle

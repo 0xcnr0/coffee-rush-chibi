@@ -1525,13 +1525,22 @@ export const CoffeeRushGame: React.FC = () => {
         foamPassiveTickRef.current = GAME_CONFIG.FOAM_PASSIVE_FIRE_INTERVAL;
         
         const cartFrontX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH;
-        // Anchor foam origin to equipped box Y position
+        // Anchor foam origin to equipped box VISUAL Y position (matches drawCart rendering)
         const foamBlock = foamBoxIndexRef.current >= 0 
           ? blocksRef.current.find(b => b.id === foamBoxIndexRef.current + 1 && !b.destroyed)
           : null;
-        const originY = foamBlock 
-          ? foamBlock.y + foamBlock.height / 2
-          : GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET - 50;
+        let originY: number;
+        if (foamBlock && foamBlock.id > 0) {
+          const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
+          const chassisHeight = Math.floor(GAME_CONFIG.BLOCK_HEIGHT * 0.4);
+          const chassisY = groundY - 30 - chassisHeight;
+          const boxHeight = GAME_CONFIG.BLOCK_HEIGHT - 4;
+          const boxIndex = foamBlock.id - 1;
+          const visualBlockY = chassisY - (boxIndex + 1) * boxHeight;
+          originY = visualBlockY + boxHeight / 2;
+        } else {
+          originY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET - 50;
+        }
         const sweepHalf = (GAME_CONFIG.FOAM_SWEEP_ANGLE / 2) * (Math.PI / 180);
         const currentAngle = Math.sin(foamSweepRef.current) * sweepHalf;
         
