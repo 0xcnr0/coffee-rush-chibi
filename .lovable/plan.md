@@ -1,65 +1,45 @@
 
 
-# 3 Fixes: Foam -> Brew Rename, Weapon Lock UI, Passive Telemetry Bug
+# Fix: Brew Box Origin + Destroy-on-Box-Death
 
-## Fix 1: Rename "Foam" to "Brew" + Icon Change (🧴 -> 🫧)
+## Problem Summary
 
-All internal code keeps `foam`/`FOAM` naming (config constants, persistence fields, telemetry keys) -- only user-facing strings and emoji change. This avoids another full rename and save version bump.
+Two bugs are causing Brew to misbehave:
 
-### Changes:
-- **GameHUD.tsx**: Change `🧴` to `🫧` on the burst button (line 210)
-- **GarageOverlay.tsx**: Change `🧴` to `🫧` on purchase buttons and equipped indicators (lines 338, 345, 350). Change toast message from "Foam Equipped!" to "Brew Equipped!" (line 338)
-- **RunSummaryOverlay.tsx**: Change display label from "Foam Burst" / "Foam" to "Brew Burst" / "Brew" in the telemetry output (line 102-104)
-- **config.ts**: Update comment headers from "FOAM WEAPON" to "BREW WEAPON (Foam)" for clarity (lines 220-221)
+1. **Wrong box lookup (off-by-one)**: The code looks for `block.id === foamBoxIndex + 1`, but blocks are created with `id: i` (0-indexed). So if Brew is on box 0, it searches for block id 1 (the wrong box). This is why Brew appears to fire from the wrong position.
 
-No persistence or config constant rename needed -- only UI labels and emoji.
+2. **Brew keeps firing after its box is destroyed**: Neither the passive cannon nor the burst checks whether the equipped box has been destroyed. Star has the same gap, but the user specifically wants Brew to stop when its box dies.
 
----
+## Changes
 
-## Fix 2: Weapon Lock UI in GarageOverlay
+### File 1: `src/game/CoffeeRushGame.tsx`
 
-**Problem:** Star button shows even when Foam is already equipped on that box, and vice versa. The persistence layer (`boxWeapons`) correctly blocks double-purchase, but the UI still renders both buttons.
+**A) Fix block ID lookup in passive cannon (line 1516)**
+- Change `b.id === foamBoxIndexRef.current + 1` to `b.id === foamBoxIndexRef.current`
 
-**Solution:** In the per-box weapon rendering loop (GarageOverlay.tsx lines 265-357), read `boxWeapons[boxIdx]` and:
-- If `boxWeapons[boxIdx] === 'star'`: show only Star (equipped/upgrade), hide Brew button
-- If `boxWeapons[boxIdx] === 'foam'`: show only Brew (equipped), hide Star button  
-- If `boxWeapons[boxIdx] === null`: show both Star and Brew purchase buttons (if unlock conditions met)
+**B) Stop foam when equipped box is destroyed (line 1506)**
+- Before the existing `if (hasFoamRef.current)` passive block, add a runtime check:
+  - Look up the foam block: `blocksRef.current.find(b => b.id === foamBoxIndexRef.current)`
+  - If that block is destroyed (`block.destroyed === true`), set `hasFoamRef.current = false` and skip all foam logic
+- This ensures both passive firing and burst button disable when the box dies
 
-### Changes:
-- **GarageOverlay.tsx** (lines 265-357): Add `boxWeapon` variable from `progression.boxWeapons`, wrap Star button render in `boxWeapon !== 'foam'` check, wrap Foam button render in `boxWeapon !== 'star'` check
+**C) Add same guard to `handleFoamBurst` (line 821-822)**
+- After the `if (!hasFoamRef.current) return;` check, also verify the equipped block is not destroyed
+- If destroyed, return early (no burst)
 
----
+### File 2: `src/game/renderer.ts`
 
-## Fix 3: Brew Passive Telemetry Bug (foamPassiveDamageDealt = 0)
+**A) Fix block ID lookup in drawFoamZone (line 235)**
+- Change `b.id === foamBoxIndex + 1` to `b.id === foamBoxIndex`
 
-**Root Cause:** In `CoffeeRushGame.tsx` projectile hit detection (lines 1582-1592), when a foam projectile hits an enemy, there is no `isFoam` check to increment `foamTelemetryRef.current.passiveDamage`. Only `isStar` is checked (line 1586). Same issue for gate hits (line 1612) -- foam gate hits are not tracked in foam telemetry.
+**B) If the foam block is destroyed, skip drawing the foam zone entirely**
+- The existing `if (!foamBlock)` fallback draws at a default Y — instead, return early when the specific block is destroyed
 
-### Changes:
-- **CoffeeRushGame.tsx line 1586** (enemy hit): Add foam tracking after star check:
-  ```
-  if ((proj as any).isFoam) foamTelemetryRef.current.passiveDamage += proj.damage;
-  ```
-- **CoffeeRushGame.tsx line 1612** (gate hit): Add foam tracking after star check:
-  ```
-  if ((proj as any).isFoam) foamTelemetryRef.current.passiveShotsToGate++;
-  ```
+## What This Fixes
 
-Note: `isFoam` is already defined as optional on the `Projectile` interface and set via `(proj as any).isFoam = true` in the passive cannon code. The `as any` cast is kept for now since `isFoam` is optional.
-
----
-
-## Files Affected
-1. `src/game/GameHUD.tsx` -- emoji change only
-2. `src/game/GarageOverlay.tsx` -- emoji + label change + weapon lock UI logic
-3. `src/game/RunSummaryOverlay.tsx` -- display label change
-4. `src/game/CoffeeRushGame.tsx` -- foam telemetry tracking in projectile hits
-5. `src/game/config.ts` -- comment update only
+- Brew passive cannon will originate from the correct box (the one you purchased it on)
+- When that box's HP hits 0, Brew stops firing and the burst button becomes unusable
+- Visual foam zone also anchors to the correct box and disappears when it dies
 
 ## NOT Touched
-- Gate HP values
-- Travel durations  
-- Star logic
-- EVO system
-- Persistence schema / SAVE_VERSION
-- Config constant names (stay as FOAM_*)
-
+- Gate HP, spawn logic, travel durations, Star mechanics, EVO system, economy values
