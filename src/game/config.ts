@@ -290,7 +290,7 @@ export const TRAVEL_DURATION_BY_STAGE = [10, 10, 16, 18, 20] as const;
 // Mini-rush config (Stage 2+ travel only)
 export const MINI_RUSH_CONFIG = {
   ENABLED_FROM_STAGE: 3,
-  DURATION: 5.0,
+  DURATION: 2.5,
   SPAWN_MULT: 0.35,
   START_RATIO: 0.25,
 } as const;
