@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseBrewForBox } from './persistence';
+import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseBlockPip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseBrewForBox } from './persistence';
 import { GAME_CONFIG } from './config';
 import { CoinIcon } from './CoinIcon';
 import { toast } from 'sonner';
@@ -115,6 +115,14 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
   const handleStarPip = () => {
     const cost = getPipCost(progression.starPips, GAME_CONFIG.STAR_PIP_BASE_COST, GAME_CONFIG.STAR_PIP_COST_SCALING);
     if (purchaseStarPip(cost)) {
+      setProgression(loadProgression());
+      onProgressionChange?.();
+    }
+  };
+
+  const handleBlockPip = (boxIdx: number) => {
+    const cost = getPipCost(progression.blockPips[boxIdx], GAME_CONFIG.BLOCK_PIP_BASE_COST, GAME_CONFIG.BLOCK_PIP_COST_SCALING);
+    if (purchaseBlockPip(boxIdx, cost)) {
       setProgression(loadProgression());
       onProgressionChange?.();
     }
@@ -256,6 +264,42 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
           </button>
         </div>
         
+        {/* Per-box HP (Shield) upgrade buttons on left side of cart */}
+        {Array.from({ length: progression.blockCountLevel }, (_, boxIdx) => {
+          const blockPips = progression.blockPips || [0, 0, 0];
+          const currentPips = blockPips[boxIdx] || 0;
+          const blockEvoCount = (progression.blockEvoChoices?.[boxIdx] || []).length;
+          const blockMaxEvos = GAME_CONFIG.BLOCK_MAX_EVOS;
+          const blockIsMaxed = blockEvoCount >= blockMaxEvos;
+          const blockPipsInTier = currentPips % GAME_CONFIG.BLOCK_PIP_PER_EVO;
+          const blockPipCost = getPipCost(currentPips, GAME_CONFIG.BLOCK_PIP_BASE_COST, GAME_CONFIG.BLOCK_PIP_COST_SCALING);
+          const canAffordBlock = progression.totalCoins >= blockPipCost;
+          const boxY = chassisY - ((boxIdx + 1) * boxHeight);
+
+          return (
+            <div key={`hp-${boxIdx}`} className="absolute pointer-events-auto"
+              style={{ top: boxY, left: GAME_CONFIG.CART_X - 40 }}>
+              <button
+                onClick={() => handleBlockPip(boxIdx)}
+                disabled={blockIsMaxed || !canAffordBlock}
+                className={`flex flex-col items-center justify-center p-1 rounded-md border min-w-[32px] h-[46px] transition-all duration-200
+                  ${blockIsMaxed ? 'bg-coffee-dark/60 border-coffee-medium/30 opacity-60'
+                    : canAffordBlock ? 'bg-coffee-dark/80 border-warm-orange/50 hover:border-warm-orange active:scale-95'
+                    : 'bg-coffee-dark/60 border-coffee-medium/30 opacity-70'}`}>
+                <Shield className={`w-3.5 h-3.5 ${blockIsMaxed ? 'text-coffee-cream/50' : 'text-warm-orange'}`} />
+                <div className="flex gap-px mt-0.5">
+                  {Array.from({ length: GAME_CONFIG.BLOCK_PIP_PER_EVO }, (_, i) => (
+                    <div key={i} className={`w-1 h-1 rounded-full ${i < blockPipsInTier ? 'bg-warm-orange' : 'bg-coffee-medium/40'}`} />
+                  ))}
+                  {blockEvoCount > 0 && <span className="text-[6px] text-gold font-bold ml-0.5">E{blockEvoCount}</span>}
+                </div>
+                {blockIsMaxed ? <Check className="w-2.5 h-2.5 text-green-400 mt-0.5" />
+                  : <span className="text-[7px] mt-0.5 text-gold">🪙{blockPipCost}</span>}
+              </button>
+            </div>
+          );
+        })}
+
         {/* Per-box Star buttons next to each cargo box */}
         {progression.bestStageReached >= 2 && Array.from({ length: progression.blockCountLevel }, (_, boxIdx) => {
           const starPerBox = progression.starPerBox || [false, false, false];
