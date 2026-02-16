@@ -333,7 +333,6 @@ export const CoffeeRushGame: React.FC = () => {
     targetModeCountsRef.current = { front: 0, mid: 0, back: 0, gate: 0 };
     stage1WaveRef.current = { spawned: 0, breatherTimer: 0 };
     bombSilenceTimerRef.current = 0;
-    clearPurchaseLog();
     setShowRunSummary(false);
     
     telemetryRef.current = {
