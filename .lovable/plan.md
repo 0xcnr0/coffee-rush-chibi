@@ -1,34 +1,41 @@
 
 
-## Kasa HP Upgrade Butonlarini Garage'a Ekle
+## Upgrade Trace Boş Görünme Hatası Düzeltmesi
 
-### Mevcut Durum
-- `purchaseBlockPip(slotIndex, cost)` fonksiyonu `persistence.ts`'te mevcut ve calisiyor
-- `blockPips[]` array'i progression datasinda tutuluyor (default: [0,0,0])
-- Ancak GarageOverlay.tsx'te bu fonksiyon **import edilmiyor** ve hicbir buton bu fonksiyonu cagirmiyor
-- Her kasanin saginda Star ve Brew butonlari var, ama HP upgrade butonu yok
+### Sorun
+Garage'da yapılan upgrade'ler (Block HP, Star pip, Brew vb.) doğru çalışıyor ve coin düşüyor, ancak Run Summary telemetrisinde "No upgrades purchased" yazıyor. Bunun nedeni: `clearPurchaseLog()` fonksiyonu hem run başında hem de run summary kapatılınca çağrılıyor. Run başındaki çağrı, Garage'da yapılan tüm upgrade log'unu siliyor.
 
-### Cozum
-Her kargo kutusunun **sol tarafina** (kartRightEdge yerine CART_X - offset) veya mevcut Star/Brew butonlarinin yanina bir Shield ikonlu HP upgrade butonu ekle.
+### Akış (Mevcut - Hatalı)
+```text
+Garage'da upgrade al --> log'a yazilir
+Play'e bas --> startRun() --> clearPurchaseLog() --> LOG SILINDI!
+Run biter --> getPurchaseLog() --> bos array --> "No upgrades purchased"
+Run Summary kapat --> clearPurchaseLog() (tekrar, gereksiz)
+```
+
+### Akış (Düzeltilmiş)
+```text
+Garage'da upgrade al --> log'a yazilir
+Play'e bas --> startRun() --> log KORUNUR
+Run biter --> getPurchaseLog() --> upgrade'ler gorulur
+Run Summary kapat --> clearPurchaseLog() --> log temizlenir
+```
 
 ### Teknik Detay
 
-**Dosya:** `src/game/GarageOverlay.tsx`
+**Dosya:** `src/game/CoffeeRushGame.tsx`
 
-1. Import listesine `purchaseBlockPip` ekle (satir 4)
-2. Her kutu icin (boxIdx loop icinde, satir 260) Star/Brew butonlarinin yanina bir HP buton ekle:
-   - Shield ikonu (zaten import edilmis)
-   - `blockPips[boxIdx]` pip durumunu goster (BLOCK_PIP_PER_EVO kadar nokta)
-   - `blockEvoChoices[boxIdx]` evo sayisini goster
-   - Tiklaninca `purchaseBlockPip(boxIdx, cost)` cagir
-   - Maliyet: `getPipCost(blockPips[boxIdx], BLOCK_PIP_BASE_COST, BLOCK_PIP_COST_SCALING)`
+**Degisiklik:** Satir 336'daki `clearPurchaseLog()` cagrisini kaldir. Log zaten satir 1946'da Run Summary kapatilinca temizleniyor, bu yeterli.
 
-3. Buton stili mevcut Star/Brew butonlariyla ayni formatta olacak:
-   - 32px genislik, 38-46px yukseklik
-   - Pip noktalar alt kisimda
-   - Coin maliyeti en altta
-   - MAX durumunda yesil Check ikonu
+Mevcut (satir 336):
+```text
+clearPurchaseLog();
+```
+Bu satir silinecek (veya yoruma alinacak).
 
-### Diger Degerler
-Gate HP, spawn degerleri, Brew, Star mekanikleri, config sabitleri, renderer kodu degismez. Sadece GarageOverlay.tsx'te UI butonu eklenir.
+### Etki
+- Garage'da yapilan tum upgrade'ler Run Summary'de gorunecek
+- Log, Run Summary kapatildiginda temizlenmeye devam edecek
+- Oyun mekanikleri, spawn degerleri, Gate HP degismez
+- Sadece tek bir satir kaldirilacak
 
