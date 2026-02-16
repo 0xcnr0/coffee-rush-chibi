@@ -1,53 +1,34 @@
 
 
-## Dort Duzeltme: Star Gorseli + Brew Rengi Maviye Cevir
+## Kasa HP Upgrade Butonlarini Garage'a Ekle
 
-### 1. Yildiz Gorseli Geri Getir
+### Mevcut Durum
+- `purchaseBlockPip(slotIndex, cost)` fonksiyonu `persistence.ts`'te mevcut ve calisiyor
+- `blockPips[]` array'i progression datasinda tutuluyor (default: [0,0,0])
+- Ancak GarageOverlay.tsx'te bu fonksiyon **import edilmiyor** ve hicbir buton bu fonksiyonu cagirmiyor
+- Her kasanin saginda Star ve Brew butonlari var, ama HP upgrade butonu yok
 
-**Dosya:** `src/game/renderer.ts`
+### Cozum
+Her kargo kutusunun **sol tarafina** (kartRightEdge yerine CART_X - offset) veya mevcut Star/Brew butonlarinin yanina bir Shield ikonlu HP upgrade butonu ekle.
 
-`drawStarZone` fonksiyonundan sadece donen yildiz sprite kodunu (satir 198-218 civari) ayri bir `drawStarSprite` fonksiyonuna tasi. Mavi seffaf daire cizimi kaldirilmis olarak kalsin. Ana `drawGame` fonksiyonunda `if (hasStar) drawStarSprite(ctx, blocks);` cagrisini ekle.
+### Teknik Detay
 
-### 2. Brew Efektlerini Maviye Cevir
+**Dosya:** `src/game/GarageOverlay.tsx`
 
-Uc ayri yerde renk degisikligi yapilacak, hepsi `src/game/renderer.ts` icinde:
+1. Import listesine `purchaseBlockPip` ekle (satir 4)
+2. Her kutu icin (boxIdx loop icinde, satir 260) Star/Brew butonlarinin yanina bir HP buton ekle:
+   - Shield ikonu (zaten import edilmis)
+   - `blockPips[boxIdx]` pip durumunu goster (BLOCK_PIP_PER_EVO kadar nokta)
+   - `blockEvoChoices[boxIdx]` evo sayisini goster
+   - Tiklaninca `purchaseBlockPip(boxIdx, cost)` cagir
+   - Maliyet: `getPipCost(blockPips[boxIdx], BLOCK_PIP_BASE_COST, BLOCK_PIP_COST_SCALING)`
 
-**a) Foam Zone Beam (satir 257):**
-- Mevcut: `hsl(38, 65%, 85%)` (krem/beyaz)
-- Yeni: `hsl(200, 70%, 75%)` (acik mavi)
+3. Buton stili mevcut Star/Brew butonlariyla ayni formatta olacak:
+   - 32px genislik, 38-46px yukseklik
+   - Pip noktalar alt kisimda
+   - Coin maliyeti en altta
+   - MAX durumunda yesil Check ikonu
 
-**b) Foam Zone Arc (satir 273):**
-- Mevcut: `hsl(38, 65%, 80%)`
-- Yeni: `hsl(200, 65%, 70%)`
-
-**c) Foam Particles - Outer glow (satir 306):**
-- Mevcut: `hsla(38, 50%, 90%, ...)`
-- Yeni: `hsla(200, 55%, 85%, ...)`
-
-**d) Foam Particles - Main blob (satir 311):**
-- Mevcut: `hsl(40, 45-70%, 86-94%)`
-- Yeni: `hsl(200, 50-70%, 80-90%)`
-
-**e) Brew Projectile - Outer glow (satir 555):**
-- Mevcut: `hsla(38, 55%, 88%, 0.5)`
-- Yeni: `hsla(200, 60%, 80%, 0.5)`
-
-**f) Brew Projectile - Main blob (satir 560):**
-- Mevcut: `hsl(40, 60%, 90%)`
-- Yeni: `hsl(200, 65%, 75%)`
-
-**g) Brew Projectile - Inner highlight (satir 565):**
-- Mevcut: `hsl(45, 50%, 97%)`
-- Yeni: `hsl(200, 40%, 92%)`
-
-### 3. Diger Degerler
-
-Gate HP, spawn degerleri, Brew mekanikleri, Star mekanikleri, config sabitleri degismez. Sadece `renderer.ts` dosyasinda gorsel degisiklikler yapilir.
-
-### Teknik Ozet
-
-**Tek dosya:** `src/game/renderer.ts`
-- `drawStarSprite` fonksiyonu olustur (daire olmadan sadece donen yildiz)
-- 7 renk degeri krem/beyazdan maviye cevrilir
-- Baska dosyaya dokunulmaz
+### Diger Degerler
+Gate HP, spawn degerleri, Brew, Star mekanikleri, config sabitleri, renderer kodu degismez. Sadece GarageOverlay.tsx'te UI butonu eklenir.
 
