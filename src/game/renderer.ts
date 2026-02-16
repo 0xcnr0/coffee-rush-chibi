@@ -56,7 +56,7 @@ export function drawGame(
   drawCart(ctx, blocks, isTraveling || isApproaching);
   drawBarista(ctx, blocks);
   
-  // Star passive zone circle removed — star visual on blocks is sufficient
+  if (hasStar) drawStarSprite(ctx, blocks);
   if (hasBrew) drawFoamZone(ctx, blocks, brewBoxIndex);
   
   enemies.forEach(enemy => drawEnemy(ctx, enemy));
@@ -178,22 +178,13 @@ function drawGateBuilding(ctx: CanvasRenderingContext2D, gate: GateBuilding, cur
 // ═══════════════════════════════════════════════════════════════════════
 // PASSIVE STAR ZONE (visual)
 // ═══════════════════════════════════════════════════════════════════════
-function drawStarZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
+function drawStarSprite(ctx: CanvasRenderingContext2D, blocks: CartBlock[]) {
   const activeBlocks = blocks.filter(b => !b.destroyed);
   if (activeBlocks.length === 0) return;
   
   const sawCenterX = GAME_CONFIG.CART_X + GAME_CONFIG.CART_WIDTH + GAME_CONFIG.STAR_PASSIVE_RADIUS * 0.5;
   const groundY = GAME_CONFIG.CANVAS_HEIGHT - GAME_CONFIG.GROUND_Y_OFFSET;
   const sawCenterY = groundY - 60;
-  const radius = GAME_CONFIG.STAR_PASSIVE_RADIUS;
-  
-  ctx.save();
-  ctx.globalAlpha = 0.08;
-  ctx.fillStyle = 'hsl(200, 60%, 50%)';
-  ctx.beginPath();
-  ctx.arc(sawCenterX, sawCenterY, radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
   
   ctx.save();
   ctx.translate(sawCenterX, sawCenterY);
@@ -254,7 +245,7 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBo
   // Draw sweeping beam indicator (thick, bright for visibility)
   ctx.save();
   ctx.globalAlpha = 0.30;
-  ctx.fillStyle = 'hsl(38, 65%, 85%)';
+  ctx.fillStyle = 'hsl(200, 70%, 75%)';
   ctx.beginPath();
   ctx.moveTo(cartFrontX, cannonOriginY);
   const beamEndX = cartFrontX + Math.cos(currentAngle) * range;
@@ -270,7 +261,7 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBo
   // Range indicator arc (brighter)
   ctx.save();
   ctx.globalAlpha = 0.20;
-  ctx.strokeStyle = 'hsl(38, 65%, 80%)';
+  ctx.strokeStyle = 'hsl(200, 65%, 70%)';
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.arc(cartFrontX, cannonOriginY, range, -sweepHalf, sweepHalf);
@@ -303,12 +294,12 @@ function drawFoamZone(ctx: CanvasRenderingContext2D, blocks: CartBlock[], foamBo
     ctx.save();
     ctx.globalAlpha = p.life * 0.9;
     // Outer glow
-    ctx.fillStyle = `hsla(38, 50%, 90%, ${p.life * 0.3})`;
+    ctx.fillStyle = `hsla(200, 55%, 85%, ${p.life * 0.3})`;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
     ctx.fill();
     // Main blob
-    ctx.fillStyle = `hsl(40, ${45 + (1 - p.life) * 25}%, ${94 - (1 - p.life) * 8}%)`;
+    ctx.fillStyle = `hsl(200, ${50 + (1 - p.life) * 20}%, ${90 - (1 - p.life) * 10}%)`;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fill();
@@ -552,17 +543,17 @@ function drawProjectile(ctx: CanvasRenderingContext2D, proj: Projectile) {
     ctx.save();
     ctx.globalAlpha = 1.0;
     // Outer glow (bigger)
-    ctx.fillStyle = 'hsla(38, 55%, 88%, 0.5)';
+    ctx.fillStyle = 'hsla(200, 60%, 80%, 0.5)';
     ctx.beginPath();
     ctx.arc(proj.x, proj.y, proj.radius * 3.5, 0, Math.PI * 2);
     ctx.fill();
     // Main blob (bigger, brighter)
-    ctx.fillStyle = 'hsl(40, 60%, 90%)';
+    ctx.fillStyle = 'hsl(200, 65%, 75%)';
     ctx.beginPath();
     ctx.arc(proj.x, proj.y, proj.radius * 2.0, 0, Math.PI * 2);
     ctx.fill();
     // Inner highlight
-    ctx.fillStyle = 'hsl(45, 50%, 97%)';
+    ctx.fillStyle = 'hsl(200, 40%, 92%)';
     ctx.beginPath();
     ctx.arc(proj.x - 1, proj.y - 1, proj.radius * 0.9, 0, Math.PI * 2);
     ctx.fill();
