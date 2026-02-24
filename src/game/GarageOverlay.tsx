@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Package, Coffee, Lock, Swords, ShoppingBag, User, Wrench, Castle, ChevronDown, Check, Award, BatteryFull, RotateCcw, Play, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseBlockPip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseBrewForBox } from './persistence';
+import { loadProgression, purchasePowerPip, purchaseDamagePip, purchaseBlockPip, purchaseCargoBox, getCargoBoxCost, getPipCost, setLastGameMode, resetProgression, getEnergyState, consumeEnergy, formatTimeRemaining, addDebugEnergy, addDebugCoins, purchaseStar, purchaseStarForBox, purchaseStarPip, purchaseBrewForBox } from './persistence';
 import { GAME_CONFIG } from './config';
 import { CoinIcon } from './CoinIcon';
 import { toast } from 'sonner';
@@ -232,6 +232,8 @@ export const GarageOverlay: React.FC<GarageOverlayProps> = ({ onPlay, blockCount
             <div className="flex items-center gap-1 bg-coffee-dark/40 rounded-full px-2 py-1">
               <CoinIcon size={16} />
               <span className="text-gold font-bold text-xs">{progression.totalCoins}</span>
+              <button onClick={() => { addDebugCoins(500); setProgression(loadProgression()); }}
+                className="ml-1 px-1.5 py-0.5 text-[9px] font-bold bg-gold/20 hover:bg-gold/40 text-gold rounded transition-colors">+500</button>
             </div>
           </div>
         </div>
